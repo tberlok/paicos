@@ -28,7 +28,7 @@ class snapshot:
     Loads the partial files instead of everything
     """
     def __init__(self, output_folder, snapnum, partfile=None):
-        import arepo_subf
+        import arepo_subf, arepo_fof
 
         if output_folder[-1] != '/':
             output_folder += '/'
@@ -61,10 +61,17 @@ class snapshot:
         self.filename = filename
         self.P = dict()
 
+        # get subfind catalog
         try:
-            self.Cat = arepo_subf.subfind_catalog(output_folder, snapnum, verbose=False)
+            self.Cat = arepo_subf.subfind_catalog(self.basedir, self.snapnum, verbose=self.verbose)
         except:
-            pass
+            self.Cat = None
+
+        if self.Cat is None:
+            try:
+                self.Cat = arepo_fof.fof_catalog(self.basedir, self.snapnum, verbose=self.verbose)
+            except:
+                print('no fof or subfind found')
 
         self.z = self.Header["Redshift"]
         self.a = self.Header["Time"]
