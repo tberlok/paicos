@@ -1,0 +1,7 @@
+*.hdf5
+*.c
+*.so
+*.html
+*__pycache__*
+build/
+experimental
