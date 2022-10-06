@@ -28,7 +28,8 @@ class snapshot:
     Loads the partial files instead of everything
     """
     def __init__(self, output_folder, snapnum, partfile=None):
-        import arepo_subf, arepo_fof
+        import arepo_subf
+        import arepo_fof
 
         if output_folder[-1] != '/':
             output_folder += '/'
@@ -63,13 +64,13 @@ class snapshot:
 
         # get subfind catalog
         try:
-            self.Cat = arepo_subf.subfind_catalog(self.basedir, self.snapnum, verbose=self.verbose)
+            self.Cat = arepo_subf.subfind_catalog(output_folder, snapnum, verbose=False)
         except:
             self.Cat = None
 
         if self.Cat is None:
             try:
-                self.Cat = arepo_fof.fof_catalog(self.basedir, self.snapnum, verbose=self.verbose)
+                self.Cat = arepo_fof.fof_catalog(output_folder, snapnum, verbose=False)
             except:
                 print('no fof or subfind found')
 
