@@ -12,8 +12,10 @@ nparts = s.Parameters['NumFilesPerSnapshot']
 
 pool = multiprocessing.Pool(16)
 
-tasks = []
-for npart in nparts:
-    tasks.append([simfolder, snapnum, npart, 2048])
 
-output = pool.starmap(make_projections, tasks)
+def do_task(npart):
+    make_projections(simfolder, snapnum, npart, 2048)
+    return 0
+
+
+output = pool.starmap(do_task, list(range(nparts)))
