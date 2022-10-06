@@ -5,7 +5,10 @@ import os
 
 
 def make_projections(simfolder, snapnum, partfile=None):
-    snap = load_partial_snap.snapshot(simfolder, snapnum, partfile)
+    if simfolder[-1] != '/':
+        simfolder += '/'
+
+    snap = load_partial_snap.snapshot(simfolder + 'output/', snapnum, partfile)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
 
@@ -14,8 +17,6 @@ def make_projections(simfolder, snapnum, partfile=None):
               'MagneticFieldSquaredTimesVolume', 'PressureTimesVolume',
               'EnstrophyTimesMasses']
 
-    if simfolder[-1] != '/':
-        simfolder += '/'
 
     if partfile is None:
         proj_dir = simfolder + 'projections/'
