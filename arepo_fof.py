@@ -2,7 +2,7 @@ import numpy as np
 import os
 import h5py
 
-class subfind_catalog:
+class fof_catalog:
   def __init__(self, basedir, snapnum, verbose=False):    
     if os.path.exists(basedir + "/fof_tab_" + str(snapnum).zfill(3) + ".hdf5"):
       self.multi_file = False
