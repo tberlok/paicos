@@ -17,7 +17,6 @@ def make_projections(simfolder, snapnum, partfile=None):
               'MagneticFieldSquaredTimesVolume', 'PressureTimesVolume',
               'EnstrophyTimesMasses']
 
-
     if partfile is None:
         proj_dir = simfolder + 'projections/'
         proj_filename = 'projection_{}_{}.hdf5'
@@ -32,6 +31,12 @@ def make_projections(simfolder, snapnum, partfile=None):
         [2*R200c, 10000, 10000],
         [10000, 2*R200c, 10000],
         [10000, 10000, 2*R200c],
+        )
+
+    width_vec = (
+        [10000, 10000, 10000],
+        [10000, 10000, 10000],
+        [10000, 10000, 10000],
         )
 
     for ii, direction in enumerate(['x', 'y', 'z']):
