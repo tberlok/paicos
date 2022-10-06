@@ -4,7 +4,7 @@ from sph_like_projection import Projector
 import os
 
 
-def make_projections(simfolder, snapnum, partfile=None):
+def make_projections(simfolder, snapnum, partfile=None, npix=512):
     if simfolder[-1] != '/':
         simfolder += '/'
 
@@ -41,7 +41,7 @@ def make_projections(simfolder, snapnum, partfile=None):
 
     for ii, direction in enumerate(['x', 'y', 'z']):
         widths = width_vec[ii]
-        p = Projector(snap, center, widths, direction, npix=512)
+        p = Projector(snap, center, widths, direction, npix=npix)
 
         image_file = ArepoImage(proj_dir + proj_filename.format(direction, snapnum, partfile),
                                 p.snap.filename, center, widths, direction)
