@@ -28,8 +28,8 @@ class snapshot:
     Loads the partial files instead of everything
     """
     def __init__(self, output_folder, snapnum, partfile=None):
-        import arepo_subf
-        import arepo_fof
+        from paicos import arepo_subf
+        from paicos import arepo_fof
 
         if output_folder[-1] != '/':
             output_folder += '/'
