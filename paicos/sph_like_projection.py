@@ -8,7 +8,7 @@ class Projector:
 
     def __init__(self, arepo_snap, center, widths, direction,
                  npix=512, nvol=8):
-        from cython_functions import get_index_of_region
+        from .cython.cython_functions import get_index_of_region
         self.snap = arepo_snap
 
         self.center = center
@@ -62,7 +62,7 @@ class Projector:
                             (4.0*np.pi/3.0))
 
     def project_variable(self, func):
-        from cython_functions import project_image
+        from .cython.cython_functions import project_image
 
         if type(func) is str:
             if func == 'Masses':

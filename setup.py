@@ -18,7 +18,7 @@ compiler_directives = {"boundscheck": False, "cdivision": True,
 ext_modules = [
     Extension(
         "*",
-        ["*.pyx"],
+        ["paicos/cython/*.pyx"],
         extra_compile_args=['-fopenmp'],
         extra_link_args=['-fopenmp'],
     )

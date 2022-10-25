@@ -53,18 +53,16 @@ if __name__ == '__main__':
     import sys
     import socket
 
-    snapnum = 247
     
-    if len(sys.argv) > 0:
-        snapnum = int(sys.argv[1])
     
     zoom = 4
 
     #halo_nums = [417, 261, 56, 41, 8, 420, 239, 104, 33, 19, 542, 260, 112, 22, 9, 344, 194, 98, 49, 20]
     # 2 not working, 112 just submitted
     #halo_nums = [4]
-    halo_nums = [0, 1, 3, 4, 417, 261, 56, 41, 8, 420, 239, 104, 33, 19, 542, 260, 22, 9, 344, 194, 98, 49, 20]
-    for halo_num in halo_nums:
+    halo_num = 112
+
+    for snapnum in range(129, 248):
         print('working on snap, halo', snapnum, halo_num)
         simfolder = '/lustre/cosmo-plasm/zoom-simulations/halo_{:04d}/adiabatic-mhd/zoom{}/'.format(halo_num, zoom)
         if socket.gethostname() == 'nnewl3.newton21.nnew':

@@ -27,8 +27,8 @@ ne_ionized = 1.0 + 2.0*(1.0-fhydrogen)/(4.0*fhydrogen)
 
 # --- import own libs ---
 
-import arepo_subf
-import arepo_fof
+from . import arepo_subf
+from . import arepo_fof
 from rotate import *
 
 # --- helper functions ---

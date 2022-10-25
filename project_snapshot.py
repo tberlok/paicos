@@ -1,6 +1,6 @@
-import load_partial_snap
-from arepo_image import ArepoImage
-from sph_like_projection import Projector
+from paicos import load_partial_snap
+from paicos import ArepoImage
+from paicos import Projector
 import os
 
 
@@ -55,4 +55,4 @@ def make_projections(simfolder, snapnum, partfile=None, npix=512):
 
 
 if __name__ == '__main__':
-    make_projections('.', 247)
+    make_projections('/lustre/cosmo-plasm/zoom-simulations/halo_0004/adiabatic-mhd/zoom4/', 247)
