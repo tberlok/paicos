@@ -4,6 +4,7 @@ from Cython.Build import cythonize
 from Cython.Compiler import Options
 import sys
 import os
+import numpy
 
 if sys.platform == 'darwin':
     os.environ['CC'] = 'gcc-11'
@@ -19,8 +20,12 @@ ext_modules = [
     Extension(
         "*",
         ["paicos/cython/*.pyx"],
+        # library_dirs=['/usr/lib/'],
         extra_compile_args=['-fopenmp'],
         extra_link_args=['-fopenmp'],
+        include_dirs=[numpy.get_include()],
+        # libraries=['stdlib'],
+        define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
     )
 ]
 
