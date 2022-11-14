@@ -12,7 +12,7 @@ if sys.platform == 'darwin':
 
 Options.annotate = True
 compiler_directives = {"boundscheck": False, "cdivision": True,
-                       "wraparound":False}
+                       "wraparound": False, 'language_level': "3"}
 
 # compiler_directives = {"boundscheck": True, "cdivision": False,
 #                        "wraparound":True}
@@ -20,12 +20,10 @@ ext_modules = [
     Extension(
         "*",
         ["paicos/cython/*.pyx"],
-        # library_dirs=['/usr/lib/'],
         extra_compile_args=['-fopenmp'],
         extra_link_args=['-fopenmp'],
         include_dirs=[numpy.get_include()],
-        # libraries=['stdlib'],
-        define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+        define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
 ]
 

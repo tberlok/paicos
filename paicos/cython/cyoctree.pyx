@@ -1,11 +1,10 @@
-# distutils: libraries = STD_LIBS
 """
 CyOctree building, loading and refining routines
 """
 cimport cython
 cimport libc.math as math
-cimport numpy as np
 
+cimport numpy as np
 import numpy as np
 
 from libc.stdlib cimport free, malloc
@@ -79,7 +78,8 @@ cdef int octree_build_node(Octree * tree, long int node_idx):
     """
     cdef np.int64_t splits[9]
     cdef np.int64_t i, j, k, n, start, end
-    cdef np.float64_t lx, ly, lz, sz, inv_size
+    cdef np.float64_t lx, ly, lz, sx, sy, sz, inv_size
+    cdef long int child
 
     # If we are running out of space in our tree, then we *try* to
     # relloacate a tree of double the size
@@ -387,6 +387,14 @@ cdef class CyOctree:
         return self.c_octree.num_nodes
 
     @property
+    def left_edge(self):
+        return np.copy(self.left_edge)
+
+    @property
+    def right_edge(self):
+        return np.copy(self.right_edge)
+
+    @property
     def node_positions(self):
         """
         The centre of every node within the octree
@@ -458,6 +466,8 @@ cdef class CyOctree:
             If None, the tree will be made large enough to encompass all particles.
         """
         cdef int i = 0
+        cdef np.float64_t left_edge_x=0.0, left_edge_y=0.0, left_edge_z=0.0
+        cdef np.float64_t right_edge_x=0.0, right_edge_y=0.0, right_edge_z=0.0
 
         # How many particles are there?
         self.c_octree.num_particles = self.input_positions.shape[0]
@@ -477,24 +487,31 @@ cdef class CyOctree:
         if left_edge is None:
             # If the edges are None, then we can just find the loop through
             # and find them out
-            left_edge = np.zeros(3, dtype=np.float64)
-            right_edge = np.zeros(3, dtype=np.float64)
 
-            left_edge[0] = self.c_octree.pposx[0]
-            left_edge[1] = self.c_octree.pposy[0]
-            left_edge[2] = self.c_octree.pposz[0]
-            right_edge[0] = self.c_octree.pposx[0]
-            right_edge[1] = self.c_octree.pposy[0]
-            right_edge[2] = self.c_octree.pposz[0]
+            # The loop below is equivalent to calls to np.min and np.max
+            # left_edge = np.min(self.input_positions, axis=0)
+            # right_edge = np.max(self.input_positions, axis=0)
+
+            left_edge_x = self.c_octree.pposx[0]
+            left_edge_y = self.c_octree.pposy[0]
+            left_edge_z = self.c_octree.pposz[0]
+            right_edge_x = self.c_octree.pposx[0]
+            right_edge_y = self.c_octree.pposy[0]
+            right_edge_z = self.c_octree.pposz[0]
 
             for i in range(self.c_octree.num_particles):
-                left_edge[0] = min(self.c_octree.pposx[i], left_edge[0])
-                left_edge[1] = min(self.c_octree.pposy[i], left_edge[1])
-                left_edge[2] = min(self.c_octree.pposz[i], left_edge[2])
+                left_edge_x = min(self.c_octree.pposx[i], left_edge_x)
+                left_edge_y = min(self.c_octree.pposy[i], left_edge_y)
+                left_edge_z = min(self.c_octree.pposz[i], left_edge_z)
 
-                right_edge[0] = max(self.c_octree.pposx[i], right_edge[0])
-                right_edge[1] = max(self.c_octree.pposy[i], right_edge[1])
-                right_edge[2] = max(self.c_octree.pposz[i], right_edge[2])
+                right_edge_x = max(self.c_octree.pposx[i], right_edge_x)
+                right_edge_y = max(self.c_octree.pposy[i], right_edge_y)
+                right_edge_z = max(self.c_octree.pposz[i], right_edge_z)
+
+            left_edge = np.array([left_edge_x, left_edge_y, left_edge_z],
+                                 dtype=np.float64)
+            right_edge = np.array([right_edge_x, right_edge_y, right_edge_z],
+                                  dtype=np.float64)
 
             self.c_octree.pstart[0] = 0
             self.c_octree.pend[0] = self.input_positions.shape[0]
@@ -686,6 +703,171 @@ cdef class CyOctree:
     #         self.smooth_onto_cells(buff, buff_den, posx[i], posy[i], posz[i],
     #                                 hsml[i], prefactor, prefactor_norm,
     #                                 0, use_normalization=use_normalization)
+
+
+    cpdef list _c_range_search(
+        self,
+        np.float64_t posx, np.float64_t posy, np.float64_t posz,
+        np.float64_t radius,
+        long int num_node
+    ):
+        """
+
+        Parameters
+        ----------
+        pos<> : float64_t
+            The x, y, and z coordinates of the particle we are depositing
+        range : float64_t
+            The smoothing length of the particle
+        num_node : long int
+            The current node we are checking to see if refined or not
+        """
+
+        cdef Octree * tree = self.c_octree
+        cdef double q_ij, diff_x, diff_y, diff_z, diff, sx, sy, sz, size
+        cdef int i, j, index
+        cdef long int child_node
+
+        cdef list indices = []
+        cdef list lower_indices
+        if tree.refined[num_node] == 0:
+
+            # Loop over all points inside tree and print the indices of those
+            # that are closer than the radius.
+            for j in range(tree.pstart[num_node], tree.pend[num_node]):
+                diff_x = tree.pposx[tree.pidx[j]] - posx
+                diff_y = tree.pposy[tree.pidx[j]] - posy
+                diff_z = tree.pposz[tree.pidx[j]] - posz
+
+                q_ij = math.sqrt(diff_x*diff_x + diff_y*diff_y + diff_z*diff_z)
+
+                if (q_ij < radius):
+                    # TODO: add array that can be returned!
+                    # print(num_node, tree.pidx[j])
+                    indices.append(tree.pidx[j])
+
+        else:
+            # Check if entire node is inside search radius. If so, we do not
+            # need 
+
+
+            # All direct children of the current node are the same size, thus
+            # we can compute their size once, outside of the loop
+            sz_factor = 1.0 / 2.0**(tree.depth[num_node] + 1)
+            sqrt_sz_factor = math.sqrt(sz_factor)
+            sx = tree.size[0]
+            sy = tree.size[1]
+            sz = tree.size[2]
+            child_node_size = sqrt_sz_factor * math.sqrt(sx*sx + sy*sy + sz*sz)
+
+            for i in range(8):
+                child_node = tree.children[8*num_node + i]
+                diff_x = tree.node_positions[3*child_node] - posx
+                diff_y = tree.node_positions[3*child_node+1] - posy
+                diff_z = tree.node_positions[3*child_node+2] - posz
+                diff = math.sqrt(diff_x*diff_x + diff_y*diff_y + diff_z*diff_z)
+
+                # Could the current particle possibly intersect this child node?
+                if diff - child_node_size < 0:
+                    lower_indices = self._c_range_search(posx, posy, posz, radius, child_node)
+                    # indices = indices + lower_indices
+                    for index in lower_indices:
+                        indices.append(index)
+        return indices
+
+    def range_search(self, np.float64_t[:] pos, np.float64_t radius):
+
+        indices = self._c_range_search(pos[0], pos[1], pos[2], radius, 0)
+
+        return indices
+
+    cdef long int _c_nearest_neighbor(
+        self,
+        np.float64_t posx, np.float64_t posy, np.float64_t posz,
+        np.float64_t radius,
+        long int num_node
+    ):
+        """
+
+        Parameters
+        ----------
+        pos<> : float64_t
+            The x, y, and z coordinates of the particle we are depositing
+        range : float64_t
+            The smoothing length of the particle
+        num_node : long int
+            The current node we are checking to see if refined or not
+        """
+
+        cdef Octree * tree = self.c_octree
+        cdef double q_ij, diff_x, diff_y, diff_z, diff, sx, sy, sz, size
+        cdef int i, j
+        cdef long int child_node
+        cdef double q_ij_min = tree.size[0]*tree.size[1]*tree.size[2]
+        cdef long int min_index = -1
+        cdef long int index
+        # print('caled')
+
+        if tree.refined[num_node] == 0:
+            for j in range(tree.pstart[num_node], tree.pend[num_node]):
+                index = tree.pidx[j]
+                # print(index, min_index)
+                diff_x = tree.pposx[index] - posx
+                diff_y = tree.pposy[index] - posy
+                diff_z = tree.pposz[index] - posz
+
+                q_ij = math.sqrt(diff_x*diff_x + diff_y*diff_y + diff_z*diff_z)
+
+                if (q_ij < radius):
+                    if q_ij < q_ij_min:
+                        min_index = index
+                        q_ij_min = q_ij
+                # print(index, min_index)
+        else:
+
+            # All direct children of the current node are the same size, thus
+            # we can compute their size once, outside of the loop
+            sz_factor = 1.0 / 2.0**(tree.depth[num_node] + 1)
+            sqrt_sz_factor = math.sqrt(sz_factor)
+            sx = tree.size[0]
+            sy = tree.size[1]
+            sz = tree.size[2]
+            child_node_size = sqrt_sz_factor * math.sqrt(sx*sx + sy*sy + sz*sz)
+
+            for i in range(8):
+                # print('calling child', i)
+                child_node = tree.children[8*num_node + i]
+                diff_x = tree.node_positions[3*child_node] - posx
+                diff_y = tree.node_positions[3*child_node+1] - posy
+                diff_z = tree.node_positions[3*child_node+2] - posz
+                diff = math.sqrt(diff_x*diff_x + diff_y*diff_y + diff_z*diff_z)
+
+                # Could the current particle possibly intersect this child node?
+                if diff - child_node_size < 0:
+                    index = self._c_nearest_neighbor(posx, posy, posz, radius, child_node)
+                    if index > -1:
+                        # print(index)
+                        diff_x = tree.pposx[index] - posx
+                        diff_y = tree.pposy[index] - posy
+                        diff_z = tree.pposz[index] - posz
+
+                        q_ij = math.sqrt(diff_x*diff_x + diff_y*diff_y + diff_z*diff_z)
+
+                        if (q_ij < radius):
+                            if q_ij < q_ij_min:
+                                min_index = index
+                                q_ij_min = q_ij
+
+        return min_index
+
+    def nearest_neighbor(self, np.float64_t[:] pos, np.float64_t radius=0.001):
+
+        cdef int min_index = -1
+        while min_index == -1:
+            min_index = self._c_nearest_neighbor(pos[0], pos[1], pos[2], radius, 0)
+            radius *= 4
+
+        return min_index
 
 
 @cython.boundscheck(False)
