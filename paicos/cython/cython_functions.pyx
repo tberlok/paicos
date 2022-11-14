@@ -4,7 +4,11 @@ cimport openmp
 import cython
 import numpy as np
 
-ctypedef double real_t
+# ctypedef double real_t
+
+ctypedef fused real_t:
+    float
+    double
 
 STUFF = "Hi" # https://stackoverflow.com/questions/8024805/cython-compiled-c-extension-importerror-dynamic-module-does-not-define-init-fu
 
