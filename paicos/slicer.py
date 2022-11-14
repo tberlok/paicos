@@ -83,8 +83,8 @@ class Slicer:
         height = self.extent[3] - self.extent[2]
         npix_height = int(height/width*npix_width)
 
-        w = (np.arange(npix_width) + 0.5)*width/npix_width
-        h = (np.arange(npix_height) + 0.5)*height/npix_height
+        w = self.extent[0] + (np.arange(npix_width) + 0.5)*width/npix_width
+        h = self.extent[2] + (np.arange(npix_height) + 0.5)*height/npix_height
         # w = np.linspace(self.extent[0], self.extent[1], npix_width)
         # h = np.linspace(self.extent[2], self.extent[3], npix_height)
 
