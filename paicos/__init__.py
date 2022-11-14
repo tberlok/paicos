@@ -1,4 +1,5 @@
-from .projector import Projector, Slicer
+from .projector import Projector
+from .slicer import Slicer
 from .nested_projector import NestedProjector
 from .arepo_image import ArepoImage
 from .arepo_converter import ArepoConverter
