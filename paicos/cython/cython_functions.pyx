@@ -3,12 +3,15 @@ from libc.stdlib cimport abort, malloc, free
 cimport openmp
 import cython
 import numpy as np
+cimport numpy as np
 
 # ctypedef double real_t
 
 ctypedef fused real_t:
     float
     double
+    np.float32_t
+    np.float64_t
 
 STUFF = "Hi" # https://stackoverflow.com/questions/8024805/cython-compiled-c-extension-importerror-dynamic-module-does-not-define-init-fu
 
