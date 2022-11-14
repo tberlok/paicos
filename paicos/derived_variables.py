@@ -40,14 +40,23 @@ def get_variable(snap, variable_str):
             # absolute vorticity squared times one half ("enstrophy")
             snap.load_data(0, 'VelocityGradient')
 
-            n_cells = snap.P['0_VelocityGradient'].shape[0]
-            # Reshape to tensor form
-            gradV = snap.P['0_VelocityGradient'][()].reshape(n_cells, 3, 3)
-            # Get vorticity components
-            vor_x = gradV[:, 2, 1] - gradV[:, 1, 2]
-            vor_y = gradV[:, 0, 2] - gradV[:, 2, 0]
-            vor_z = gradV[:, 1, 0] - gradV[:, 0, 1]
+            # Reshaping is slow
+            if False:
+                n_cells = snap.P['0_VelocityGradient'].shape[0]
 
+                # Reshape to tensor form
+                gradV = snap.P['0_VelocityGradient'][()].reshape(n_cells, 3, 3)
+                # Get vorticity components
+                vor_x = gradV[:, 2, 1] - gradV[:, 1, 2]
+                vor_y = gradV[:, 0, 2] - gradV[:, 2, 0]
+                vor_z = gradV[:, 1, 0] - gradV[:, 0, 1]
+            else:
+                def get_index(ii, jj):
+                    return ii*3 + jj
+                gradV = snap.P['0_VelocityGradient'][()]
+                vor_x = gradV[:, get_index(2, 1)] - gradV[:, get_index(1, 2)]
+                vor_y = gradV[:, get_index(0, 2)] - gradV[:, get_index(2, 0)]
+                vor_z = gradV[:, get_index(1, 0)] - gradV[:, get_index(0, 1)]
             # The vorticity vector
             # vorticity = np.stack([vor_x, vor_y, vor_z], axis=1)
 

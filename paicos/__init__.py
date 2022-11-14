@@ -11,3 +11,4 @@ from .cython.cython_functions import get_index_of_x_slice_region
 from .cython.cython_functions import get_index_of_y_slice_region
 from .cython.cython_functions import get_index_of_z_slice_region
 from .cython.cython_functions import project_image, project_image_omp, simple_reduction
+from .cython.cython_functions import get_magnitude_of_vector, get_curvature
