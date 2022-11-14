@@ -95,7 +95,51 @@ def get_index_of_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                         index[ip] = 1
 
     # Return a numpy boolean array
-    tmp = np.zeros(Np, dtype=np.bool)
+    tmp = np.zeros(Np, dtype=np.bool_)
+    tmp[:] = index[:]
+    return tmp
+
+def get_index_of_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
+                        real_t sidelength_x, real_t sidelength_y,
+                        real_t [:] thickness, real_t boxsize):
+
+    cdef int Np = pos.shape[0]
+    cdef int ip
+    cdef real_t x, y, z
+
+    cdef int[:] index = np.zeros(Np, dtype=np.intc)
+
+    for ip in prange(Np, nogil=True, schedule='static'):
+        x = pos[ip, 0] - xc
+        y = pos[ip, 1] - yc
+        z = pos[ip, 2] - zc
+
+        # box_wrap_diff function
+        if x < -0.5*boxsize:
+            x = x + boxsize
+        elif x > 0.5*boxsize:
+            x = x - boxsize
+
+        if y < -0.5*boxsize:
+            y = y + boxsize
+        elif y > 0.5*boxsize:
+            y = y - boxsize
+
+        if z < -0.5*boxsize:
+            z = z + boxsize
+        elif z > 0.5*boxsize:
+            z = z - boxsize
+
+        # Index calculation
+        index[ip] = 0
+        if (x < sidelength_x/2.0) and (x > -sidelength_x/2.0):
+            if (y < sidelength_y/2.0) and (y > -sidelength_y/2.0):
+                if (z > -0.5*thickness[ip]):
+                    if (z < 0.5*thickness[ip]):
+                        index[ip] = 1
+
+    # Return a numpy boolean array
+    tmp = np.zeros(Np, dtype=np.bool_)
     tmp[:] = index[:]
     return tmp
 
@@ -143,7 +187,7 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
     # Shape of projection array
     cdef int ny = <int> (sidelength_y/sidelength_x * nx)
-    assert ny > 64, 'rounding error above can give wrong aspect ratio.'
+    #assert ny > 64, 'rounding error above can give wrong aspect ratio.'
 
     # Create projection array
     cdef real_t[:,:] projection = np.zeros((nx, ny), dtype=np.float32)
