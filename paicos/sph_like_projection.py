@@ -72,6 +72,8 @@ class Projector:
         self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
 
+        self.hsml = np.array(self.hsml, dtype=np.float64)
+
         self.pos = self.pos[self.index]
 
     def _get_variable(self, variable_str):
