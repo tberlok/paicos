@@ -7,8 +7,19 @@ class Projector:
     """
 
     def __init__(self, arepo_snap, center, widths, direction,
-                 npix=512, nvol=8):
-        from .cython.cython_functions import get_index_of_region
+                 npix=512, nvol=8, numthreads=16):
+        from paicos import get_index_of_region
+        from paicos import simple_reduction
+
+        n = simple_reduction(1000, numthreads)
+        if n == 1000:
+            self.use_omp = True
+            self.numthreads = numthreads
+        else:
+            self.use_omp = False
+            self.numthreads = 1
+            print('OpenMP is not working on your system...')
+
         self.snap = arepo_snap
 
         self.center = center
@@ -61,31 +72,30 @@ class Projector:
         self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
 
-    def project_variable(self, func):
-        from .cython.cython_functions import project_image
+    def _get_variable(self, variable_str):
 
-        if type(func) is str:
-            if func == 'Masses':
+        if type(variable_str) is str:
+            if variable_str == 'Masses':
                 self.snap.load_data(0, 'Masses')
                 variable = self.snap.P['0_Masses']
-            elif func == 'GFM_MetallicityTimesMasses':
+            elif variable_str == 'GFM_MetallicityTimesMasses':
                 self.snap.load_data(0, 'GFM_Metallicity')
                 variable = self.snap.P['0_Masses']*self.snap.P['0_GFM_Metallicity']
-            elif func == 'Volume':
+            elif variable_str == 'Volume':
                 self.snap.load_data(0, 'Masses')
                 self.snap.load_data(0, 'Density')
                 variable = self.snap.P['0_Masses']/self.snap.P['0_Density']
-            elif func == 'EnergyDissipation':
+            elif variable_str == 'EnergyDissipation':
                 self.snap.load_data(0, 'EnergyDissipation')
                 variable = self.snap.P['0_EnergyDissipation']
-            elif func == 'MachnumberTimesEnergyDissipation':
+            elif variable_str == 'MachnumberTimesEnergyDissipation':
                 self.snap.load_data(0, 'Machnumber')
                 self.snap.load_data(0, 'EnergyDissipation')
                 variable = self.snap.P['0_Machnumber']*self.snap.P['0_EnergyDissipation']
-            elif func == 'MagneticFieldSquaredTimesVolume':
+            elif variable_str == 'MagneticFieldSquaredTimesVolume':
                 self.snap.load_data(0, 'MagneticField')
                 variable = self.snap.P["0_Volumes"]*np.sum(self.snap.P['0_MagneticField']**2, axis=1)
-            elif func == 'PressureTimesVolume':
+            elif variable_str == 'PressureTimesVolume':
                 self.snap.load_data(0, 'InternalEnergy')
                 self.snap.load_data(0, 'Density')
                 gamma = 5/3
@@ -94,11 +104,11 @@ class Projector:
                 # Same as above but faster
                 variable = self.snap.P["0_Masses"] * self.snap.P["0_InternalEnergy"] * (gamma - 1.)
 
-            elif func == 'TemperatureTimesMasses':
+            elif variable_str == 'TemperatureTimesMasses':
                 self.snap.get_temperatures()
                 variable = self.snap.P["0_Temperatures"]*self.snap.P['0_Masses']
 
-            elif func == 'EnstrophyTimesMasses':
+            elif variable_str == 'EnstrophyTimesMasses':
                 # absolute vorticity squared times one half ("enstrophy")
                 self.snap.load_data(0, 'VelocityGradient')
 
@@ -115,11 +125,27 @@ class Projector:
 
                 enstrophy = 0.5 * (vor_x**2 + vor_y**2 + vor_z**2)
                 variable = enstrophy*self.snap.P['0_Masses']
-            else:
-                raise RuntimeError('unknown function requested', func)
-
         else:
-            variable = func(self.arepo_snap)
+            raise RuntimeError('unknown function requested', variable_str)
+
+        return variable
+
+    def project_variable(self, variable):
+
+        if self.use_omp:
+            from paicos import project_image_omp as project_image
+        else:
+            from paicos import project_image
+
+        import types
+        if isinstance(variable, str):
+            variable = self._get_variable(variable)
+        elif isinstance(variable, types.FunctionType):
+            variable = variable(self.arepo_snap)
+        elif isinstance(variable, np.ndarray):
+            pass
+        else:
+            raise RuntimeError('Unexpected type for variable')
 
         xc = self.xc
         yc = self.yc
@@ -131,34 +157,30 @@ class Projector:
                                        variable[self.index],
                                        self.hsml, self.npix,
                                        yc, zc, self.width_y, self.width_z,
-                                       boxsize)
+                                       boxsize, self.numthreads)
         elif self.direction == 'y':
             projection = project_image(self.pos[self.index, 0],
                                        self.pos[self.index, 2],
                                        variable[self.index],
                                        self.hsml, self.npix,
                                        xc, zc, self.width_x, self.width_z,
-                                       boxsize)
+                                       boxsize, self.numthreads)
         elif self.direction == 'z':
             projection = project_image(self.pos[self.index, 0],
                                        self.pos[self.index, 1],
                                        variable[self.index],
                                        self.hsml, self.npix,
                                        xc, yc, self.width_x, self.width_y,
-                                       boxsize)
-        # image = projection()
+                                       boxsize, self.numthreads)
         return projection
-
-    # def sph_like_projection(arepo_snap, variable_func, center, widths, dir):
-    #     pass
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    import load_partial_snap
-    from arepo_image import ArepoImage
+    from paicos import load_partial_snap
+    from paicos import ArepoImage
 
-    snap = load_partial_snap.snapshot('.', 247)
+    snap = load_partial_snap.snapshot('../data', 247)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
     # widths = [10000, 10000, 2*R200c]
