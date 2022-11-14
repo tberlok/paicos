@@ -3,7 +3,8 @@ from libc.stdlib cimport abort, malloc, free
 cimport openmp
 import cython
 import numpy as np
-ctypedef float real_t
+
+ctypedef double real_t
 
 STUFF = "Hi" # https://stackoverflow.com/questions/8024805/cython-compiled-c-extension-importerror-dynamic-module-does-not-define-init-fu
 
@@ -192,7 +193,7 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     assert (sidelength_y/sidelength_x * nx) == <float> ny, '(sidelength_y/sidelength_x * nx) needs to be an integer'
 
     # Create projection array
-    cdef real_t[:,:] projection = np.zeros((nx, ny), dtype=np.float32)
+    cdef real_t[:,:] projection = np.zeros((nx, ny), dtype=np.float64)
 
     # Loop integers and other variables
     cdef int ip, ix, iy, ih
@@ -277,7 +278,7 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
                     projection[ix, iy] += weight*variable[ip]/norm
 
     # Fix to avoid returning a memory-view
-    tmp = np.zeros((nx, ny), dtype=np.float32)
+    tmp = np.zeros((nx, ny), dtype=np.float64)
     tmp[:, :] = projection[:, :]
     return tmp
 
