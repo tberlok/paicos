@@ -78,61 +78,9 @@ class Projector:
 
     def _get_variable(self, variable_str):
 
-        if type(variable_str) is str:
-            if variable_str == 'Masses':
-                self.snap.load_data(0, 'Masses')
-                variable = self.snap.P['0_Masses']
-            elif variable_str == 'GFM_MetallicityTimesMasses':
-                self.snap.load_data(0, 'GFM_Metallicity')
-                variable = self.snap.P['0_Masses']*self.snap.P['0_GFM_Metallicity']
-            elif variable_str == 'Volume':
-                self.snap.load_data(0, 'Masses')
-                self.snap.load_data(0, 'Density')
-                variable = self.snap.P['0_Masses']/self.snap.P['0_Density']
-            elif variable_str == 'EnergyDissipation':
-                self.snap.load_data(0, 'EnergyDissipation')
-                variable = self.snap.P['0_EnergyDissipation']
-            elif variable_str == 'MachnumberTimesEnergyDissipation':
-                self.snap.load_data(0, 'Machnumber')
-                self.snap.load_data(0, 'EnergyDissipation')
-                variable = self.snap.P['0_Machnumber']*self.snap.P['0_EnergyDissipation']
-            elif variable_str == 'MagneticFieldSquaredTimesVolume':
-                self.snap.load_data(0, 'MagneticField')
-                variable = self.snap.P["0_Volumes"]*np.sum(self.snap.P['0_MagneticField']**2, axis=1)
-            elif variable_str == 'PressureTimesVolume':
-                self.snap.load_data(0, 'InternalEnergy')
-                self.snap.load_data(0, 'Density')
-                gamma = 5/3
-                # thermal pressure times volume
-                # variable = self.snap.P["0_Volumes"] * self.snap.P["0_InternalEnergy"] * self.snap.P["0_Density"] * (gamma - 1.)
-                # Same as above but faster
-                variable = self.snap.P["0_Masses"] * self.snap.P["0_InternalEnergy"] * (gamma - 1.)
+        from paicos import get_variable
 
-            elif variable_str == 'TemperatureTimesMasses':
-                self.snap.get_temperatures()
-                variable = self.snap.P["0_Temperatures"]*self.snap.P['0_Masses']
-
-            elif variable_str == 'EnstrophyTimesMasses':
-                # absolute vorticity squared times one half ("enstrophy")
-                self.snap.load_data(0, 'VelocityGradient')
-
-                n_cells = self.snap.P['0_VelocityGradient'].shape[0]
-                # Reshape to tensor form
-                gradV = self.snap.P['0_VelocityGradient'][()].reshape(n_cells, 3, 3)
-                # Get vorticity components
-                vor_x = gradV[:, 2, 1] - gradV[:, 1, 2]
-                vor_y = gradV[:, 0, 2] - gradV[:, 2, 0]
-                vor_z = gradV[:, 1, 0] - gradV[:, 0, 1]
-
-                # The vorticity vector
-                # vorticity = np.stack([vor_x, vor_y, vor_z], axis=1)
-
-                enstrophy = 0.5 * (vor_x**2 + vor_y**2 + vor_z**2)
-                variable = enstrophy*self.snap.P['0_Masses']
-        else:
-            raise RuntimeError('unknown function requested', variable_str)
-
-        return variable
+        return get_variable(self.snap, variable_str)
 
     def project_variable(self, variable):
 
@@ -178,7 +126,7 @@ class Projector:
                                        self.hsml, self.npix,
                                        xc, yc, self.width_x, self.width_y,
                                        boxsize, self.numthreads)
-        return projection
+        return projection.T
 
 
 if __name__ == '__main__':
@@ -217,6 +165,6 @@ if __name__ == '__main__':
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.log10(Masses/Volume).T, origin='lower',
+        axes[ii].imshow(np.log10(Masses/Volume), origin='lower',
                         extent=p.extent)
     plt.show()
