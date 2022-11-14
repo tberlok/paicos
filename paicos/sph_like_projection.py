@@ -46,7 +46,7 @@ class Projector:
 
         snap.get_volumes()
         snap.load_data(0, "Coordinates")
-        self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float32)
+        self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
 
         if direction == 'x':
             self.index = get_index_of_region(pos, xc, yc, zc,
@@ -71,6 +71,8 @@ class Projector:
 
         self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
+
+        self.pos = self.pos[self.index]
 
     def _get_variable(self, variable_str):
 
@@ -147,28 +149,30 @@ class Projector:
         else:
             raise RuntimeError('Unexpected type for variable')
 
+        variable = np.array(variable[self.index], dtype=np.float64)
+
         xc = self.xc
         yc = self.yc
         zc = self.zc
         boxsize = self.snap.box
         if self.direction == 'x':
-            projection = project_image(self.pos[self.index, 1],
-                                       self.pos[self.index, 2],
-                                       variable[self.index],
+            projection = project_image(self.pos[:, 1],
+                                       self.pos[:, 2],
+                                       variable,
                                        self.hsml, self.npix,
                                        yc, zc, self.width_y, self.width_z,
                                        boxsize, self.numthreads)
         elif self.direction == 'y':
-            projection = project_image(self.pos[self.index, 0],
-                                       self.pos[self.index, 2],
-                                       variable[self.index],
+            projection = project_image(self.pos[:, 0],
+                                       self.pos[:, 2],
+                                       variable,
                                        self.hsml, self.npix,
                                        xc, zc, self.width_x, self.width_z,
                                        boxsize, self.numthreads)
         elif self.direction == 'z':
-            projection = project_image(self.pos[self.index, 0],
-                                       self.pos[self.index, 1],
-                                       variable[self.index],
+            projection = project_image(self.pos[:, 0],
+                                       self.pos[:, 1],
+                                       variable,
                                        self.hsml, self.npix,
                                        xc, yc, self.width_x, self.width_y,
                                        boxsize, self.numthreads)
@@ -191,12 +195,6 @@ if __name__ == '__main__':
         [10000, 10000, 2*R200c],
         )
 
-    # width_vec = (
-    #     [2*R200c, 2*R200c, 2*R200c],
-    #     [2*R200c, 2*R200c, 2*R200c],
-    #     [2*R200c, 2*R200c, 2*R200c],
-    #     )
-
     plt.figure(1)
     plt.clf()
     fig, axes = plt.subplots(num=1, ncols=3)#, sharey=True)
@@ -204,8 +202,6 @@ if __name__ == '__main__':
         widths = width_vec[ii]
         p = Projector(snap, center, widths, direction, npix=512)
 
-    # widths = [10000, 2*R200c, 10000]
-    # p = Projector(snap, center, widths, 'y', npix=512)
         image_file = ArepoImage('projection_{}.hdf5'.format(direction),
                                 p.snap.filename, center, widths, direction)
 
@@ -217,6 +213,8 @@ if __name__ == '__main__':
 
         # Move from temporary filename to final filename
         image_file.finalize()
+
+        # Make a plot
         axes[ii].imshow(np.log10(Masses/Volume).T, origin='lower',
                         extent=p.extent)
     plt.show()
