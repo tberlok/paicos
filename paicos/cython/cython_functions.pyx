@@ -350,8 +350,8 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
         norm = 0.0
         for ix in range(ix_min, ix_max):
             for iy in range(iy_min, iy_max):
-                dx = x - <real_t> ix
-                dy = y - <real_t> iy
+                dx = x - 0.5 - <real_t> ix
+                dy = y - 0.5 - <real_t> iy
                 r2 = dx*dx + dy*dy
 
                 weight = 1.0 - r2/h2
@@ -366,8 +366,8 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
         for ix in range(ix_min, ix_max):
             for iy in range(iy_min, iy_max):
-                dx = x - <real_t> ix
-                dy = y - <real_t> iy
+                dx = x - 0.5 - <real_t> ix
+                dy = y - 0.5 - <real_t> iy
                 r2 = dx*dx + dy*dy
 
                 weight = 1.0 - r2/h2
@@ -458,8 +458,8 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
             norm = 0.0
             for ix in range(ix_min, ix_max):
                 for iy in range(iy_min, iy_max):
-                    dx = x - <real_t> ix
-                    dy = y - <real_t> iy
+                    dx = x - 0.5 - <real_t> ix
+                    dy = y - 0.5 - <real_t> iy
                     r2 = dx*dx + dy*dy
 
                     weight = 1.0 - r2/h2
@@ -474,8 +474,8 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
             for ix in range(ix_min, ix_max):
                 for iy in range(iy_min, iy_max):
-                    dx = x - <real_t> ix
-                    dy = y - <real_t> iy
+                    dx = x - 0.5 - <real_t> ix
+                    dy = y - 0.5 - <real_t> iy
                     r2 = dx*dx + dy*dy
 
                     weight = 1.0 - r2/h2

@@ -7,7 +7,8 @@ class NestedProjector:
     """
 
     def __init__(self, arepo_snap, center, widths, direction,
-                 npix=512, nvol=8, numthreads=16, verbose=False):
+                 npix=512, nvol=8, numthreads=16, factor=3, npix_min=128,
+                 verbose=False):
         from paicos import get_index_of_region
         from paicos import simple_reduction
 
@@ -78,7 +79,9 @@ class NestedProjector:
 
         self.pos = self.pos[self.index]
 
-        # Code for nested functionality below
+        # Code specific for nested functionality below
+        self.factor = factor
+        self.npix_min = npix_min
 
         # Find required grid resolutions and the binning in smoothing (hsml)
         bins, n_grids = self._get_bins()
@@ -108,13 +111,15 @@ class NestedProjector:
 
         width = self.extent[1] - self.extent[0]
 
-        npix_low = nearest_power_of_two(width/np.max(hsml)*3)
-        npix_high = nearest_power_of_two(width/np.min(hsml)*3)
+        npix_low = nearest_power_of_two(width/np.max(hsml)*self.factor)
+        npix_high = nearest_power_of_two(width/np.min(hsml)*self.factor)
 
         if npix_high > self.npix:
             npix_high = self.npix
-        if npix_low < 128:
-            npix_low = 128
+        if npix_low < self.npix_min:
+            npix_low = self.npix_min
+        if npix_low > npix_high:
+            npix_low = npix_high
 
         n_grids = []
         bins = [width]
@@ -127,7 +132,7 @@ class NestedProjector:
             if n_grid == npix_high:
                 bins.append(0.0)
             else:
-                bins.append(width/n_grid*3)
+                bins.append(width/n_grid*self.factor)
 
         return bins, n_grids
 
@@ -266,7 +271,7 @@ if __name__ == '__main__':
         # Make a plot
         axes[0, ii].imshow(normal_image, origin='lower',
                            extent=p.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-        axes[1, ii].imshow(normal_image, origin='lower',
+        axes[1, ii].imshow(nested_image, origin='lower',
                            extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
         axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
                            extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
