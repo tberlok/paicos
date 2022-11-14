@@ -266,6 +266,7 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
                   real_t[:] hvec, int nx, real_t xc, real_t yc,
                   real_t sidelength_x, real_t sidelength_y,
                   real_t boxsize, int numthreads=1):
+
     """
 
     xc, yc are the coordinates at the center of a square image
@@ -304,8 +305,8 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     assert sidelength_x/nx == sidelength_y/ny
 
     # Lower left corner of image in Arepo coordinates
-    x0 = xc - sidelength_x/2
-    y0 = yc - sidelength_y/2
+    x0 = xc - sidelength_x/2.0
+    y0 = yc - sidelength_y/2.0
 
     for ip in range(Np):
         # Center coordinate system at x0, y0
@@ -389,6 +390,7 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
     # Shape of projection array
     cdef int ny = <int> (sidelength_y/sidelength_x * nx)
+
     assert (sidelength_y/sidelength_x * nx) == <float> ny, '(sidelength_y/sidelength_x * nx) needs to be an integer'
 
     # Loop integers and other variables
@@ -403,8 +405,8 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     assert sidelength_x/nx == sidelength_y/ny
 
     # Lower left corner of image in Arepo coordinates
-    x0 = xc - sidelength_x/2
-    y0 = yc - sidelength_y/2
+    x0 = xc - sidelength_x/2.0
+    y0 = yc - sidelength_y/2.0
 
     cdef int threadnum, maxthreads
 
@@ -484,8 +486,8 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
     # Add up contributions from each thread
     for threadnum in range(numthreads):
-        for ix in range(ny):
-            for iy in range(nx):
+        for ix in range(nx):
+            for iy in range(ny):
                 projection[ix, iy] = projection[ix, iy] + tmp_variable[ix, iy, threadnum]
 
     # Fix to avoid returning a memory-view
