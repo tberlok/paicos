@@ -23,44 +23,55 @@ class Histogram:
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from paicos import arepo_snap
-    from paicos import ArepoImage
-
-    snap = arepo_snap.snapshot('../data', 247)
-    center = snap.Cat.Group['GroupPos'][0]
-
-    snap.load_data(0, 'Coordinates')
-    pos = snap.P['0_Coordinates']
-
-    r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
-
-    r_max = 11000
-    index = r < r_max
-
-    bins = np.linspace(0, r_max, 1000)
-    # bins = np.logspace(-2, np.log10(r_max), 1000)
-
-    h_r = Histogram(r[index], bins)
-
-    for key in ['Masses', 'MagneticField', 'MagneticFieldDivergence']:
-        snap.load_data(0, key)
-
-    snap.get_volumes()
-    snap.get_temperatures()
-
-    B2 = np.sum((snap.P['0_MagneticField'])**2, axis=1)
-    Volumes = snap.P['0_Volumes']
-    Masses = snap.P['0_Masses']
-
-    B2TimesVolume = h_r.hist((B2*Volumes)[index])
-    Volumes = h_r.hist(Volumes[index])
-    TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
-    Masses = h_r.hist(Masses[index])
 
     plt.figure(1)
     plt.clf()
     fig, axes = plt.subplots(num=1, ncols=3, sharex=True)
-    axes[0].loglog(h_r.bin_centers, Masses/Volumes)
-    axes[1].loglog(h_r.bin_centers, B2TimesVolume/Volumes)
-    axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
+    for ii in range(2):
+        snap = arepo_snap.snapshot('../data', 247)
+        center = snap.Cat.Group['GroupPos'][0]
+
+        snap.load_data(0, 'Coordinates')
+        pos = snap.P['0_Coordinates']
+
+        r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
+
+        r_max = 10000
+        index = r < r_max*1.1
+
+        bins = np.linspace(0, r_max, 150)
+        # bins = np.logspace(-2, np.log10(r_max), 1000)
+
+        h_r = Histogram(r[index], bins)
+
+        for key in ['Masses', 'MagneticField', 'MagneticFieldDivergence']:
+            snap.load_data(0, key)
+
+        snap.get_volumes()
+        snap.get_temperatures()
+
+        B2 = np.sum((snap.P['0_MagneticField'])**2, axis=1)
+        Volumes = snap.P['0_Volumes']
+        Masses = snap.P['0_Masses']
+
+        if ii == 0:
+            B2TimesVolume = h_r.hist((B2*Volumes)[index])
+            Volumes = h_r.hist(Volumes[index])
+            TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
+            Masses = h_r.hist(Masses[index])
+
+            axes[0].loglog(h_r.bin_centers, Masses/Volumes)
+            axes[1].loglog(h_r.bin_centers, B2TimesVolume/Volumes)
+            axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
+        else:
+            B2TimesVolume, edges = np.histogram(r[index], weights=(B2*Volumes)[index], bins=bins)
+            Volumes, edges = np.histogram(r[index], weights=Volumes[index], bins=bins)
+            TTimesMasses, edges = np.histogram(r[index], weights=(Masses*snap.P['0_Temperatures'])[index], bins=bins)
+            Masses, edges = np.histogram(r[index], weights=Masses[index], bins=bins)
+            bin_centers = 0.5*(edges[1:] + edges[:-1])
+
+            axes[0].loglog(bin_centers, Masses/Volumes, '--')
+            axes[1].loglog(bin_centers, B2TimesVolume/Volumes, '--')
+            axes[2].loglog(bin_centers, TTimesMasses/Masses, '--')
 
     plt.show()
