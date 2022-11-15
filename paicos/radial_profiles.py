@@ -93,12 +93,18 @@ class RadialProfiles:
         from paicos import get_variable
 
         if self.verbose:
+            import time
             print('Working on profile for', variable_str)
+            t = time.time()
 
         variable = get_variable(self.snap, variable_str)[self.index]
 
         with h5py.File(self.tmp_radial_filename, 'r+') as f:
             f.create_dataset(variable_str, data=self.h_r.hist(variable))
+
+        if self.verbose:
+            dur = time.time() - t
+            print('which took {:1.2f} seconds'.format(dur))
 
     def finalize(self):
         """
