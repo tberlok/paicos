@@ -35,10 +35,10 @@ class RadialProfiles:
             self.add_profile('GFM_MetallicityTimesMasses')
 
         # Delete all gas variables for memory efficiency
-        keys = list(snap.P.keys())
+        keys = list(self.snap.P.keys())
         for key in keys:
             if key[0] == '0':
-                del snap.P[key]
+                del self.snap.P[key]
 
         # Now do the dark matter
 
