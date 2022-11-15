@@ -7,8 +7,17 @@ class Histogram:
     using the same x-variables and binning but different weights.
     The heavy part of the computation is stored in idigit
     """
-    def __init__(self, x_variable, bins):
+    def __init__(self, x_variable, bins, verbose=False):
+        self.verbose = verbose
+
+        if self.verbose:
+            import time
+            t = time.time()
+            print('Digitize for histogram begun')
+
         self.idigit = np.digitize(x_variable, bins)
+        if self.verbose:
+            print('This took {:1.2f} seconds'.format(time.time()-t))
         self.bins = bins
         self.bin_centers = 0.5*(bins[1:] + bins[:-1])
 
@@ -42,8 +51,6 @@ if __name__ == '__main__':
         bins = np.linspace(0, r_max, 150)
         # bins = np.logspace(-2, np.log10(r_max), 1000)
 
-        h_r = Histogram(r[index], bins)
-
         for key in ['Masses', 'MagneticField', 'MagneticFieldDivergence']:
             snap.load_data(0, key)
 
@@ -55,6 +62,7 @@ if __name__ == '__main__':
         Masses = snap.P['0_Masses']
 
         if ii == 0:
+            h_r = Histogram(r[index], bins, verbose=True)
             B2TimesVolume = h_r.hist((B2*Volumes)[index])
             Volumes = h_r.hist(Volumes[index])
             TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])

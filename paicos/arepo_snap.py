@@ -146,11 +146,16 @@ class snapshot:
   def info(self, PartType, verbose=True):
     PartType_str = 'PartType{}'.format(PartType)
     with h5py.File(self.first_snapfile_name, 'r') as file:
-      keys = list(file[PartType_str].keys())
-      if verbose:
-        print('keys for ' + PartType_str + ' are')
-        print(keys)
-    return keys
+      if PartType_str in list(file.keys()):
+        keys = list(file[PartType_str].keys())
+        if verbose:
+          print('keys for ' + PartType_str + ' are')
+          print(keys)
+        return keys
+      else:
+        if verbose:
+          print('PartType not in hdf5 file')
+        return None
 
   def get_high_res_region(self, threshold=0.9):
     if "0_HighResIndex" in self.P:

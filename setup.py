@@ -14,8 +14,8 @@ Options.annotate = True
 compiler_directives = {"boundscheck": False, "cdivision": True,
                        "wraparound": False, 'language_level': "3"}
 
-# compiler_directives = {"boundscheck": True, "cdivision": False,
-#                        "wraparound":True}
+# compiler_directives = {"boundscheck": True, "cdivision": True,
+#                        "wraparound": True, 'language_level': "3"}
 ext_modules = [
     Extension(
         "*",

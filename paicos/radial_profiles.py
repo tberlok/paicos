@@ -20,7 +20,7 @@ class RadialProfiles:
         r_max = 10000
         self.index = r < r_max*1.1
 
-        self.h_r = Histogram(r[self.index], bins=bins)
+        self.h_r = Histogram(r[self.index], bins=bins, verbose=verbose)
 
         self.create_tmp_radial_file()
         self.copy_over_snapshot_information()
@@ -45,33 +45,35 @@ class RadialProfiles:
         # Now do the dark matter
 
         for part in [1, 2, 3]:
+
             if self.verbose:
                 print('Working on mass profile for DM type', part)
             # Load Dark matter positions
-            self.snap.load_data(part, "Coordinates")
+            if snap.info(part, False) is not None:
+                self.snap.load_data(part, "Coordinates")
 
-            pos = self.snap.P[str(part) + '_Coordinates']
+                pos = self.snap.P[str(part) + '_Coordinates']
 
-            # Radius from center of cluster
-            r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
+                # Radius from center of cluster
+                r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
-            # snap.load_data(part, "SubfindHsml")
-            dm_mass = self.snap.Header["MassTable"][part]
+                # snap.load_data(part, "SubfindHsml")
+                dm_mass = self.snap.Header["MassTable"][part]
 
-            if part != 2:
-                masses = np.ones(self.snap.P[str(part) +
-                                 '_Coordinates'].shape[0],
-                                 dtype=np.float32) * dm_mass
-            else:
-                self.snap.load_data(part, "Masses")
-                masses = self.snap.P['2_Masses']
+                if part != 2:
+                    masses = np.ones(self.snap.P[str(part) +
+                                     '_Coordinates'].shape[0],
+                                     dtype=np.float32) * dm_mass
+                else:
+                    self.snap.load_data(part, "Masses")
+                    masses = self.snap.P['2_Masses']
 
-            index = r < r_max*1.1
-            masses = masses[index]
-            r = r[index]
-            hist, edges = np.histogram(r, bins=bins, weights=masses)
-            with h5py.File(self.tmp_radial_filename, 'r+') as f:
-                f.create_dataset('DM_Masses_part' + str(part), data=hist)
+                index = r < r_max*1.1
+                masses = masses[index]
+                r = r[index]
+                hist, edges = np.histogram(r, bins=bins, weights=masses)
+                with h5py.File(self.tmp_radial_filename, 'r+') as f:
+                    f.create_dataset('DM_Masses_part' + str(part), data=hist)
 
         bin_volumes = np.diff(4/3*np.pi*bins**3)
         with h5py.File(self.tmp_radial_filename, 'r+') as f:
