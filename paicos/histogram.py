@@ -33,13 +33,13 @@ if __name__ == '__main__':
 
     r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
-    r_max = 10000
+    r_max = 11000
     index = r < r_max
 
-    bins = np.linspace(0, r_max, 5000)
+    bins = np.linspace(0, r_max, 1000)
     # bins = np.logspace(-2, np.log10(r_max), 1000)
 
-    h_r = Histogram(r, bins)
+    h_r = Histogram(r[index], bins)
 
     for key in ['Masses', 'MagneticField', 'MagneticFieldDivergence']:
         snap.load_data(0, key)
@@ -51,16 +51,16 @@ if __name__ == '__main__':
     Volumes = snap.P['0_Volumes']
     Masses = snap.P['0_Masses']
 
-    B2TimesVolume = h_r.hist(B2*Volumes)
-    Volumes = h_r.hist(Volumes)
-    TTimesMasses = h_r.hist(Masses*snap.P['0_Temperatures'])
-    Masses = h_r.hist(Masses)
+    B2TimesVolume = h_r.hist((B2*Volumes)[index])
+    Volumes = h_r.hist(Volumes[index])
+    TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
+    Masses = h_r.hist(Masses[index])
 
     plt.figure(1)
     plt.clf()
     fig, axes = plt.subplots(num=1, ncols=3, sharex=True)
-    axes[0].semilogx(h_r.bin_centers, Masses/Volumes)
-    axes[1].semilogx(h_r.bin_centers, B2TimesVolume/Volumes)
-    axes[2].semilogx(h_r.bin_centers, TTimesMasses/Masses)
+    axes[0].loglog(h_r.bin_centers, Masses/Volumes)
+    axes[1].loglog(h_r.bin_centers, B2TimesVolume/Volumes)
+    axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
 
     plt.show()
