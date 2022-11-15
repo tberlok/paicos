@@ -5,10 +5,12 @@ from paicos import Histogram
 
 class RadialProfiles:
 
-    def __init__(self, arepo_snap, center, r_max, bins):
+    def __init__(self, arepo_snap, center, r_max, bins, verbose=False):
         self.snap = arepo_snap
 
         self.center = center
+
+        self.verbose = verbose
 
         self.snap.load_data(0, 'Coordinates')
         pos = self.snap.P['0_Coordinates']
@@ -43,6 +45,8 @@ class RadialProfiles:
         # Now do the dark matter
 
         for part in [1, 2, 3]:
+            if self.verbose:
+                print('Working on mass profile for DM type', part)
             # Load Dark matter positions
             self.snap.load_data(part, "Coordinates")
 
@@ -78,6 +82,9 @@ class RadialProfiles:
 
     def add_profile(self, variable_str):
         from paicos import get_variable
+
+        if self.verbose:
+            print('Working on profile for', variable_str)
 
         variable = get_variable(self.snap, variable_str)[self.index]
 
