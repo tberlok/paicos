@@ -36,6 +36,33 @@ def get_variable(snap, variable_str):
             snap.get_temperatures()
             variable = snap.P["0_Temperatures"]*snap.P['0_Masses']
 
+        elif variable_str == 'Current':
+            snap.load_data(0, 'BfieldGradient')
+
+            def get_index(ii, jj):
+                return ii*3 + jj
+            gradB = snap.P['0_BfieldGradient'][()]
+            J_x = gradB[:, get_index(2, 1)] - gradB[:, get_index(1, 2)]
+            J_y = gradB[:, get_index(0, 2)] - gradB[:, get_index(2, 0)]
+            J_z = gradB[:, get_index(1, 0)] - gradB[:, get_index(0, 1)]
+
+            J = np.sqrt(J_x**2 + J_y**2 + J_z**2)
+            variable = J
+
+        elif variable_str == 'Enstrophy':
+            # absolute vorticity squared times one half ("enstrophy")
+            snap.load_data(0, 'VelocityGradient')
+
+            def get_index(ii, jj):
+                return ii*3 + jj
+            gradV = snap.P['0_VelocityGradient'][()]
+            vor_x = gradV[:, get_index(2, 1)] - gradV[:, get_index(1, 2)]
+            vor_y = gradV[:, get_index(0, 2)] - gradV[:, get_index(2, 0)]
+            vor_z = gradV[:, get_index(1, 0)] - gradV[:, get_index(0, 1)]
+
+            enstrophy = 0.5 * (vor_x**2 + vor_y**2 + vor_z**2)
+            variable = enstrophy
+
         elif variable_str == 'EnstrophyTimesMasses':
             # absolute vorticity squared times one half ("enstrophy")
             snap.load_data(0, 'VelocityGradient')
