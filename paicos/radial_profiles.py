@@ -6,6 +6,10 @@ from paicos import Histogram
 class RadialProfiles:
 
     def __init__(self, arepo_snap, center, r_max, bins, verbose=False):
+        if verbose:
+            import time
+            t = time.time()
+
         self.snap = arepo_snap
 
         self.center = center
@@ -26,8 +30,8 @@ class RadialProfiles:
         self.copy_over_snapshot_information()
 
         variable_strings = ['Masses', 'Volumes', 'TemperatureTimesMasses',
-                            'MagneticFieldSquaredTimesVolume',
-                            'PressureTimesVolume']
+                            'MagneticFieldSquaredTimesVolumes',
+                            'PressureTimesVolumes']
         for variable_str in variable_strings:
             self.add_profile(variable_str)
 
@@ -81,6 +85,9 @@ class RadialProfiles:
 
         # Move to final hdf5 file
         # self.finalize()
+
+        if verbose:
+            print('Radial profile took {:1.2f} seconds'.format(time.time()-t))
 
     def add_profile(self, variable_str):
         from paicos import get_variable
