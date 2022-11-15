@@ -108,7 +108,7 @@ class Slicer:
         d, i = tree.query(image_points, workers=16)
 
         self.index = unflatten(np.arange(pos.shape[0])[self.slice][i])
-        self.distance_to_nearest_cell = d
+        self.distance_to_nearest_cell = unflatten(d)
 
     def get_image(self, variable):
 
