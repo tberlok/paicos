@@ -49,7 +49,7 @@ class RadialProfiles:
             if self.verbose:
                 print('Working on mass profile for DM type', part)
             # Load Dark matter positions
-            if snap.info(part, False) is not None:
+            if self.snap.info(part, False) is not None:
                 self.snap.load_data(part, "Coordinates")
 
                 pos = self.snap.P[str(part) + '_Coordinates']
