@@ -19,11 +19,11 @@ def get_variable(snap, variable_str):
             snap.load_data(0, 'Machnumber')
             snap.load_data(0, 'EnergyDissipation')
             variable = snap.P['0_Machnumber']*snap.P['0_EnergyDissipation']
-        elif variable_str == 'MagneticFieldSquaredTimesVolume':
+        elif variable_str == 'MagneticFieldSquaredTimesVolumes':
             snap.get_volumes()
             snap.load_data(0, 'MagneticField')
             variable = snap.P["0_Volumes"]*np.sum(snap.P['0_MagneticField']**2, axis=1)
-        elif variable_str == 'PressureTimesVolume':
+        elif variable_str == 'PressureTimesVolumes':
             snap.load_data(0, 'InternalEnergy')
             snap.load_data(0, 'Density')
             gamma = 5/3
