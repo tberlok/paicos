@@ -4,6 +4,7 @@ from .slicer import Slicer
 from .arepo_image import ArepoImage
 from .arepo_converter import ArepoConverter
 from .histogram import Histogram
+from .radial_profiles import RadialProfiles
 from . import arepo_snap
 from . import arepo_fof, arepo_subf
 from .derived_variables import get_variable

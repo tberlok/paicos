@@ -9,10 +9,9 @@ def get_variable(snap, variable_str):
         elif variable_str == 'GFM_MetallicityTimesMasses':
             snap.load_data(0, 'GFM_Metallicity')
             variable = snap.P['0_Masses']*snap.P['0_GFM_Metallicity']
-        elif variable_str == 'Volume':
-            snap.load_data(0, 'Masses')
-            snap.load_data(0, 'Density')
-            variable = snap.P['0_Masses']/snap.P['0_Density']
+        elif variable_str == 'Volumes':
+            snap.get_volumes()
+            variable = snap.P['0_Volumes']
         elif variable_str == 'EnergyDissipation':
             snap.load_data(0, 'EnergyDissipation')
             variable = snap.P['0_EnergyDissipation']
@@ -21,6 +20,7 @@ def get_variable(snap, variable_str):
             snap.load_data(0, 'EnergyDissipation')
             variable = snap.P['0_Machnumber']*snap.P['0_EnergyDissipation']
         elif variable_str == 'MagneticFieldSquaredTimesVolume':
+            snap.get_volumes()
             snap.load_data(0, 'MagneticField')
             variable = snap.P["0_Volumes"]*np.sum(snap.P['0_MagneticField']**2, axis=1)
         elif variable_str == 'PressureTimesVolume':
@@ -89,7 +89,7 @@ def get_variable(snap, variable_str):
 
             enstrophy = 0.5 * (vor_x**2 + vor_y**2 + vor_z**2)
             variable = enstrophy*snap.P['0_Masses']
-    else:
-        raise RuntimeError('unknown function requested', variable_str)
+        else:
+            raise RuntimeError('unknown function requested', variable_str)
 
-    return variable
+        return variable
