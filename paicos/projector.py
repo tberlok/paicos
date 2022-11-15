@@ -131,10 +131,10 @@ class Projector:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import load_partial_snap
+    from paicos import arepo_snap
     from paicos import ArepoImage
 
-    snap = load_partial_snap.snapshot('../data', 247)
+    snap = arepo_snap.snapshot('../data', 247)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
     # widths = [10000, 10000, 2*R200c]
