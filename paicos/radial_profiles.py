@@ -113,6 +113,7 @@ class RadialProfiles:
         with h5py.File(self.tmp_radial_filename, 'w') as f:
             f.create_dataset('bin_centers', data=self.h_r.bin_centers)
             f.create_dataset('bins', data=self.h_r.bins)
+            f.create_dataset('center', data=self.center)
 
     def copy_over_snapshot_information(self):
         """
