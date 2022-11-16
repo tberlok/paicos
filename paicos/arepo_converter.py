@@ -1,4 +1,5 @@
 import h5py
+import numpy as np
 
 
 class ArepoConverter:
@@ -8,7 +9,21 @@ class ArepoConverter:
     2) converting from internal code units to physical units (CGS) using
        astropy.
 
-     TODO: Here write a couple of examples of using the code.
+    Methods are:
+
+    to_physical(name, data)
+    give_units(name, data)
+    to_physical_and_give_units(name, data)
+
+    Example code:
+     converter = ArepoConverter('thin_projection_z_247.hdf5')
+
+     rho = np.array([2, 4])
+     rho = converter.to_physical_and_give_units('Density', rho)
+
+     Mstars = 1
+     Mstars = converter.to_physical_and_give_units('Masses', Mstars)
+
     """
     def __init__(self, hdf5file):
         """
@@ -128,8 +143,11 @@ class ArepoConverter:
 
 
 if __name__ == '__main__':
-    import numpy as np
-    converter = ArepoConverter('thin_projection_z_247.hdf5')
+    from paicos import get_project_root_dir
+
+    path = get_project_root_dir()
+
+    converter = ArepoConverter(path + '/data/slice_x.hdf5')
 
     rho = np.array([2, 4])
     rho = converter.to_physical_and_give_units('Density', rho)

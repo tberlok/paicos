@@ -13,12 +13,12 @@ class Slicer:
 
         self.snap = arepo_snap
 
-        self.center = center
+        self.center = np.array(center)
         self.xc = center[0]
         self.yc = center[1]
         self.zc = center[2]
 
-        self.widths = widths
+        self.widths = np.array(widths)
         self.width_x = widths[0]
         self.width_y = widths[1]
         self.width_z = widths[2]
@@ -117,10 +117,13 @@ class Slicer:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import load_partial_snap
+    from paicos import arepo_snap
     from paicos import ArepoImage
+    from paicos import get_project_root_dir
 
-    snap = load_partial_snap.snapshot('../data', 247)
+    path = get_project_root_dir()
+
+    snap = arepo_snap.snapshot(path + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
     width_vec = (
@@ -136,8 +139,9 @@ if __name__ == '__main__':
         widths = width_vec[ii]
         s = Slicer(snap, center, widths, direction, npix=512)
 
-        image_file = ArepoImage('slice_{}.hdf5'.format(direction),
-                                s.snap.filename, center, widths, direction)
+        image_file = ArepoImage(path + '/slice_{}.hdf5'.format(direction),
+                                snap.first_snapfile_name, center, widths,
+                                direction)
 
         snap.load_data(0, 'Density')
         Density = s.get_image(snap.P['0_Density'])

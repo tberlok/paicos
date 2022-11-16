@@ -3,7 +3,7 @@ import numpy as np
 
 class NestedProjector:
     """
-    This implements an SPH-like projection of gas variables.
+    This implements an SPH-like projection of gas variables using nested grids.
     """
 
     def __init__(self, arepo_snap, center, widths, direction,
@@ -25,12 +25,12 @@ class NestedProjector:
 
         self.verbose = verbose
 
-        self.center = center
+        self.center = np.array(center)
         self.xc = center[0]
         self.yc = center[1]
         self.zc = center[2]
 
-        self.widths = widths
+        self.widths = np.array(widths)
         self.width_x = widths[0]
         self.width_y = widths[1]
         self.width_z = widths[2]
@@ -231,8 +231,11 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
     from paicos import arepo_snap
+    from paicos import get_project_root_dir
 
-    snap = arepo_snap.snapshot('../data', 247)
+    path = get_project_root_dir()
+
+    snap = arepo_snap.snapshot(path + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
 
@@ -253,14 +256,14 @@ if __name__ == '__main__':
         p_nested = NestedProjector(snap, center, widths, direction, npix=512)
 
         Masses = p_nested.project_variable('Masses')
-        Volume = p_nested.project_variable('Volume')
+        Volume = p_nested.project_variable('Volumes')
 
         nested_image = Masses/Volume
 
         p = Projector(snap, center, widths, direction, npix=512)
 
         Masses = p.project_variable('Masses')
-        Volume = p.project_variable('Volume')
+        Volume = p.project_variable('Volumes')
 
         normal_image = Masses/Volume
 

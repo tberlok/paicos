@@ -145,8 +145,11 @@ class RadialProfiles:
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from paicos import arepo_snap
+    from paicos import get_project_root_dir
 
-    snap = arepo_snap.snapshot('../data', 247)
+    path = get_project_root_dir()
+
+    snap = arepo_snap.snapshot(path + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
     r_max = 10000

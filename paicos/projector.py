@@ -133,8 +133,11 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from paicos import arepo_snap
     from paicos import ArepoImage
+    from paicos import get_project_root_dir
 
-    snap = arepo_snap.snapshot('../data', 247)
+    path = get_project_root_dir()
+
+    snap = arepo_snap.snapshot(path + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
     # widths = [10000, 10000, 2*R200c]
@@ -147,19 +150,20 @@ if __name__ == '__main__':
 
     plt.figure(1)
     plt.clf()
-    fig, axes = plt.subplots(num=1, ncols=3)#, sharey=True)
+    fig, axes = plt.subplots(num=1, ncols=3)
     for ii, direction in enumerate(['x', 'y', 'z']):
         widths = width_vec[ii]
         p = Projector(snap, center, widths, direction, npix=512)
 
-        image_file = ArepoImage('projection_{}.hdf5'.format(direction),
-                                p.snap.filename, center, widths, direction)
+        filename = path + '/data/projection_{}.hdf5'.format(direction)
+        image_file = ArepoImage(filename, snap.first_snapfile_name, center,
+                                widths, direction)
 
         Masses = p.project_variable('Masses')
-        Volume = p.project_variable('Volume')
+        Volume = p.project_variable('Volumes')
 
         image_file.save_image('Masses', Masses)
-        image_file.save_image('Volume', Volume)
+        image_file.save_image('Volumes', Volume)
 
         # Move from temporary filename to final filename
         image_file.finalize()

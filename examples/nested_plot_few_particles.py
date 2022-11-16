@@ -3,8 +3,11 @@ from matplotlib.colors import LogNorm
 from paicos import arepo_snap
 from paicos import Projector, NestedProjector
 import numpy as np
+from paicos import get_project_root_dir
 
-snap = arepo_snap.snapshot('../data', 247)
+path = get_project_root_dir()
+
+snap = arepo_snap.snapshot(path + '/data', 247)
 center = snap.Cat.Group['GroupPos'][0]
 R200c = snap.Cat.Group['Group_R_Crit200'][0]
 
@@ -44,7 +47,7 @@ for ii, direction in enumerate(['z']):
                                npix_min=8)
 
     Masses_nested = p_nested.project_variable('Masses')
-    Volume_nested = p_nested.project_variable('Volume')
+    Volume_nested = p_nested.project_variable('Volumes')
 
     nested_image = np.zeros_like(Masses_nested)
     nested_image[Masses_nested > 0] = Masses_nested[Masses_nested > 0]/Volume_nested[Masses_nested > 0]
@@ -52,7 +55,7 @@ for ii, direction in enumerate(['z']):
     p = Projector(snap, center, widths, direction, npix=512)
 
     Masses = p.project_variable('Masses')
-    Volume = p.project_variable('Volume')
+    Volume = p.project_variable('Volumes')
 
     normal_image = np.zeros_like(Masses)
     normal_image[Masses > 0] = Masses[Masses > 0]/Volume[Masses > 0]
@@ -66,4 +69,7 @@ for ii, direction in enumerate(['z']):
                        extent=p_nested.extent)
     # print(np.max(np.abs(normal_image-nested_image)/normal_image))
     # print(np.sum(normal_image.flatten()), np.sum(nested_image.flatten()))
+axes[0].set_title('Standard projection')
+axes[1].set_title('nested grids')
+axes[2].set_title('difference')
 plt.show()
