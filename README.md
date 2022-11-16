@@ -57,5 +57,6 @@ python paicos/slicer.py
 
 ## Example Jupyter notebooks
 
-I will upload some of these soon, please ask again if not.
+I have uploaded the notebook `examples/paicos_examples.ipynb` which
+displays the functionality on one of the bigger simulations on the cluster.
 
