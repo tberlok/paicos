@@ -3,7 +3,7 @@
 A somewhat bare-bones python package for making projections and slices of
 Arepo simulations.
 
-<img src="images/Z24_snap130_wide_projection_notnested.jpg" width="700">
+<img src="images/Z24_snap130_wide_projection_notnested.jpg" width="auto">
 
 
 ## Installation on your laptop
@@ -57,5 +57,5 @@ python paicos/slicer.py
 
 ## Example Jupyter notebooks
 
-I will upload some of these soon, please ask again if 
+I will upload some of these soon, please ask again if not.
 
