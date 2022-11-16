@@ -139,7 +139,7 @@ if __name__ == '__main__':
         widths = width_vec[ii]
         s = Slicer(snap, center, widths, direction, npix=512)
 
-        image_file = ArepoImage(path + '/slice_{}.hdf5'.format(direction),
+        image_file = ArepoImage(path + '/data/slice_{}.hdf5'.format(direction),
                                 snap.first_snapfile_name, center, widths,
                                 direction)
 
