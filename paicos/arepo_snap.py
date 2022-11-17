@@ -26,7 +26,7 @@ class Snapshot:
     Based on script written by Ewald Puchwein
     """
     def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False,
-                 no_snapdir=False):
+                 no_snapdir=False, load_catalog=True):
         self.basedir = basedir
         self.snapnum = snapnum
         self.snap_basename = snap_basename
@@ -115,22 +115,23 @@ class Snapshot:
             100.0   # unit velocity in m/s
 
         # get subfind catalog
-        try:
-            self.Cat = Catalog(
-                self.basedir, self.snapnum, verbose=self.verbose,
-                subfind_catalog=True)
-        except FileNotFoundError:
-            self.Cat = None
-
-        # If no subfind catalog found, then try for a fof catalog
-        if self.Cat is None:
+        if load_catalog:
             try:
                 self.Cat = Catalog(
                     self.basedir, self.snapnum, verbose=self.verbose,
-                    subfind_catalog=False)
+                    subfind_catalog=True)
             except FileNotFoundError:
-                import warnings
-                warnings.warn('no fof or subfind found', FileNotFoundError)
+                self.Cat = None
+
+            # If no subfind catalog found, then try for a fof catalog
+            if self.Cat is None:
+                try:
+                    self.Cat = Catalog(
+                        self.basedir, self.snapnum, verbose=self.verbose,
+                        subfind_catalog=False)
+                except FileNotFoundError:
+                    import warnings
+                    warnings.warn('no catalog found', FileNotFoundError)
 
         self.P = dict()   # particle data
 
