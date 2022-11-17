@@ -139,16 +139,20 @@ class snapshot:
         # get subfind catalog
         try:
             self.Cat = arepo_catalog.arepo_catalog(
-                self.basedir, self.snapnum, verbose=self.verbose)
+                self.basedir, self.snapnum, verbose=self.verbose,
+                subfind_catalog=True)
         except FileNotFoundError:
             self.Cat = None
 
+        # If no subfind catalog found, then try for a fof catalog
         if self.Cat is None:
             try:
                 self.Cat = arepo_catalog.arepo_catalog(
-                    self.basedir, self.snapnum, verbose=self.verbose)
+                    self.basedir, self.snapnum, verbose=self.verbose,
+                    subfind_catalog=False)
             except FileNotFoundError:
-                print('no fof or subfind found')
+                import warnings
+                warnings.warn('no fof or subfind found', FileNotFoundError)
 
         self.P = dict()   # particle data
 
