@@ -16,15 +16,14 @@ class ArepoImage:
     custom method may be used (e.g. arepo-snap-util).
 
     """
-    def __init__(self, image_filename, arepo_snap_filename,
-                 center, widths, direction):
+    def __init__(self, image_filename, snap, center, widths, direction):
 
         """
         The filenames should include the full path:
 
         image_filename: e.g. "./projections/thin_projection_247_x.hdf5"
 
-        arepo_snap_filename: e.g. "./output/snapdir_247/snap_247.0.hdf5"
+        snap: an instance of the Snapshot class
 
         center: A length-3 array giving the center of the image.
 
@@ -66,7 +65,7 @@ class ArepoImage:
         for ii in range(0, len(tmp_list)-1):
             self.tmp_image_filename += tmp_list[ii] + '/'
         self.tmp_image_filename += tmp_list[-1]
-        self.arepo_snap_filename = arepo_snap_filename
+        self.arepo_snap_filename = snap.first_snapfile_name
 
         self.create_projection_file()
 
@@ -156,10 +155,11 @@ class ArepoImage:
 
 if __name__ == '__main__':
     from paicos import root_dir
+    from paicos import Snapshot
 
     image_filename = root_dir + "/data/test_arepo_image_format.hdf5"
 
-    arepo_snap_filename = root_dir + "/data/snap_247.hdf5"
+    snap = Snapshot(root_dir + '/data/', 247)
 
     # A length-3 array giving the center of the image.
     center = [250000, 400000, 500000]
@@ -173,8 +173,7 @@ if __name__ == '__main__':
     # Create arepo image file.
     # The file will have 'tmp_' prepended to the filename until .finalize()
     # is called.
-    image_file = ArepoImage(image_filename, arepo_snap_filename,
-                            center, widths, direction)
+    image_file = ArepoImage(image_filename, snap, center, widths, direction)
 
     # Save some images to the file (in a real example one would first import\\
     # and use a projection function)
