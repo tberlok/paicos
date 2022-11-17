@@ -69,6 +69,8 @@ class Projector:
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.yc - self.width_y/2, self.yc + self.width_y/2]
 
+        self.extent = np.array(self.extent)
+
         self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
 

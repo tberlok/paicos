@@ -73,6 +73,8 @@ class Slicer:
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.yc - self.width_y/2, self.yc + self.width_y/2]
 
+        self.extent = np.array(self.extent)
+
         # Now construct the image grid
 
         def unflatten(arr):
