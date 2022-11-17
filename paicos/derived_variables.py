@@ -2,6 +2,24 @@ import numpy as np
 
 
 def get_variable(snap, variable_str):
+    """
+    Convenience function for getting (derived) variables of gas variables
+
+    Currently supports:
+
+    'Masses'
+    'Volumes'
+    'GFM_MetallicityTimesMasses'
+    'EnergyDissipation'
+    'MachnumberTimesEnergyDissipation'
+    'MagneticFieldSquaredTimesVolumes'
+    'PressureTimesVolumes'
+    'TemperatureTimesMasses'
+    'Current' |∇×B|
+    'Enstrophy' 1/2|∇×v|²
+    'EnstrophyTimesMasses'
+    """
+
     if type(variable_str) is str:
         if variable_str == 'Masses':
             snap.load_data(0, 'Masses')
