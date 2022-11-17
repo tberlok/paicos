@@ -3,7 +3,10 @@ import os
 import h5py
 
 
-class arepo_catalog:
+class Catalog:
+    """
+    Catalog reader, originally written by Ewald Puchwein.
+    """
     def __init__(self, basedir, snapnum, verbose=False, subfind_catalog=True):
 
         if subfind_catalog:

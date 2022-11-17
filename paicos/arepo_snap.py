@@ -1,6 +1,6 @@
 # --- import Python libs ---
 
-from . import arepo_catalog
+from .arepo_catalog import Catalog
 import numpy as np
 import os
 import time
@@ -12,43 +12,21 @@ from scipy.constants import parsec as pc  # all in SI
 from scipy.constants import m_p as mproton
 from scipy.constants import m_e as melectron
 from scipy.constants import k as kboltzmann
-from scipy.constants import G as Gnewton
-from scipy.constants import c as clight
 from scipy.constants import eV
-from scipy.constants import e as electron_charge
 kpc = 1.0e3 * pc
 Mpc = 1.0e6 * pc
 keV = 1000.0*eV
 msun = 1.9884430e30
 mhydrogen = mproton + melectron
 
-fhydrogen = 0.76
-mmean_ionized = (1.0+(1.0-fhydrogen)/fhydrogen) / \
-    (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
-ne_ionized = 1.0 + 2.0*(1.0-fhydrogen)/(4.0*fhydrogen)
-
-# --- import own libs ---
-
-
-# --- helper functions ---
-
-
-def box_wrap_diff(pos, boxsize):  # wraps to -0.5*boxsize - 0.5*boxsize
-    ind = np.where(pos < -0.5*boxsize)
-    pos[ind] += boxsize
-
-    ind = np.where(pos > 0.5*boxsize)
-    pos[ind] -= boxsize
-
-    assert (pos >= -0.5*boxsize).all()
-    assert (pos <= 0.5*boxsize).all()
-
-
-# --- snapshot class ---
-
 
 class snapshot:
-    def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False, no_snapdir=False):
+    """
+    A class for reading in Arepo snapshots.
+    Based on script written by Ewald Puchwein
+    """
+    def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False,
+                 no_snapdir=False):
         self.basedir = basedir
         self.snapnum = snapnum
         self.snap_basename = snap_basename
@@ -63,7 +41,7 @@ class snapshot:
 
         # if multiple files
         if not os.path.exists(self.first_snapfile_name):
-            if self.no_snapdir == False:
+            if not self.no_snapdir:
                 self.snapname = self.basedir + "/" + "snapdir_" + \
                     str(self.snapnum).zfill(3) + "/" + \
                     snap_basename + "_" + str(self.snapnum).zfill(3)
@@ -138,7 +116,7 @@ class snapshot:
 
         # get subfind catalog
         try:
-            self.Cat = arepo_catalog.arepo_catalog(
+            self.Cat = Catalog(
                 self.basedir, self.snapnum, verbose=self.verbose,
                 subfind_catalog=True)
         except FileNotFoundError:
@@ -147,7 +125,7 @@ class snapshot:
         # If no subfind catalog found, then try for a fof catalog
         if self.Cat is None:
             try:
-                self.Cat = arepo_catalog.arepo_catalog(
+                self.Cat = Catalog(
                     self.basedir, self.snapnum, verbose=self.verbose,
                     subfind_catalog=False)
             except FileNotFoundError:
@@ -173,7 +151,9 @@ class snapshot:
     def load_data(self, particle_type, blockname):
         assert particle_type < self.nspecies
 
-        if str(particle_type)+"_"+blockname in self.P:
+        P_key = str(particle_type)+"_"+blockname
+        datname = "PartType"+str(particle_type)+"/"+blockname
+        if P_key in self.P:
             if self.verbose:
                 print(blockname, "for species",
                       particle_type, "already in memory")
@@ -183,10 +163,8 @@ class snapshot:
                   "for species", particle_type, "...")
             start_time = time.time()
 
-        datname = "PartType"+str(particle_type)+"/"+blockname
-
         if blockname == "Masses" and self.masstable[particle_type] > 0:
-            self.P[str(particle_type)+"_"+blockname] = self.masstable[particle_type] * \
+            self.P[P_key] = self.masstable[particle_type] * \
                 np.ones(self.npart[particle_type], dtype=np.float32)
             if self.verbose:
                 print("... got value from MassTable in header!")
@@ -208,23 +186,27 @@ class snapshot:
 
             if ifile == 0:   # initialize array
                 if f[datname].shape.__len__() == 1:
-                    self.P[str(particle_type)+"_"+blockname] = np.empty(
+                    self.P[P_key] = np.empty(
                         self.npart[particle_type], dtype=f[datname].dtype)
                 else:
-                    self.P[str(particle_type)+"_"+blockname] = np.empty(
-                        (self.npart[particle_type], f[datname].shape[1]), dtype=f[datname].dtype)
+                    self.P[P_key] = np.empty(
+                        (self.npart[particle_type], f[datname].shape[1]),
+                        dtype=f[datname].dtype)
 
-            self.P[str(particle_type)+"_" +
-                   blockname][skip_part:skip_part+np_file] = f[datname]
+            self.P[P_key][skip_part:skip_part+np_file] = f[datname]
 
             skip_part += np_file
 
-        if blockname == "Velocities":
-            # convert to physical velocity
-            self.P[str(particle_type)+"_"+blockname] *= np.sqrt(self.a)
-
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
+
+    def remove_data(self, particle_type, blockname):
+        """
+        Remove data from object. Sometimes useful for for large datasets
+        """
+        P_key = str(particle_type)+"_"+blockname
+        if P_key in self.P:
+            del self.P[P_key]
 
     def get_high_res_region(self, threshold=0.9):
         if "0_HighResIndex" in self.P:
@@ -264,11 +246,16 @@ class snapshot:
 
         self.load_data(0, "InternalEnergy")
 
-        try:
+        fhydrogen = 0.76
+
+        if "ElectronAbundance" in self.info(0):
             self.load_data(0, "ElectronAbundance")
             mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
                            fhydrogen*self.P["0_ElectronAbundance"])
-        except:
+        else:
+            mmean_ionized = (1.0+(1.0-fhydrogen)/fhydrogen) / \
+                (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
+            ne_ionized = 1.0 + 2.0*(1.0-fhydrogen)/(4.0*fhydrogen)
             mmean = mmean_ionized
 
         self.P["0_Temperatures"] = 2.0/3.0 * self.P["0_InternalEnergy"] * \
@@ -310,137 +297,3 @@ class snapshot:
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
-
-    def get_mass_density_cummass_profile_species(self, sub, species, rmin, rmax, nbins=500, bin_scaling="log"):
-        self.load_data(species, "Coordinates")
-        self.load_data(species, "Masses")
-        sub_pos = self.Cat.Sub["SubhaloPos"][sub]
-
-        pos = self.P[str(species)+"_Coordinates"].copy()
-        pos -= sub_pos
-        box_wrap_diff(pos, self.box)
-        rad = np.sqrt(np.sum(pos**2, axis=1))
-        del pos
-
-        if bin_scaling == "log":
-            bin_edges = np.logspace(np.log10(rmin), np.log10(rmax), nbins+1)
-        elif bin_scaling == "lin":
-            bin_edges = np.linspace(rmin, rmax, nbins+1)
-        else:
-            assert False
-
-        volumes = 4.0*np.pi/3.0*(bin_edges[1:]**3-bin_edges[:-1]**3)
-
-        mass_profile, buff = np.histogram(
-            rad, bins=bin_edges, weights=np.float64(self.P[str(species)+"_Masses"]))
-        density_profile = mass_profile / volumes
-        cummass_profile = mass_profile.cumsum()
-
-        r_center = bincenters = 0.5*(bin_edges[1:]+bin_edges[:-1])
-        r_outer = bin_edges[1:]
-
-        return r_center, mass_profile, density_profile, r_outer, cummass_profile
-
-    def get_gas_slice(self, xc, yc, zc, sidelength, npix=512, nthreads=4, rot_mat=None):
-        from get_slice import get_slice
-
-        if self.verbose:
-            print("getting gas slice ...")
-            start_time = time.time()
-
-        a_z = 0.0
-        a_x = 0.0
-        a_z2 = 0.0
-
-        #mapind = get_slice(self.P["0_Coordinates"][:,0], self.P["0_Coordinates"][:,1], self.P["0_Coordinates"][:,2], self.npart[0], self.box, zc, xc, yc, sidelength, a_z, a_x, a_z2, npix, 0, 0)
-        mapind = get_slice(np.float32(self.P["0_Coordinates"][:, 0]), np.float32(self.P["0_Coordinates"][:, 1]), np.float32(
-            self.P["0_Coordinates"][:, 2]), self.npart[0], self.box, zc, xc, yc, sidelength, a_z, a_x, a_z2, npix, 0, 0)
-
-        if self.verbose:
-            print("... done! (took", time.time()-start_time, "s)")
-
-        return mapind
-
-    def get_gas_projection(self, xc, yc, zc, sidelength, thickness, npix=512, nthreads=4, rot_mat=None):
-        from put_grid import put_grid
-
-        if self.verbose:
-            print("getting gas projection ...")
-
-        self.get_volumes()
-
-        periodic = False
-        if sidelength == self.box:
-            periodic = True
-
-        self.load_data(0, "Coordinates")
-        pos = self.P["0_Coordinates"].copy()
-        pos[:, 0] -= xc
-        pos[:, 1] -= yc
-        pos[:, 2] -= zc
-
-        box_wrap_diff(pos, self.box)
-
-        # could rotate here
-        if rot_mat is not None:
-            assert((np.dot(rot_mat.transpose(), rot_mat) -
-                    np.identity(3)).max() < 1.0e-10)
-            pos = np.dot(rot_mat, pos.transpose()).transpose()
-
-        ind = np.where((pos[:, 2] > -0.5*thickness) &
-                       (pos[:, 2] < 0.5*thickness))[0]
-
-        nvol = 64.0
-        #hsml = (nvol*(self.P["0_Volumes"][ind])/(4.0*np.pi/3.0))**(1.0/3.0)
-        # much faster but reuires new numpy
-        hsml = np.cbrt(nvol*(self.P["0_Volumes"][ind])/(4.0*np.pi/3.0))
-
-        if self.verbose:
-            print("calling put_grid")
-
-        gasmap = put_grid(npix, 0, 0, sidelength, pos[ind, 0], pos[ind, 1],
-                          hsml, self.P["0_Masses"][ind], periodic, num_threads=nthreads)
-
-        if self.verbose:
-            print("... done!")
-
-        return gasmap
-
-    def get_gas_projection_sub(self, sub, sidelength, thickness, npix=512, nthreads=4, rot=None, rot_rmax_pkpc=10.0, rot_pt=0):
-        subpos = self.Cat.Sub["SubhaloPos"][sub]
-
-        rot_mat = None
-        if rot:
-            L = self.get_angular_momentum_sub(
-                sub, rot_rmax_pkpc/self.u_l_pkpc, particle_type=rot_pt)
-            assert rot in ["face-on", "edge-on"]
-            rot_mat = rot_mat_from_2vecs(L, [1.0, 0.0, 0.0], rot)
-
-        return self.get_gas_projection(subpos[0], subpos[1], subpos[2], sidelength, thickness, npix=npix, nthreads=nthreads, rot_mat=rot_mat)
-
-    def get_angular_momentum_sub(self, sub, rmax, particle_type):
-        rmax2 = rmax**2
-
-        self.load_data(particle_type, "Coordinates")
-        self.get_host_subhalo(particle_type)
-
-        inds = np.where(self.P[str(particle_type)+"_HostSub"] == sub)[0]
-        pos = self.P[str(particle_type)+"_Coordinates"][inds]
-
-        subpos = self.Cat.Sub["SubhaloPos"][sub]
-        pos = pos - subpos
-        box_wrap_diff(pos, self.box)
-
-        indr = np.where((pos**2).sum(axis=1) < rmax2)[0]
-        pos = pos[indr] * self.a   # now in physical units
-
-        self.load_data(particle_type, "Masses")
-        self.load_data(particle_type, "Velocities")
-
-        mass = self.P[str(particle_type)+"_Masses"][inds[indr]]
-        vel = self.P[str(particle_type)+"_Velocities"][inds[indr]]
-
-        L_ang_mom = np.sum(
-            mass[:, None] * np.cross(pos, vel), dtype=np.float64, axis=0)
-
-        return L_ang_mom

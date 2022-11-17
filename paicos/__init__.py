@@ -6,7 +6,7 @@ from .arepo_converter import ArepoConverter
 from .histogram import Histogram
 from .radial_profiles import RadialProfiles
 from . import arepo_snap
-from . import arepo_catalog
+from .arepo_catalog import Catalog
 from .derived_variables import get_variable
 from .util import get_project_root_dir
 from .cython.cython_functions import get_index_of_region
