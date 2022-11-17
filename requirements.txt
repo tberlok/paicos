@@ -3,3 +3,4 @@ cython
 numpy
 matplotlib
 h5py
+astropy

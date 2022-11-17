@@ -155,12 +155,11 @@ class ArepoImage:
 
 
 if __name__ == '__main__':
-    from paicos import get_project_root_dir
+    from paicos import root_dir
 
-    path = get_project_root_dir()
-    image_filename = path + "/data/test_arepo_image_format.hdf5"
+    image_filename = root_dir + "/data/test_arepo_image_format.hdf5"
 
-    arepo_snap_filename = path + "/data/snap_247.hdf5"
+    arepo_snap_filename = root_dir + "/data/snap_247.hdf5"
 
     # A length-3 array giving the center of the image.
     center = [250000, 400000, 500000]

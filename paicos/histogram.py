@@ -31,16 +31,14 @@ class Histogram:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import arepo_snap
-    from paicos import get_project_root_dir
-
-    path = get_project_root_dir()
+    from paicos import Snapshot
+    from paicos import root_dir
 
     plt.figure(1)
     plt.clf()
     fig, axes = plt.subplots(num=1, ncols=3, sharex=True)
     for ii in range(2):
-        snap = arepo_snap.snapshot(path + '/data', 247)
+        snap = Snapshot(root_dir + '/data', 247)
         center = snap.Cat.Group['GroupPos'][0]
 
         snap.load_data(0, 'Coordinates')

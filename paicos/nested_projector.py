@@ -230,12 +230,10 @@ class NestedProjector:
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
-    from paicos import arepo_snap
-    from paicos import get_project_root_dir
+    from paicos import Snapshot
+    from paicos import root_dir
 
-    path = get_project_root_dir()
-
-    snap = arepo_snap.snapshot(path + '/data', 247)
+    snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
 

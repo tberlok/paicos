@@ -143,11 +143,9 @@ class ArepoConverter:
 
 
 if __name__ == '__main__':
-    from paicos import get_project_root_dir
+    from paicos import root_dir
 
-    path = get_project_root_dir()
-
-    converter = ArepoConverter(path + '/data/slice_x.hdf5')
+    converter = ArepoConverter(root_dir + '/data/slice_x.hdf5')
 
     rho = np.array([2, 4])
     rho = converter.to_physical_and_give_units('Density', rho)

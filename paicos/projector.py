@@ -131,13 +131,11 @@ class Projector:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import arepo_snap
+    from paicos import Snapshot
     from paicos import ArepoImage
-    from paicos import get_project_root_dir
+    from paicos import root_dir
 
-    path = get_project_root_dir()
-
-    snap = arepo_snap.snapshot(path + '/data', 247)
+    snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
     # widths = [10000, 10000, 2*R200c]
@@ -155,7 +153,7 @@ if __name__ == '__main__':
         widths = width_vec[ii]
         p = Projector(snap, center, widths, direction, npix=512)
 
-        filename = path + '/data/projection_{}.hdf5'.format(direction)
+        filename = root_dir + '/data/projection_{}.hdf5'.format(direction)
         image_file = ArepoImage(filename, snap.first_snapfile_name, center,
                                 widths, direction)
 

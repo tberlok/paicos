@@ -20,7 +20,7 @@ msun = 1.9884430e30
 mhydrogen = mproton + melectron
 
 
-class snapshot:
+class Snapshot:
     """
     A class for reading in Arepo snapshots.
     Based on script written by Ewald Puchwein

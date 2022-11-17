@@ -9,3 +9,6 @@ def get_project_root_dir():
         root_dir += '/' + path_split[ii]
 
     return root_dir
+
+
+root_dir = get_project_root_dir()

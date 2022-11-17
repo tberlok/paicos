@@ -1,11 +1,11 @@
 import h5py
 import numpy as np
-from paicos import Histogram
 
 
 class RadialProfiles:
 
     def __init__(self, arepo_snap, center, r_max, bins, verbose=False):
+        from paicos import Histogram
         if verbose:
             import time
             t = time.time()
@@ -144,12 +144,10 @@ class RadialProfiles:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import arepo_snap
-    from paicos import get_project_root_dir
+    from paicos import Snapshot
+    from paicos import root_dir
 
-    path = get_project_root_dir()
-
-    snap = arepo_snap.snapshot(path + '/data', 247)
+    snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
     r_max = 10000

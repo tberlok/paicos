@@ -117,13 +117,13 @@ class Slicer:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import arepo_snap
+    from paicos import Snapshot
     from paicos import ArepoImage
-    from paicos import get_project_root_dir
+    from paicos import root_dir
 
-    path = get_project_root_dir()
+    # root_dir = get_project_root_dir()
 
-    snap = arepo_snap.snapshot(path + '/data', 247)
+    snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
     width_vec = (
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         widths = width_vec[ii]
         s = Slicer(snap, center, widths, direction, npix=512)
 
-        image_file = ArepoImage(path + '/data/slice_{}.hdf5'.format(direction),
+        image_file = ArepoImage(root_dir + '/data/slice_{}.hdf5'.format(direction),
                                 snap.first_snapfile_name, center, widths,
                                 direction)
 
