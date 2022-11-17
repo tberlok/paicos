@@ -69,7 +69,7 @@ class arepo_catalog:
             if self.multi_file is False:
                 cur_filename = self.first_file_name
             else:
-                if self.no_groupdir is False:
+                if self.no_groupdir:
                     cur_filename = multi_wo_dir.format(ifile)
                 else:
                     cur_filename = multi_file.format(ifile)
