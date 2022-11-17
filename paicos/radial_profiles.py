@@ -4,7 +4,8 @@ import numpy as np
 
 class RadialProfiles:
 
-    def __init__(self, arepo_snap, center, r_max, bins, verbose=False):
+    def __init__(self, radial_filename, arepo_snap, center, r_max, bins,
+                 verbose=False):
         from paicos import Histogram
         if verbose:
             import time
@@ -26,7 +27,16 @@ class RadialProfiles:
 
         self.h_r = Histogram(r[self.index], bins=bins, verbose=verbose)
 
+        self.radial_filename = radial_filename
+        tmp_list = radial_filename.split('/')
+        tmp_list[-1] = 'tmp_' + tmp_list[-1]
+        self.tmp_radial_filename = ''
+        for ii in range(0, len(tmp_list)-1):
+            self.tmp_radial_filename += tmp_list[ii] + '/'
+        self.tmp_radial_filename += tmp_list[-1]
+
         self.create_tmp_radial_file()
+
         self.copy_over_snapshot_information()
 
         variable_strings = ['Masses', 'Volumes', 'TemperatureTimesMasses',
@@ -114,12 +124,6 @@ class RadialProfiles:
         os.rename(self.tmp_radial_filename, self.radial_filename)
 
     def create_tmp_radial_file(self):
-        snap = self.snap
-        basedir = snap.basedir + '/'
-        basename = 'radial_profiles_{:03d}.hdf5'
-        snapnum = snap.snapnum
-        self.radial_filename = basedir + basename.format(snapnum)
-        self.tmp_radial_filename = basedir + 'tmp_' + basename.format(snapnum)
 
         self.arepo_snap_filename = snap.first_snapfile_name
 
@@ -154,5 +158,7 @@ if __name__ == '__main__':
 
     bins = np.linspace(0, r_max, 150)
 
-    radial_profile = RadialProfiles(snap, center, r_max, bins)
+    radial_filename = root_dir + '/data/radial_filename_247.hdf5'
+    radial_profile = RadialProfiles(radial_filename,
+                                    snap, center, r_max, bins)
     radial_profile.finalize()

@@ -278,6 +278,10 @@ if __name__ == '__main__':
                            extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
         axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
                            extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
+
+        axes[0, ii].set_title('Normal projection ({})'.format(direction))
+        axes[1, ii].set_title('nested projection')
+        axes[2, ii].set_title('difference')
         # print(np.max(np.abs(normal_image-nested_image)/normal_image))
         print(np.sum(normal_image.flatten()), np.sum(nested_image.flatten()))
     plt.show()

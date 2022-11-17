@@ -156,8 +156,7 @@ if __name__ == '__main__':
         p = Projector(snap, center, widths, direction, npix=512)
 
         filename = root_dir + '/data/projection_{}.hdf5'.format(direction)
-        image_file = ArepoImage(filename, snap.first_snapfile_name, center,
-                                widths, direction)
+        image_file = ArepoImage(filename, snap, center, widths, direction)
 
         Masses = p.project_variable('Masses')
         Volume = p.project_variable('Volumes')
