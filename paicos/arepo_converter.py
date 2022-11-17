@@ -66,6 +66,9 @@ class ArepoConverter:
         Input names are the arepo hdf5 dataset names.
         """
 
+        if type(data) is list:
+            data = np.array(data)
+
         if type(name) is dict:
             if ('a_scaling' in name) and ('h_scaling' in name):
                 return data * self.a**(name['a_scaling']) * self.h**(name['h_scaling'])
