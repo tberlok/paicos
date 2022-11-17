@@ -1,7 +1,6 @@
 # --- import Python libs ---
 
-from . import arepo_fof
-from . import arepo_subf
+from . import arepo_catalog
 import numpy as np
 import os
 import time
@@ -139,16 +138,16 @@ class snapshot:
 
         # get subfind catalog
         try:
-            self.Cat = arepo_subf.subfind_catalog(
+            self.Cat = arepo_catalog.arepo_catalog(
                 self.basedir, self.snapnum, verbose=self.verbose)
-        except:
+        except FileNotFoundError:
             self.Cat = None
 
         if self.Cat is None:
             try:
-                self.Cat = arepo_fof.fof_catalog(
+                self.Cat = arepo_catalog.arepo_catalog(
                     self.basedir, self.snapnum, verbose=self.verbose)
-            except:
+            except FileNotFoundError:
                 print('no fof or subfind found')
 
         self.P = dict()   # particle data
@@ -166,19 +165,6 @@ class snapshot:
                 if verbose:
                     print('PartType not in hdf5 file')
                 return None
-
-    def get_high_res_region(self, threshold=0.9):
-        if "0_HighResIndex" in self.P:
-            return
-
-        if self.verbose:
-            print("computing indices of HighResGasMass")
-
-        self.load_data(0, "HighResGasMass")
-        self.load_data(0, "Masses")
-
-        self.P["0_HighResIndex"] = self.P['0_HighResGasMass'] > threshold * \
-            self.P['0_Masses']
 
     def load_data(self, particle_type, blockname):
         assert particle_type < self.nspecies
@@ -203,6 +189,7 @@ class snapshot:
             return
 
         skip_part = 0
+
         for ifile in range(self.nfiles):
             cur_filename = self.snapname
 
@@ -234,6 +221,19 @@ class snapshot:
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
+
+    def get_high_res_region(self, threshold=0.9):
+        if "0_HighResIndex" in self.P:
+            return
+
+        if self.verbose:
+            print("computing indices of HighResGasMass")
+
+        self.load_data(0, "HighResGasMass")
+        self.load_data(0, "Masses")
+
+        self.P["0_HighResIndex"] = self.P['0_HighResGasMass'] > threshold * \
+            self.P['0_Masses']
 
     def get_volumes(self):
         if "0_Volumes" in self.P:
