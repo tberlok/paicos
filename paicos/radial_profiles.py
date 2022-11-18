@@ -13,12 +13,12 @@ class RadialProfiles:
 
         self.snap = arepo_snap
 
-        self.center = center
+        self.center = np.array(center)
 
         self.verbose = verbose
 
         self.snap.load_data(0, 'Coordinates')
-        pos = self.snap.P['0_Coordinates']
+        pos = np.array(self.snap.P['0_Coordinates'])
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 

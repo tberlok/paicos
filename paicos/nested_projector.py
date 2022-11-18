@@ -19,7 +19,8 @@ class NestedProjector:
         else:
             self.use_omp = False
             self.numthreads = 1
-            print('OpenMP is not working on your system...')
+            import warnings
+            warnings.warn('OpenMP is not working on your system...')
 
         self.snap = arepo_snap
 

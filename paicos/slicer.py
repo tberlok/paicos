@@ -107,7 +107,7 @@ class Slicer:
         self.pos = pos[self.slice]
         tree = KDTree(self.pos)
 
-        d, i = tree.query(image_points, workers=16)
+        d, i = tree.query(image_points, workers=numthreads)
 
         self.index = unflatten(np.arange(pos.shape[0])[self.slice][i])
         self.distance_to_nearest_cell = unflatten(d)
@@ -122,8 +122,6 @@ if __name__ == '__main__':
     from paicos import Snapshot
     from paicos import ArepoImage
     from paicos import root_dir
-
-    # root_dir = get_project_root_dir()
 
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
@@ -142,10 +140,13 @@ if __name__ == '__main__':
         s = Slicer(snap, center, widths, direction, npix=512)
 
         image_file = ArepoImage(root_dir + '/data/slice_{}.hdf5'.format(direction),
-                                snap.first_snapfile_name, center, widths,
+                                snap, center, widths,
                                 direction)
 
         snap.load_data(0, 'Density')
+        snap.load_data(0, 'Velocities')
+        snap.load_data(0, 'MagneticField')
+
         Density = s.get_image(snap.P['0_Density'])
 
         image_file.save_image('Density', Density)
