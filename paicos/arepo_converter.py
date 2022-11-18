@@ -129,7 +129,7 @@ class ArepoConverter:
         elif name == 'InternalEnergy':
             return data * self.arepo_units['unit_energy']/self.arepo_units['unit_mass']
         elif name == 'MagneticField':
-            return data * np.sqrt(self.y['unit_pressure'])
+            return data * np.sqrt(self.arepo_units['unit_pressure'])
         elif name == 'Velocities':
             return data * self.arepo_units['unit_velocity']
         else:
@@ -155,3 +155,5 @@ if __name__ == '__main__':
 
     Mstars = 1
     Mstars = converter.to_physical_and_give_units('Masses', Mstars)
+
+    B = converter.to_physical_and_give_units('MagneticField', [1])

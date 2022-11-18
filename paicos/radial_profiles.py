@@ -22,7 +22,6 @@ class RadialProfiles:
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
-        r_max = 10000
         self.index = r < r_max*1.1
 
         self.h_r = Histogram(r[self.index], bins=bins, verbose=verbose)
@@ -147,7 +146,6 @@ class RadialProfiles:
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
     from paicos import Snapshot
     from paicos import root_dir
 
