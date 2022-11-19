@@ -92,6 +92,8 @@ class ArepoConverter:
             return data * self.h / self.a**2
         elif name == 'Velocities':
             return data * self.a**0.5
+        elif name == 'Temperature':
+            return data
         else:
             err_msg = 'failed to convert from comoving to physical'
             raise RuntimeError(err_msg)
@@ -105,6 +107,14 @@ class ArepoConverter:
         for 'Coordinates'.
 
         """
+        from astropy import units as u
+        # Allows conversion between K and eV
+        u.add_enabled_equivalencies(u.temperature_energy())
+        # Allows conversion to Gauss (potential issues?)
+        # https://github.com/astropy/astropy/issues/7396
+        gauss_B = (u.g/u.cm)**(0.5)/u.s
+        equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
+        u.add_enabled_equivalencies(equiv_B)
 
         if type(name) is dict:
             if ('length_scaling' in name) and ('mass_scaling' in name):
@@ -132,6 +142,8 @@ class ArepoConverter:
             return data * np.sqrt(self.arepo_units['unit_pressure'])
         elif name == 'Velocities':
             return data * self.arepo_units['unit_velocity']
+        elif name == 'Temperature':
+            return data * u.K
         else:
             err_msg = 'failed to give units using astropy'
             raise RuntimeError(err_msg)
@@ -157,3 +169,8 @@ if __name__ == '__main__':
     Mstars = converter.to_physical_and_give_units('Masses', Mstars)
 
     B = converter.to_physical_and_give_units('MagneticField', [1])
+
+    T = converter.give_units('Temperature', 1)
+
+    print(T.to('keV'))
+    print(B.to('uG'))
