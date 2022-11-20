@@ -16,7 +16,8 @@ class ArepoImage:
     custom method may be used (e.g. arepo-snap-util).
 
     """
-    def __init__(self, image_filename, snap, center, widths, direction):
+    def __init__(self, image_filename, snap=None, center=None, widths=None,
+                 direction=None, image_creator=None, mode='w'):
 
         """
         The filenames should include the full path:
@@ -25,6 +26,10 @@ class ArepoImage:
 
         snap: an instance of the Snapshot class
 
+        If your image was created using a Paicos Projector or Slicer object. You can
+        pass such an object using the image_creator input. Alternatively,
+        you can simply
+
         center: A length-3 array giving the center of the image.
 
         widths: This is a length-3 array giving the widths of
@@ -32,29 +37,43 @@ class ArepoImage:
                 can be set to zero.
 
         direction: the viewing direction. Set this to e.g. 'x', 'y' or 'z'.
+
         """
 
-        self.center = center
-        self.xc = center[0]
-        self.yc = center[1]
-        self.zc = center[2]
+        if image_creator is not None:
+            self.center = np.array(image_creator.center)
+            self.widths = np.array(image_creator.widths)
+            self.direction = image_creator.direction
+        elif (center is not None) and (widths is not None) and (direction is not None):
+            self.center = center
+            self.widths = widths
+            self.direction = direction
+        else:
+            msg = """
+            Either pass a projector/slicer object to image_creator,
+            or alternatively, specify 'center', 'widths' and 'direction'
+            of your image"""
+            raise RuntimeError(msg)
 
-        self.widths = widths
-        self.width_x = widths[0]
-        self.width_y = widths[1]
-        self.width_z = widths[2]
+        self.xc = self.center[0]
+        self.yc = self.center[1]
+        self.zc = self.center[2]
 
-        self.direction = direction
+        self.width_x = self.widths[0]
+        self.width_y = self.widths[1]
+        self.width_z = self.widths[2]
 
-        if direction == 'x':
+        self.mode = mode
+
+        if self.direction == 'x':
             self.extent = [self.yc - self.width_y/2, self.yc + self.width_y/2,
                            self.zc - self.width_z/2, self.zc + self.width_z/2]
 
-        elif direction == 'y':
+        elif self.direction == 'y':
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.zc - self.width_z/2, self.zc + self.width_z/2]
 
-        elif direction == 'z':
+        elif self.direction == 'z':
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.yc - self.width_y/2, self.yc + self.width_y/2]
 
@@ -138,7 +157,7 @@ class ArepoImage:
                     f[group].attrs[key] = g[group].attrs[key]
         g.close()
 
-    def save_image(self, name, data):
+    def save_image(self, name, data, attrs=None):
         """
         This function saves a 2D image to the hdf5 file.
         """
@@ -147,15 +166,29 @@ class ArepoImage:
 
     def finalize(self):
         """
-        # TODO: Overload an out-of-scope operator instead?
         """
         import os
-        os.rename(self.tmp_image_filename, self.image_filename)
+        if self.mode == 'w':
+            os.rename(self.tmp_image_filename, self.image_filename)
+        elif self.mode == 'a' or self.mode == 'r+':
+            with h5py.File(self.tmp_image_filename, 'r') as tmp:
+                with h5py.File(self.image_filename, 'r+') as final:
+                    np.testing.assert_array_equal(tmp['image_info'].attrs['center'],
+                                                  final['image_info'].attrs['center'])
+                    np.testing.assert_array_equal(tmp['image_info'].attrs['widths'],
+                                                  final['image_info'].attrs['widths'])
+                    assert tmp['image_info'].attrs['direction'] == final['image_info'].attrs['direction']
+                    assert tmp['Header'].attrs['Time'] == final['Header'].attrs['Time']
+                    for key in tmp.keys():
+                        if key not in final.keys():
+                            final.create_dataset(key, data=tmp[key])
+            os.remove(self.tmp_image_filename)
 
 
 if __name__ == '__main__':
     from paicos import root_dir
     from paicos import Snapshot
+    from paicos import Projector
 
     image_filename = root_dir + "/data/test_arepo_image_format.hdf5"
 
@@ -182,3 +215,12 @@ if __name__ == '__main__':
 
     # Move from temporary filename to final filename
     image_file.finalize()
+
+    # Now amend the file with another set of data
+    p = Projector(snap, center, widths, direction)
+    image_file = ArepoImage(image_filename, snap, image_creator=p, mode='a')
+    image_file.save_image('random_data3', np.random.random((500, 500)))
+    image_file.finalize()
+
+    with h5py.File(image_filename, 'r') as f:
+        print(list(f.keys()))
