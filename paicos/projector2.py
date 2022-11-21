@@ -79,7 +79,7 @@ class Projector2(ImageCreator):
     def project_variable(self, variable):
 
         if self.use_omp:
-            from paicos import project_image2_omp as project_image
+            from paicos import project_image2_omp as project_image2
         else:
             from paicos import project_image2
 
