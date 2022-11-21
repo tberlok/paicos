@@ -1,45 +1,31 @@
 import numpy as np
+from paicos import ImageCreator
 
 
-class Slicer:
+class Slicer(ImageCreator):
     """
-    This implements an slicing of gas variables.
+    This implements slicing of gas variables.
     """
 
-    def __init__(self, arepo_snap, center, widths, direction,
+    def __init__(self, snap, center, widths, direction,
                  npix=512, numthreads=16):
 
         from scipy.spatial import KDTree
 
-        self.snap = arepo_snap
+        super().__init__(snap, center, widths, direction, npix=npix,
+                         numthreads=numthreads)
 
-        self.center = np.array(center)
-        self.xc = center[0]
-        self.yc = center[1]
-        self.zc = center[2]
-
-        self.widths = np.array(widths)
-        self.width_x = widths[0]
-        self.width_y = widths[1]
-        self.width_z = widths[2]
-
-        self.numthreads = numthreads
-
-        for ii, direc in enumerate(['x', 'y', 'z']):
-            if direction == direc:
-                assert widths[ii] == 0.
-
-        self.direction = direction
-
-        self.npix = npix
-
-        snap = arepo_snap
+        snap = self.snap
         xc = self.xc
         yc = self.yc
         zc = self.zc
         width_x = self.width_x
         width_y = self.width_y
         width_z = self.width_z
+
+        for ii, direc in enumerate(['x', 'y', 'z']):
+            if self.direction == direc:
+                assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
         snap.get_volumes()
@@ -54,26 +40,18 @@ class Slicer:
             self.slice = get_index_of_x_slice_region(pos, xc, yc, zc,
                                                      width_y, width_z,
                                                      thickness, snap.box)
-            self.extent = [self.yc - self.width_y/2, self.yc + self.width_y/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
 
         elif direction == 'y':
             from paicos import get_index_of_y_slice_region
             self.slice = get_index_of_y_slice_region(pos, xc, yc, zc,
                                                      width_x, width_z,
                                                      thickness, snap.box)
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
 
         elif direction == 'z':
             from paicos import get_index_of_z_slice_region
             self.slice = get_index_of_z_slice_region(pos, xc, yc, zc,
                                                      width_x, width_y,
                                                      thickness, snap.box)
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.yc - self.width_y/2, self.yc + self.width_y/2]
-
-        self.extent = np.array(self.extent)
 
         # Now construct the image grid
 
@@ -83,12 +61,12 @@ class Slicer:
         npix_width = npix
         width = self.extent[1] - self.extent[0]
         height = self.extent[3] - self.extent[2]
+
+        # TODO: Make assertion that dx=dy
         npix_height = int(height/width*npix_width)
 
         w = self.extent[0] + (np.arange(npix_width) + 0.5)*width/npix_width
         h = self.extent[2] + (np.arange(npix_height) + 0.5)*height/npix_height
-        # w = np.linspace(self.extent[0], self.extent[1], npix_width)
-        # h = np.linspace(self.extent[2], self.extent[3], npix_height)
 
         ww, hh = np.meshgrid(w, h)
         w = ww.flatten()
@@ -137,17 +115,16 @@ if __name__ == '__main__':
     fig, axes = plt.subplots(num=1, ncols=3)
     for ii, direction in enumerate(['x', 'y', 'z']):
         widths = width_vec[ii]
-        s = Slicer(snap, center, widths, direction, npix=512)
+        slicer = Slicer(snap, center, widths, direction, npix=512)
 
-        image_file = ArepoImage(root_dir + '/data/slice_{}.hdf5'.format(direction),
-                                snap, center, widths,
-                                direction)
+        image_filename = root_dir + '/data/slice_{}.hdf5'.format(direction)
+        image_file = ArepoImage(image_filename, slicer)
 
         snap.load_data(0, 'Density')
         snap.load_data(0, 'Velocities')
         snap.load_data(0, 'MagneticField')
 
-        Density = s.get_image(snap.P['0_Density'])
+        Density = slicer.get_image(snap.P['0_Density'])
 
         image_file.save_image('Density', Density)
 
@@ -155,5 +132,6 @@ if __name__ == '__main__':
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.log10(Density), origin='lower', extent=s.extent)
+        axes[ii].imshow(np.log10(Density), origin='lower',
+                        extent=slicer.extent)
     plt.show()

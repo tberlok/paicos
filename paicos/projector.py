@@ -1,42 +1,24 @@
 import numpy as np
+from paicos import ImageCreator
 
 
-class Projector:
+class Projector(ImageCreator):
     """
     This implements an SPH-like projection of gas variables.
     """
 
-    def __init__(self, arepo_snap, center, widths, direction,
+    def __init__(self, snap, center, widths, direction,
                  npix=512, nvol=8, numthreads=16):
         from paicos import get_index_of_region
-        from paicos import simple_reduction
 
-        n = simple_reduction(1000, numthreads)
-        if n == 1000:
-            self.use_omp = True
-            self.numthreads = numthreads
-        else:
-            self.use_omp = False
-            self.numthreads = 1
-            print('OpenMP is not working on your system...')
+        super().__init__(snap, center, widths, direction, npix=npix,
+                         numthreads=numthreads)
 
-        self.snap = arepo_snap
+        self.nvol = nvol
 
-        self.center = center
-        self.xc = center[0]
-        self.yc = center[1]
-        self.zc = center[2]
+        self._check_if_omp_has_issues(numthreads)
 
-        self.widths = widths
-        self.width_x = widths[0]
-        self.width_y = widths[1]
-        self.width_z = widths[2]
-
-        self.direction = direction
-
-        self.npix = npix
-
-        snap = arepo_snap
+        snap = self.snap
         xc = self.xc
         yc = self.yc
         zc = self.zc
@@ -48,28 +30,20 @@ class Projector:
         snap.load_data(0, "Coordinates")
         self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
 
-        if direction == 'x':
+        if self.direction == 'x':
             self.index = get_index_of_region(pos, xc, yc, zc,
                                              width_x, width_y, width_z,
                                              snap.box)
-            self.extent = [self.yc - self.width_y/2, self.yc + self.width_y/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
 
-        elif direction == 'y':
+        elif self.direction == 'y':
             self.index = get_index_of_region(pos, xc, yc, zc,
                                              width_x, width_y, width_z,
                                              snap.box)
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
 
-        elif direction == 'z':
+        elif self.direction == 'z':
             self.index = get_index_of_region(pos, xc, yc, zc,
                                              width_x, width_y, width_z,
                                              snap.box)
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.yc - self.width_y/2, self.yc + self.width_y/2]
-
-        self.extent = np.array(self.extent)
 
         self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
@@ -77,6 +51,24 @@ class Projector:
         self.hsml = np.array(self.hsml, dtype=np.float64)
 
         self.pos = self.pos[self.index]
+
+    def _check_if_omp_has_issues(self, numthreads):
+        from paicos import simple_reduction
+        n = simple_reduction(1000, numthreads)
+        if n == 1000:
+            self.use_omp = True
+            self.numthreads = numthreads
+        else:
+            self.use_omp = False
+            self.numthreads = 1
+            import warnings
+            msg = ("OpenMP is seems to have issues with reduction operators" +
+                   "on your system, so we'll turn it off." +
+                   "If you're on Mac then the issue is likely a" +
+                   "compiler problem, discussed here:\n" +
+                   "https://stackoverflow.com/questions/54776301/" +
+                   "cython-prange-is-repeating-not-parallelizing")
+            warnings.warn(msg)
 
     def _get_variable(self, variable_str):
 
@@ -153,13 +145,13 @@ if __name__ == '__main__':
     fig, axes = plt.subplots(num=1, ncols=3)
     for ii, direction in enumerate(['x', 'y', 'z']):
         widths = width_vec[ii]
-        p = Projector(snap, center, widths, direction, npix=512)
+        projector = Projector(snap, center, widths, direction, npix=512)
 
         filename = root_dir + '/data/projection_{}.hdf5'.format(direction)
-        image_file = ArepoImage(filename, snap, center, widths, direction)
+        image_file = ArepoImage(filename, projector)
 
-        Masses = p.project_variable('Masses')
-        Volume = p.project_variable('Volumes')
+        Masses = projector.project_variable('Masses')
+        Volume = projector.project_variable('Volumes')
 
         image_file.save_image('Masses', Masses)
         image_file.save_image('Volumes', Volume)
@@ -169,5 +161,5 @@ if __name__ == '__main__':
 
         # Make a plot
         axes[ii].imshow(np.log10(Masses/Volume), origin='lower',
-                        extent=p.extent)
+                        extent=projector.extent)
     plt.show()

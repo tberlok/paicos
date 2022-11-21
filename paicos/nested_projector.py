@@ -1,7 +1,8 @@
 import numpy as np
+from paicos import Projector
 
 
-class NestedProjector:
+class NestedProjector(Projector):
     """
     This implements an SPH-like projection of gas variables using nested grids.
     """
@@ -9,78 +10,11 @@ class NestedProjector:
     def __init__(self, arepo_snap, center, widths, direction,
                  npix=512, nvol=8, numthreads=16, factor=3, npix_min=128,
                  verbose=False):
-        from paicos import get_index_of_region
-        from paicos import simple_reduction
 
-        n = simple_reduction(1000, numthreads)
-        if n == 1000:
-            self.use_omp = True
-            self.numthreads = numthreads
-        else:
-            self.use_omp = False
-            self.numthreads = 1
-            import warnings
-            warnings.warn('OpenMP is not working on your system...')
-
-        self.snap = arepo_snap
+        super().__init__(snap, center, widths, direction,
+                         npix=npix, nvol=nvol, numthreads=numthreads)
 
         self.verbose = verbose
-
-        self.center = np.array(center)
-        self.xc = center[0]
-        self.yc = center[1]
-        self.zc = center[2]
-
-        self.widths = np.array(widths)
-        self.width_x = widths[0]
-        self.width_y = widths[1]
-        self.width_z = widths[2]
-
-        self.direction = direction
-
-        self.npix = npix
-
-        snap = arepo_snap
-        xc = self.xc
-        yc = self.yc
-        zc = self.zc
-        width_x = self.width_x
-        width_y = self.width_y
-        width_z = self.width_z
-
-        snap.get_volumes()
-        snap.load_data(0, "Coordinates")
-        self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
-
-        if direction == 'x':
-            self.index = get_index_of_region(pos, xc, yc, zc,
-                                             width_x, width_y, width_z,
-                                             snap.box)
-            self.extent = [self.yc - self.width_y/2, self.yc + self.width_y/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
-
-        elif direction == 'y':
-            self.index = get_index_of_region(pos, xc, yc, zc,
-                                             width_x, width_y, width_z,
-                                             snap.box)
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
-
-        elif direction == 'z':
-            self.index = get_index_of_region(pos, xc, yc, zc,
-                                             width_x, width_y, width_z,
-                                             snap.box)
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.yc - self.width_y/2, self.yc + self.width_y/2]
-
-        self.extent = np.array(self.extent)
-
-        self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
-                            (4.0*np.pi/3.0))
-
-        self.hsml = np.array(self.hsml, dtype=np.float64)
-
-        self.pos = self.pos[self.index]
 
         # Code specific for nested functionality below
         self.factor = factor

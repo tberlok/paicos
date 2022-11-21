@@ -1,10 +1,10 @@
 # The main classes
+from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog
 from .projector import Projector
 from .nested_projector import NestedProjector
 from .slicer import Slicer
-from .arepo_image import ArepoImage
 from .arepo_converter import ArepoConverter
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
