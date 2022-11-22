@@ -120,8 +120,12 @@ class ArepoImage:
         """
         This function saves a 2D image to the hdf5 file.
         """
+
         with h5py.File(self.tmp_image_filename, 'r+') as f:
             f.create_dataset(name, data=data)
+            if isinstance(attrs, dict):
+                for key in attrs.keys():
+                    f[name].attrs[key] = attrs[key]
 
     def finalize(self):
         """
@@ -141,6 +145,8 @@ class ArepoImage:
                     for key in tmp.keys():
                         if key not in final.keys():
                             final.create_dataset(key, data=tmp[key])
+                            for attrs_key in tmp[key].attrs.keys():
+                                final[key].attrs[attrs_key] = tmp[key].attrs[attrs_key]
             os.remove(self.tmp_image_filename)
 
 
@@ -177,10 +183,17 @@ if __name__ == '__main__':
     # Move from temporary filename to final filename
     image_file.finalize()
 
+    snap.load_data(0, 'Coordinates')
     # Now amend the file with another set of data
     image_file = ArepoImage(image_filename, image_creator, mode='a')
-    image_file.save_image('random_data3', np.random.random((500, 500)))
+    data = np.random.random((500, 500))
+
+    # Notice that we here also save attributes for coordinates,
+    # these can be used to convert from comoving to non-comoving
+    image_file.save_image('random_data3', data,
+                          attrs=snap.P_attrs['0_Coordinates'])
     image_file.finalize()
 
     with h5py.File(image_filename, 'r') as f:
         print(list(f.keys()))
+        print(dict(f['random_data3'].attrs))
