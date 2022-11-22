@@ -134,6 +134,7 @@ class Snapshot:
                     warnings.warn('no catalog found', FileNotFoundError)
 
         self.P = dict()   # particle data
+        self.P_attrs = dict()  # attributes
 
     def info(self, PartType, verbose=True):
         PartType_str = 'PartType{}'.format(PartType)
@@ -154,6 +155,7 @@ class Snapshot:
 
         P_key = str(particle_type)+"_"+blockname
         datname = "PartType"+str(particle_type)+"/"+blockname
+        PartType_str = 'PartType{}'.format(particle_type)
         if P_key in self.P:
             if self.verbose:
                 print(blockname, "for species",
@@ -193,6 +195,12 @@ class Snapshot:
                     self.P[P_key] = np.empty(
                         (self.npart[particle_type], f[datname].shape[1]),
                         dtype=f[datname].dtype)
+                # Load attributes
+                data_attributes = dict(f[PartType_str][blockname].attrs)
+                if len(data_attributes) > 0:
+                    data_attributes.update({'small_h': self.h,
+                                            'scale_factor': self.a})
+                self.P_attrs[P_key] = data_attributes
 
             self.P[P_key][skip_part:skip_part+np_file] = f[datname]
 
@@ -208,6 +216,8 @@ class Snapshot:
         P_key = str(particle_type)+"_"+blockname
         if P_key in self.P:
             del self.P[P_key]
+        if P_key in self.P_attrs:
+            del self.P_attrs[P_key]
 
     def get_high_res_region(self, threshold=0.9):
         if "0_HighResIndex" in self.P:
