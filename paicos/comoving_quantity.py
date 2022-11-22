@@ -10,7 +10,8 @@ class ComovingQuantity(Quantity):
     include comoving variables.
 
     I've implemented most basic functionality, i.e. addition, subtraction,
-    division, multiplication and powers.
+    division, multiplication, powers, numpy sqrt and cbrt.
+    Testing to follow!
     """
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
@@ -184,6 +185,7 @@ class ComovingQuantity(Quantity):
         else:
             err_msg = ("ComovingQuantities can only be " +
                        "added to other comoving quantities")
+            raise RuntimeError(err_msg)
         return Quantity.__sub__(self, value)
 
     def __mul__(self, value):
@@ -195,8 +197,8 @@ class ComovingQuantity(Quantity):
             h_sc = self.comoving_dic['h_scaling']
             a_sc2 = value.comoving_dic['a_scaling']
             h_sc2 = value.comoving_dic['h_scaling']
-            comoving_dic = {'a_scaling': a_sc - a_sc2,
-                            'h_scaling': h_sc - h_sc2,
+            comoving_dic = {'a_scaling': a_sc + a_sc2,
+                            'h_scaling': h_sc + h_sc2,
                             'small_h': self.comoving_dic['small_h'],
                             'scale_factor': self.comoving_dic['scale_factor']}
             new = ComovingQuantity(new.value, new.unit,
@@ -229,6 +231,45 @@ class ComovingQuantity(Quantity):
                         'h_scaling': h_sc*value,
                         'small_h': self.comoving_dic['small_h'],
                         'scale_factor': self.comoving_dic['scale_factor']}
+        new = ComovingQuantity(new.value, new.unit,
+                               comoving_dic=comoving_dic)
+        return new
+
+    def __array_ufunc__(self, function, method, *inputs, **kwargs):
+
+        a_sc = self.comoving_dic['a_scaling']
+        h_sc = self.comoving_dic['h_scaling']
+        comoving_dic = self.comoving_dic
+        if function == np.sqrt:
+            comoving_dic = {'a_scaling': a_sc/2,
+                            'h_scaling': h_sc/2}
+        elif function == np.cbrt:
+            comoving_dic = {'a_scaling': a_sc/3,
+                            'h_scaling': h_sc/3}
+        elif function == np.multiply:
+            pass
+            # if isinstance(inputs[1], ComovingQuantity):
+            #     a_sc2 = inputs[1].comoving_dic['a_scaling']
+            #     h_sc2 = inputs[1].comoving_dic['h_scaling']
+            #     comoving_dic = {'a_scaling': a_sc + a_sc2,
+            #                     'h_scaling': h_sc + h_sc2}
+        elif function == np.true_divide:
+            pass
+            # if isinstance(inputs[1], ComovingQuantity):
+            #     a_sc2 = inputs[1].comoving_dic['a_scaling']
+            #     h_sc2 = inputs[1].comoving_dic['h_scaling']
+            #     comoving_dic = {'a_scaling': a_sc - a_sc2,
+            #                     'h_scaling': h_sc - h_sc2}
+        elif function == np.power:
+            comoving_dic = {'a_scaling': a_sc*inputs[1],
+                            'h_scaling': h_sc*inputs[1]}
+        else:
+            raise RuntimeError('not implemented')
+
+        new = super().__array_ufunc__(function, method, *inputs, **kwargs)
+
+        comoving_dic.update({'small_h': self.comoving_dic['small_h'],
+                            'scale_factor': self.comoving_dic['scale_factor']})
         new = ComovingQuantity(new.value, new.unit,
                                comoving_dic=comoving_dic)
         return new

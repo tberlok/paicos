@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+from astropy import units as u
 
 
 class ArepoConverter:
@@ -32,7 +33,14 @@ class ArepoConverter:
         The input required is a hdf5 file with the Parameters and Header
         groups found in arepo snapshots.
         """
-        from astropy import units as u
+
+        # Allows conversion between K and eV
+        u.add_enabled_equivalencies(u.temperature_energy())
+        # Allows conversion to Gauss (potential issues?)
+        # https://github.com/astropy/astropy/issues/7396
+        gauss_B = (u.g/u.cm)**(0.5)/u.s
+        equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
+        u.add_enabled_equivalencies(equiv_B)
 
         with h5py.File(hdf5file, 'r') as f:
             scale_factor = f['Header'].attrs['Time']
@@ -107,14 +115,6 @@ class ArepoConverter:
         for 'Coordinates'.
 
         """
-        from astropy import units as u
-        # Allows conversion between K and eV
-        u.add_enabled_equivalencies(u.temperature_energy())
-        # Allows conversion to Gauss (potential issues?)
-        # https://github.com/astropy/astropy/issues/7396
-        gauss_B = (u.g/u.cm)**(0.5)/u.s
-        equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
-        u.add_enabled_equivalencies(equiv_B)
 
         if type(name) is dict:
             if ('length_scaling' in name) and ('mass_scaling' in name):
@@ -156,6 +156,73 @@ class ArepoConverter:
         data = self.give_units(name, data)
         return data
 
+    def get_comoving_quantity(self, name, data):
+        from paicos import ComovingQuantity
+
+        data = np.array(data)
+
+        if isinstance(name, dict):
+            # Check that required information is there
+            required_keys = ['a_scaling', 'h_scaling', 'length_scaling',
+                             'velocity_scaling', 'mass_scaling']
+            for key in required_keys:
+                if key not in name:
+                    raise RuntimeError('Missing {} in dictionary'.format(key))
+
+            # Create comoving dictionary
+            comoving_dic = {}
+            for key in ['a_scaling', 'h_scaling']:
+                comoving_dic.update({key: name[key]})
+
+            comoving_dic.update({'small_h': self.h,
+                                 'scale_factor': self.a})
+            # Create units of the quantity
+            aunits = self.arepo_units
+            units = aunits['unit_length']**(name['length_scaling']) * \
+                aunits['unit_mass']**(name['mass_scaling']) * \
+                aunits['unit_velocity']**(name['velocity_scaling'])
+            # Return a comoving quantity
+            return ComovingQuantity(data, comoving_dic=name)*units
+
+        elif isinstance(name, str):
+            if name == 'Coordinates':
+                comoving_dic = {'a_scaling': 0, 'h_scaling': -1}
+                units = self.arepo_units['unit_length'].to('kpc')
+            elif name == 'Density':
+                comoving_dic = {'a_scaling': -3, 'h_scaling': 2}
+                units = self.arepo_units['unit_density']
+            elif name == 'Volume':
+                comoving_dic = {'a_scaling': 3, 'h_scaling': -3}
+                units = 1/self.arepo_units['unit_length'].to('kpc')**3
+            elif name == 'Masses':
+                comoving_dic = {'h_scaling': -1}
+                units = self.arepo_units['unit_mass'].to('Msun')
+            elif name == 'EnergyDissipation':
+                comoving_dic = {'h_scaling': -1}
+                units = self.arepo_units['unit_energy']
+            elif name == 'InternalEnergy':
+                comoving_dic = {}
+                units = self.arepo_units['unit_energy']/self.arepo_units['unit_mass']
+            elif name == 'MagneticField':
+                comoving_dic = {'a_scaling': -2, 'h_scaling': 1}
+                units = np.sqrt(self.arepo_units['unit_pressure'])
+            elif name == 'Velocities':
+                comoving_dic = {'a_scaling': 0.5}
+                units = self.arepo_units['unit_velocity']
+            elif name == 'Temperature':
+                comoving_dic = {}
+                units = u.K
+            else:
+                err_msg = 'invalid option name={}, cannot create Co-quantity'
+                raise RuntimeError(err_msg.format(name))
+            for key in ['a_scaling', 'h_scaling']:
+                if key not in comoving_dic:
+                    comoving_dic.update({key: 0})
+
+            comoving_dic.update({'small_h': self.h,
+                                 'scale_factor': self.a})
+            return ComovingQuantity(data, comoving_dic=comoving_dic)*units
+
 
 if __name__ == '__main__':
     from paicos import root_dir
@@ -172,5 +239,9 @@ if __name__ == '__main__':
 
     T = converter.give_units('Temperature', 1)
 
+    B = converter.to_physical_and_give_units('MagneticField', [1])
+
     print(T.to('keV'))
     print(B.to('uG'))
+
+    B = converter.get_comoving_quantity('MagneticField', [1])
