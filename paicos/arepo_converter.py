@@ -74,37 +74,15 @@ class ArepoConverter:
         Input names are the arepo hdf5 dataset names.
         """
 
+        comoving_dic, units = self.get_comoving_dic_and_units(name)
+
         if type(data) is list:
             data = np.array(data)
 
-        if type(name) is dict:
-            if ('a_scaling' in name) and ('h_scaling' in name):
-                return data * self.a**(name['a_scaling']) * self.h**(name['h_scaling'])
-            else:
-                print('name:', name)
-                raise RuntimeError('name does not contain the required info')
+        factor = self.a**(comoving_dic['a_scaling']) * \
+            self.h**(comoving_dic['h_scaling'])
 
-        if name == 'Coordinates':
-            return data * self.a / self.h
-        elif name == 'Density':
-            return data * self.h**2 / self.a**3
-        elif name == 'Volume':
-            return data * self.a**3 / self.h**3.
-        elif name == 'Masses':
-            return data/self.h
-        elif name == 'EnergyDissipation':
-            return data/self.h
-        elif name == 'InternalEnergy':
-            return data
-        elif name == 'MagneticField':
-            return data * self.h / self.a**2
-        elif name == 'Velocities':
-            return data * self.a**0.5
-        elif name == 'Temperature':
-            return data
-        else:
-            err_msg = 'failed to convert from comoving to physical'
-            raise RuntimeError(err_msg)
+        return data * factor
 
     def give_units(self, name, data):
         """
@@ -115,38 +93,11 @@ class ArepoConverter:
         for 'Coordinates'.
 
         """
+        comoving_dic, units = self.get_comoving_dic_and_units(name)
 
-        if type(name) is dict:
-            if ('length_scaling' in name) and ('mass_scaling' in name):
-                aunits = self.arepo_units
-                units = aunits['unit_length']**(name['length_scaling']) * \
-                    aunits['unit_mass'] **(name['mass_scaling']) * \
-                    aunits['unit_velocity']**(name['velocity_scaling'])
-                return data * units
-            else:
-                print('name:', name)
-                raise RuntimeError('name does not contain the required info')
-        if name == 'Coordinates':
-            return data * self.arepo_units['unit_length'].to('kpc')
-        elif name == 'Density':
-            return data * self.arepo_units['unit_density']
-        elif name == 'Volume':
-            return data / self.arepo_units['unit_length'].to('kpc')**3
-        elif name == 'Masses':
-            return data * self.arepo_units['unit_mass'].to('Msun')
-        # elif name == 'EnergyDissipation':
-        #     return data * self.arepo_units['unit_energy'] # Check!
-        elif name == 'InternalEnergy':
-            return data * self.arepo_units['unit_energy']/self.arepo_units['unit_mass']
-        elif name == 'MagneticField':
-            return data * np.sqrt(self.arepo_units['unit_pressure'])
-        elif name == 'Velocities':
-            return data * self.arepo_units['unit_velocity']
-        elif name == 'Temperature':
-            return data * u.K
-        else:
-            err_msg = 'failed to give units using astropy'
-            raise RuntimeError(err_msg)
+        if type(data) is list:
+            data = np.array(data)
+        return data*units
 
     def to_physical_and_give_units(self, name, data):
         """
@@ -159,8 +110,13 @@ class ArepoConverter:
     def get_comoving_quantity(self, name, data):
         from paicos import ComovingQuantity
 
+        comoving_dic, units = self.get_comoving_dic_and_units(name)
+
         data = np.array(data)
 
+        return ComovingQuantity(data, comoving_dic=comoving_dic)*units
+
+    def get_comoving_dic_and_units(self, name):
         if isinstance(name, dict):
             # Check that required information is there
             required_keys = ['a_scaling', 'h_scaling', 'length_scaling',
@@ -176,13 +132,11 @@ class ArepoConverter:
 
             comoving_dic.update({'small_h': self.h,
                                  'scale_factor': self.a})
-            # Create units of the quantity
+            # Create units for the quantity
             aunits = self.arepo_units
             units = aunits['unit_length']**(name['length_scaling']) * \
                 aunits['unit_mass']**(name['mass_scaling']) * \
                 aunits['unit_velocity']**(name['velocity_scaling'])
-            # Return a comoving quantity
-            return ComovingQuantity(data, comoving_dic=name)*units
 
         elif isinstance(name, str):
             if name == 'Coordinates':
@@ -213,15 +167,16 @@ class ArepoConverter:
                 comoving_dic = {}
                 units = u.K
             else:
-                err_msg = 'invalid option name={}, cannot create Co-quantity'
+                err_msg = 'invalid option name={}, cannot find units'
                 raise RuntimeError(err_msg.format(name))
             for key in ['a_scaling', 'h_scaling']:
                 if key not in comoving_dic:
                     comoving_dic.update({key: 0})
 
+            # Finally add
             comoving_dic.update({'small_h': self.h,
                                  'scale_factor': self.a})
-            return ComovingQuantity(data, comoving_dic=comoving_dic)*units
+            return comoving_dic, units
 
 
 if __name__ == '__main__':
