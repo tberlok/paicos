@@ -127,6 +127,21 @@ class ArepoImage:
                 for key in attrs.keys():
                     f[name].attrs[key] = attrs[key]
 
+    def add_group(self, name, attrs=None):
+        with h5py.File(self.tmp_image_filename, 'r+') as f:
+            f.create_group(name)
+            if isinstance(attrs, dict):
+                for key in attrs.keys():
+                    f[name].attrs[key] = attrs[key]
+
+    def add_data_to_group(self, groupname, dataname, data, attrs=None):
+        data = np.array(data, dtype=np.float64)
+        with h5py.File(self.tmp_image_filename, 'r+') as f:
+            f[groupname].create_dataset(dataname, data=data)
+            if isinstance(attrs, dict):
+                for key in attrs.keys():
+                    f[groupname][dataname].attrs[key] = attrs[key]
+
     def finalize(self):
         """
         """
@@ -143,10 +158,25 @@ class ArepoImage:
                     assert tmp['image_info'].attrs['direction'] == final['image_info'].attrs['direction']
                     assert tmp['Header'].attrs['Time'] == final['Header'].attrs['Time']
                     for key in tmp.keys():
-                        if key not in final.keys():
-                            final.create_dataset(key, data=tmp[key])
-                            for attrs_key in tmp[key].attrs.keys():
-                                final[key].attrs[attrs_key] = tmp[key].attrs[attrs_key]
+                        # Copy over group, its attributes, its datasets and their attributes
+                        if isinstance(tmp[key], h5py._hl.group.Group):
+                            if key not in final.keys():
+                                final.create_group(key)
+                                # Copy over group attributes
+                                for g_attrs_key in tmp[key].attrs.keys():
+                                    final[key].attrs[g_attrs_key] = tmp[key].attrs[g_attrs_key]
+                                # Create data sets
+                                for data_key in tmp[key].keys():
+                                    final[key].create_dataset(data_key, data=tmp[key][data_key])
+                                    # Copy over attributes for each data set
+                                    for attrs_key in tmp[key][data_key].attrs.keys():
+                                        final[key][data_key].attrs[attrs_key] = tmp[key][data_key].attrs[attrs_key]
+                        # Copy over data set and its attributes
+                        elif isinstance(tmp[key], h5py._hl.dataset.Dataset):
+                            if key not in final.keys():
+                                final.create_dataset(key, data=tmp[key])
+                                for attrs_key in tmp[key].attrs.keys():
+                                    final[key].attrs[attrs_key] = tmp[key].attrs[attrs_key]
             os.remove(self.tmp_image_filename)
 
 
@@ -192,8 +222,19 @@ if __name__ == '__main__':
     # these can be used to convert from comoving to non-comoving
     image_file.save_image('random_data3', data,
                           attrs=snap.P_attrs['0_Coordinates'])
+
+    # Let us also save information about the 10 most massive FOF groups
+    # (sorted according to their M200_crit)
+    image_file.add_group('Catalog', attrs={'Description': 'Most massive FOFs'})
+    index = np.argsort(snap.Cat.Group['Group_M_Crit200'])[::-1]
+    for key in snap.Cat.Group.keys():
+        image_file.add_data_to_group('Catalog', key,
+                                     snap.Cat.Group[key][index[:10]],
+                                     attrs={'test of adding attrs': 1})
+
     image_file.finalize()
 
     with h5py.File(image_filename, 'r') as f:
         print(list(f.keys()))
         print(dict(f['random_data3'].attrs))
+        print(list(f['Catalog'].keys()))
