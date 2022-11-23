@@ -27,10 +27,6 @@ class Snapshot:
         self.multi_file = False
         self.first_snapfile_name = self.snapname + ".hdf5"
 
-        self.converter = ArepoConverter(self.first_snapfile_name)
-        self.age = self.converter.age
-        self.lookback_time = self.converter.lookback_time
-
         # if multiple files
         if not os.path.exists(self.first_snapfile_name):
             if not self.no_snapdir:
@@ -46,6 +42,10 @@ class Snapshot:
 
         if self.verbose:
             print("snapshot", snapnum, "found")
+
+        self.converter = ArepoConverter(self.first_snapfile_name)
+        self.age = self.converter.age
+        self.lookback_time = self.converter.lookback_time
 
         # get header of first file
         f = h5py.File(self.first_snapfile_name, 'r')
