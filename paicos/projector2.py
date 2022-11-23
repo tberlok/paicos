@@ -35,17 +35,17 @@ class Projector2(ImageCreator):
 
         if self.direction == 'x':
             self.index = get_index(pos, xc, yc, zc,
-                                   width_x, width_y, width_z, self.hsml,
+                                   width_x, width_y, width_z, self.hsml/2.0,
                                    snap.box)
 
         elif self.direction == 'y':
             self.index = get_index(pos, xc, yc, zc,
-                                   width_x, width_y, width_z, self.hsml,
+                                   width_x, width_y, width_z, self.hsml/2.0,
                                    snap.box)
 
         elif self.direction == 'z':
             self.index = get_index(pos, xc, yc, zc,
-                                   width_x, width_y, width_z, self.hsml,
+                                   width_x, width_y, width_z, self.hsml/2.0,
                                    snap.box)
 
         self.hsml = np.array(self.hsml[self.index])
@@ -63,9 +63,9 @@ class Projector2(ImageCreator):
             self.numthreads = 1
             import warnings
             msg = ("OpenMP is seems to have issues with reduction operators" +
-                   "on your system, so we'll turn it off." +
-                   "If you're on Mac then the issue is likely a" +
-                   "compiler problem, discussed here:\n" +
+                   " on your system, so we'll turn it off." +
+                   " If you're on Mac then the issue is likely a" +
+                   " compiler problem, discussed here:\n" +
                    "https://stackoverflow.com/questions/54776301/" +
                    "cython-prange-is-repeating-not-parallelizing")
             warnings.warn(msg)
@@ -153,15 +153,15 @@ if __name__ == '__main__':
         image_file = ArepoImage(filename, projector)
 
         Masses = projector.project_variable('Masses')
-        Volume = projector.project_variable('Volumes')
+        Volumes = projector.project_variable('Volumes')
 
         image_file.save_image('Masses', Masses)
-        image_file.save_image('Volumes', Volume)
+        image_file.save_image('Volumes', Volumes)
 
         # Move from temporary filename to final filename
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.log10(Masses/Volume), origin='lower',
+        axes[ii].imshow(np.log10(Masses/Volumes), origin='lower',
                         extent=projector.extent)
     plt.show()

@@ -5,6 +5,8 @@ import cython
 import numpy as np
 cimport numpy as np
 
+cimport libc.math as math
+
 ctypedef fused real_t:
     float
     double
@@ -81,12 +83,21 @@ def project_image2(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec,
             y = y - boxsize
 
 
-        boundary_factor = 1.0
+        boundary_factor = 0.0
+
 
         if z < hvec[ip]:
                 boundary_factor = 0.5  + z/(2.0*hvec[ip])
         if z > (sidelength_z - hvec[ip]):
                 boundary_factor = 0.5 - (z - sidelength_z)/(2.0*hvec[ip])
+        # if z < -hvec[ip]:
+        #     boundary_factor = 0.0
+        # if z > (sidelength_z + hvec[ip]):
+        #     boundary_factor = 0.0
+        if boundary_factor < 0.0:
+            boundary_factor = 0.0
+        if boundary_factor > 1.0:
+            boundary_factor = 1.0
 
         # Position of particle in units of sidelength (0, sidelength)
         x = x*nx/sidelength_x
@@ -136,9 +147,8 @@ def project_image2(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec,
                 r2 = dx*dx + dy*dy
 
                 weight = 1.0 - r2/h2
-                weight *= boundary_factor
                 if weight > 0.0:
-                    projection[ix, iy] += weight*variable[ip]/norm
+                    projection[ix, iy] += weight*variable[ip]/norm*boundary_factor
 
     # Fix to avoid returning a memory-view
     tmp = np.zeros((nx, ny), dtype=np.float64)
@@ -193,23 +203,33 @@ def project_image2_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec,
             z = zvec[ip] - z0
 
             # Apply periodic boundary condition
-            if x < 0.0:
-                x = x + boxsize
-            elif x > boxsize:
-                x = x - boxsize
+            # if x < 0.0:
+            #     x = x + boxsize
+            # elif x > boxsize:
+            #     x = x - boxsize
 
-            if y < 0.0:
-                y = y + boxsize
-            elif y > boxsize:
-                y = y - boxsize
+            # if y < 0.0:
+            #     y = y + boxsize
+            # elif y > boxsize:
+            #     y = y - boxsize
 
 
-            boundary_factor = 1.0
+            boundary_factor = 0.0
 
-            if z < hvec[ip]:
-                    boundary_factor = 0.5  + z/(2.0*hvec[ip])
-            if z > (sidelength_z - hvec[ip]):
-                    boundary_factor = 0.5 - (z - sidelength_z)/(2.0*hvec[ip])
+            # if z < hvec[ip]:
+            #     boundary_factor = 0.5  + z/(2.0*hvec[ip])
+            # if z > (sidelength_z - hvec[ip]):
+            #     boundary_factor = 0.5 - (z - sidelength_z)/(2.0*hvec[ip])
+
+            if z < -hvec[ip]:
+                boundary_factor = 0.0
+            if z > (sidelength_z + hvec[ip]):
+                boundary_factor = 0.0
+
+            if z < 0:
+                boundary_factor = 0.0
+            if z > sidelength_z:
+                boundary_factor = 0.0
 
             # Position of particle in units of sidelength (0, sidelength)
             x = x*nx/sidelength_x
