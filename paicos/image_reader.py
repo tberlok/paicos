@@ -52,3 +52,6 @@ if __name__ == '__main__':
 
     im = ImageReader(root_dir + '/data/', 247,
                      basename='test_arepo_image_format')
+
+    print(im['Density'][:,:])
+    print(im['Density'][:,:].comoving_dic)

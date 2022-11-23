@@ -83,18 +83,13 @@ class ComovingQuantity(Quantity):
             if a_sc == 1:
                 length_label = r'\mathrm{c}' + length_label
             else:
-                length_label = r'a^{}'.format(a_sc) + length_label
+                length_label = a_sc_str + length_label
 
             if h_sc == -1:
                 length_label = length_label + r'/h'
             else:
-                length_label = r'h^{}'.format(h_sc) + length_label
+                length_label = h_sc_str + length_label
             label = '$' + length_label + '$'
-
-        label = label.replace('a^1', 'a')
-        label = label.replace('h^1', 'h')
-        label = label.replace('a^0', '')
-        label = label.replace('h^0', '')
 
         return label
 
@@ -128,38 +123,30 @@ class ComovingQuantity(Quantity):
         """
         Get nice presentation in Jupyter notebooks
         """
-        s = Quantity._repr_latex_(self)
+        from fractions import Fraction
+        s = unit_format.Latex.to_string(self.unit)
         label = s[1:-1]
 
         a_sc = self.comoving_dic['a_scaling']
         h_sc = self.comoving_dic['h_scaling']
-        if a_sc == 0:
-            comoving = False
+
+        a_sc_str = str(Fraction(a_sc).limit_denominator(10000))
+        h_sc_str = str(Fraction(h_sc).limit_denominator(10000))
+        if a_sc_str == '0':
+            a_sc_str = ''
+        elif a_sc_str == '1':
+            a_sc_str = 'a'
         else:
-            comoving = True
-        if comoving:
-            if h_sc != 0:
-                if h_sc == 1 and a_sc == 1:
-                    co_label = r'a h'.format(a_sc, h_sc)
-                elif a_sc == 1:
-                    co_label = r'a h^{}'.format(h_sc)
-                elif h_sc == 1:
-                    co_label = r'a h'.format(a_sc)
-                else:
-                    co_label = r'a^{} h^{}'.format(a_sc, h_sc)
-            else:
-                if a_sc == 1:
-                    co_label = r'a'
-                else:
-                    co_label = r'a^{}'.format(a_sc)
+            a_sc_str = 'a^{' + a_sc_str + '}'
+
+        if h_sc_str == '0':
+            h_sc_str = ''
+        elif h_sc_str == '1':
+            h_sc_str = 'h'
         else:
-            if h_sc != 0:
-                if h_sc == 1:
-                    co_label + r'h'
-                else:
-                    co_label + r'h^{}'.format(h_sc)
-            else:
-                co_label = ''
+            h_sc_str = 'h^{' + h_sc_str + '}'
+
+        co_label = a_sc_str + h_sc_str
         if len(co_label) > 0:
             label = ('$' + label + r'\times ' + co_label + '$')
         else:
@@ -300,6 +287,17 @@ class ComovingQuantity(Quantity):
                             'scale_factor': self.comoving_dic['scale_factor']})
         new = ComovingQuantity(new.value, new.unit,
                                comoving_dic=comoving_dic)
+        return new
+
+    def __getitem__(self, key):
+        """
+        Comoving quantity loses the astropy units when creating a
+        slice of a numpy array. This fixes that issue.
+        """
+
+        out = super().__getitem__(key)
+        new = ComovingQuantity(out.value, self.unit,
+                               comoving_dic=self.comoving_dic)
         return new
 
 
