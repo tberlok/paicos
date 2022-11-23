@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from astropy import units as u
+from astropy.cosmology import LambdaCDM
 
 
 class ArepoConverter:
@@ -44,6 +45,7 @@ class ArepoConverter:
 
         with h5py.File(hdf5file, 'r') as f:
             scale_factor = f['Header'].attrs['Time']
+            redshift = f['Header'].attrs['Redshift']
             unit_length = f['Parameters'].attrs['UnitLength_in_cm'] * u.cm
             unit_mass = f['Parameters'].attrs['UnitMass_in_g'] * u.g
             unit_velocity = f['Parameters'].attrs['UnitVelocity_in_cm_per_s'] * u.cm/u.s
@@ -51,6 +53,9 @@ class ArepoConverter:
             unit_energy = unit_mass * unit_velocity**2
             unit_pressure = (unit_mass/unit_length) / unit_time**2
             unit_density = unit_mass/unit_length**3
+            Omega0 = f['Header'].attrs['Omega0']
+            OmegaBaryon = f['Header'].attrs['OmegaBaryon']
+            OmegaLambda = f['Header'].attrs['OmegaLambda']
 
             HubbleParam = f['Parameters'].attrs['HubbleParam']
 
@@ -61,8 +66,16 @@ class ArepoConverter:
                             'unit_energy': unit_energy,
                             'unit_pressure': unit_pressure,
                             'unit_density': unit_density}
-        self.a = scale_factor
+        self.a = self.scale_factor = scale_factor
+        self.z = self.redshift = redshift
         self.h = HubbleParam
+
+        # Set up LambdaCDM cosmology to calculate times, etc
+        self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
+                                       Ob0=OmegaBaryon, Ode0=OmegaLambda)
+        # Current age of the universe and look back time
+        self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
+        self.lookback_time = cosmo.lookback_time(self.z)
 
     def to_physical(self, name, data):
         """
@@ -117,8 +130,20 @@ class ArepoConverter:
         return ComovingQuantity(data, comoving_dic=comoving_dic)*units
 
     def get_comoving_dic_and_units(self, name):
-        if isinstance(name, dict):
+        """
+        Here we find the units and the scaling with a and h
+        of a quantity.
 
+        The input 'name' can be either a data attribute
+        from arepo (which currently does not exist for all variables)
+        or it can be a string corresponding to one of the data types,
+        i.e. 'Velocities' or 'Coordinates'
+
+        For this latter, hardcoded, option, I have implemented a few of the
+        gas variables.
+        """
+
+        if isinstance(name, dict):
             # Create comoving dictionary
             comoving_dic = {}
             for key in ['a_scaling', 'h_scaling']:
@@ -130,6 +155,8 @@ class ArepoConverter:
             if 'units' in name:
                 units = 1*u.Unit(name['units'])
             else:
+                # Arepo data attributes and the units from the Parameter
+                # group in the hdf5 file are here combined
                 aunits = self.arepo_units
                 units = aunits['unit_length']**(name['length_scaling']) * \
                     aunits['unit_mass']**(name['mass_scaling']) * \

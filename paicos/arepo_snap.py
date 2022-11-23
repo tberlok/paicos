@@ -1,23 +1,11 @@
 # --- import Python libs ---
 
 from .arepo_catalog import Catalog
+from .arepo_converter import ArepoConverter
 import numpy as np
 import os
 import time
 import h5py
-
-# --- constants ---
-
-from scipy.constants import parsec as pc  # all in SI
-from scipy.constants import m_p as mproton
-from scipy.constants import m_e as melectron
-from scipy.constants import k as kboltzmann
-from scipy.constants import eV
-kpc = 1.0e3 * pc
-Mpc = 1.0e6 * pc
-keV = 1000.0*eV
-msun = 1.9884430e30
-mhydrogen = mproton + melectron
 
 
 class Snapshot:
@@ -39,6 +27,10 @@ class Snapshot:
         self.multi_file = False
         self.first_snapfile_name = self.snapname + ".hdf5"
 
+        self.converter = ArepoConverter(self.first_snapfile_name)
+        self.age = self.converter.age
+        self.lookback_time = self.converter.lookback_time
+
         # if multiple files
         if not os.path.exists(self.first_snapfile_name):
             if not self.no_snapdir:
@@ -57,21 +49,9 @@ class Snapshot:
 
         # get header of first file
         f = h5py.File(self.first_snapfile_name, 'r')
-        header_attrs = f['/Header'].attrs
 
-        self.Header = dict()
-        for ikey in header_attrs.keys():
-            self.Header[ikey] = header_attrs[ikey]
-
-        self.have_params = False
-        if "Parameters" in f.keys():
-            parameters_attrs = f['/Parameters'].attrs
-            self.Parameters = dict()
-
-            for ikey in parameters_attrs.keys():
-                self.Parameters[ikey] = parameters_attrs[ikey]
-
-            self.have_params = True
+        self.Header = dict(f['Header'].attrs)
+        self.Parameters = dict(f['Parameters'].attrs)
 
         f.close()
 
@@ -84,35 +64,14 @@ class Snapshot:
             print("has", self.nspecies, "particle types")
             print("with npart =", self.npart)
 
-        self.z = self.Header["Redshift"]
-        self.a = self.Header["Time"]
+        self.z = self.redshift = self.Header["Redshift"]
+        self.a = self.scale_factor = self.Header["Time"]
+        self.h = self.Header["HubbleParam"]
 
         if self.verbose:
             print("at z =", self.z)
 
         self.box = self.Header["BoxSize"]
-
-        if self.have_params:
-            pardict = self.Parameters
-        else:
-            pardict = self.Header
-
-        self.omega_m = pardict["Omega0"]
-        self.omega_l = pardict["OmegaLambda"]
-        self.omega_b = pardict["OmegaBaryon"]
-        self.h = pardict["HubbleParam"]
-
-        self.u_m = pardict["UnitMass_in_g"] / 1000.0 / self.h   # in kg
-        self.u_l_c = pardict["UnitLength_in_cm"] / \
-            100.0 / self.h   # in comoving m
-        self.u_l_p = pardict["UnitLength_in_cm"] / \
-            100.0 / self.h * self.a   # in physical m
-        self.u_l_ckpc = self.u_l_c / kpc
-        self.u_l_cMpc = self.u_l_c / Mpc
-        self.u_l_pkpc = self.u_l_p / kpc
-        self.u_l_pMpc = self.u_l_p / Mpc
-        self.u_v = pardict["UnitVelocity_in_cm_per_s"] / \
-            100.0   # unit velocity in m/s
 
         # get subfind catalog
         if load_catalog:
@@ -219,19 +178,6 @@ class Snapshot:
         if P_key in self.P_attrs:
             del self.P_attrs[P_key]
 
-    def get_high_res_region(self, threshold=0.9):
-        if "0_HighResIndex" in self.P:
-            return
-
-        if self.verbose:
-            print("computing indices of HighResGasMass")
-
-        self.load_data(0, "HighResGasMass")
-        self.load_data(0, "Masses")
-
-        self.P["0_HighResIndex"] = self.P['0_HighResGasMass'] > threshold * \
-            self.P['0_Masses']
-
     def get_volumes(self):
         if "0_Volumes" in self.P:
             return
@@ -248,6 +194,9 @@ class Snapshot:
             print("... done! (took", time.time()-start_time, "s)")
 
     def get_temperatures(self):
+        from astropy import constants as c
+        mhydrogen = c.m_e + c.m_p
+        u_v = self.converter.arepo_units['unit_velocity']
         if "0_Temperatures" in self.P:
             return
 
@@ -266,11 +215,11 @@ class Snapshot:
         else:
             mmean_ionized = (1.0+(1.0-fhydrogen)/fhydrogen) / \
                 (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
-            ne_ionized = 1.0 + 2.0*(1.0-fhydrogen)/(4.0*fhydrogen)
             mmean = mmean_ionized
 
-        self.P["0_Temperatures"] = 2.0/3.0 * self.P["0_InternalEnergy"] * \
-            self.u_v**2 * mmean * mhydrogen / kboltzmann   # temperature in Kelvin
+        # temperature in Kelvin
+        self.P["0_Temperatures"] = (2.0/3.0 * self.P["0_InternalEnergy"] *
+                                    u_v**2 * mmean * mhydrogen).to('K').value
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")

@@ -1,6 +1,5 @@
 import h5py
-import numpy as np
-from paicos import ComovingQuantity, ArepoConverter
+from paicos import ArepoConverter
 
 
 class ImageReader(dict):
@@ -17,11 +16,12 @@ class ImageReader(dict):
             self.Param = dict(f['Parameters'].attrs)
             keys = list(f.keys())
 
-        self.Redshift = self.Header['Redshift']
+        self.redshift = self.z = self.Header['Redshift']
         self.h = self.Header['HubbleParam']
-        self.scale_factor = self.Header['Time']
-        # self.time (as an astropy object in Gyr)
+        self.scale_factor = self.a = self.Header['Time']
         self.converter = ArepoConverter(self.filename)
+        self.age = self.converter.age
+        self.lookback_time = self.converter.lookback_time
         with h5py.File(self.filename, 'r') as f:
             get_func = self.converter.get_comoving_quantity
             self.extent = get_func('Coordinates',
@@ -53,5 +53,5 @@ if __name__ == '__main__':
     im = ImageReader(root_dir + '/data/', 247,
                      basename='test_arepo_image_format')
 
-    print(im['Density'][:,:])
-    print(im['Density'][:,:].comoving_dic)
+    print(im['Density'][:, :])
+    print(im['Density'][:, :].comoving_dic)
