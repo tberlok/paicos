@@ -124,7 +124,7 @@ class ComovingQuantity(Quantity):
         Get nice presentation in Jupyter notebooks
         """
         from fractions import Fraction
-        s = unit_format.Latex.to_string(self.unit)
+        s = Quantity._repr_latex_(self)
         label = s[1:-1]
 
         a_sc = self.comoving_dic['a_scaling']
