@@ -118,12 +118,6 @@ class ArepoConverter:
 
     def get_comoving_dic_and_units(self, name):
         if isinstance(name, dict):
-            # Check that required information is there
-            required_keys = ['a_scaling', 'h_scaling', 'length_scaling',
-                             'velocity_scaling', 'mass_scaling']
-            for key in required_keys:
-                if key not in name:
-                    raise RuntimeError('Missing {} in dictionary'.format(key))
 
             # Create comoving dictionary
             comoving_dic = {}
@@ -133,14 +127,17 @@ class ArepoConverter:
             comoving_dic.update({'small_h': self.h,
                                  'scale_factor': self.a})
             # Create units for the quantity
-            aunits = self.arepo_units
-            units = aunits['unit_length']**(name['length_scaling']) * \
-                aunits['unit_mass']**(name['mass_scaling']) * \
-                aunits['unit_velocity']**(name['velocity_scaling'])
+            if 'units' in name:
+                units = 1*u.Unit(name['units'])
+            else:
+                aunits = self.arepo_units
+                units = aunits['unit_length']**(name['length_scaling']) * \
+                    aunits['unit_mass']**(name['mass_scaling']) * \
+                    aunits['unit_velocity']**(name['velocity_scaling'])
 
         elif isinstance(name, str):
             if name == 'Coordinates':
-                comoving_dic = {'a_scaling': 0, 'h_scaling': -1}
+                comoving_dic = {'a_scaling': 1, 'h_scaling': -1}
                 units = self.arepo_units['unit_length'].to('kpc')
             elif name == 'Density':
                 comoving_dic = {'a_scaling': -3, 'h_scaling': 2}
@@ -176,7 +173,7 @@ class ArepoConverter:
             # Finally add
             comoving_dic.update({'small_h': self.h,
                                  'scale_factor': self.a})
-            return comoving_dic, units
+        return comoving_dic, units
 
 
 if __name__ == '__main__':

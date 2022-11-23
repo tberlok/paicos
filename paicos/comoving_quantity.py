@@ -50,41 +50,62 @@ class ComovingQuantity(Quantity):
         """
         Here we use information from self.unit to return labels for plots
         """
+        from fractions import Fraction
         s = unit_format.Latex.to_string(self.unit)
         label = s[1:-1]
 
         a_sc = self.comoving_dic['a_scaling']
         h_sc = self.comoving_dic['h_scaling']
-        if a_sc == 0:
-            comoving = False
+
+        a_sc_str = str(Fraction(a_sc).limit_denominator(10000))
+        h_sc_str = str(Fraction(h_sc).limit_denominator(10000))
+        if a_sc_str == '0':
+            a_sc_str = ''
+        elif a_sc_str == '1':
+            a_sc_str = 'a'
         else:
-            comoving = True
-        if comoving:
-            if h_sc != 0:
-                if h_sc == 1 and a_sc == 1:
-                    co_label = r'a h'.format(a_sc, h_sc)
-                elif a_sc == 1:
-                    co_label = r'a h^{}'.format(h_sc)
-                elif h_sc == 1:
-                    co_label = r'a h'.format(a_sc)
-                else:
-                    co_label = r'a^{} h^{}'.format(a_sc, h_sc)
-            else:
-                if a_sc == 1:
-                    co_label = r'a'
-                else:
-                    co_label = r'a^{}'.format(a_sc)
+            a_sc_str = 'a^{' + a_sc_str + '}'
+
+        if h_sc_str == '0':
+            h_sc_str = ''
+        elif h_sc_str == '1':
+            h_sc_str = 'h'
         else:
-            if h_sc != 0:
-                if h_sc == 1:
-                    co_label + r'h'
-                else:
-                    co_label + r'h^{}'.format(h_sc)
-            else:
-                co_label = ''
+            h_sc_str = 'h^{' + h_sc_str + '}'
+
+        co_label = a_sc_str + h_sc_str
+
         label = ('$' + variable + r'\;' + co_label + r'\; \left[' +
                  label + r'\right]$')
+
+        if self.unit == 'kpc' or self.unit == 'Mpc':
+            length_label = s[1:-1]
+            if a_sc == 1:
+                length_label = r'\mathrm{c}' + length_label
+            else:
+                length_label = r'a^{}'.format(a_sc) + length_label
+
+            if h_sc == -1:
+                length_label = length_label + r'/h'
+            else:
+                length_label = r'h^{}'.format(h_sc) + length_label
+            label = '$' + length_label + '$'
+
+        label = label.replace('a^1', 'a')
+        label = label.replace('h^1', 'h')
+        label = label.replace('a^0', '')
+        label = label.replace('h^0', '')
+
         return label
+
+    def get_attribute(self):
+
+        attribute_dic = {}
+        for key in self.comoving_dic:
+            attribute_dic.update({key: self.comoving_dic[key]})
+        attribute_dic.update({'units': self.unit.to_string()})
+
+        return attribute_dic
 
     def to_physical(self):
         """
@@ -243,28 +264,35 @@ class ComovingQuantity(Quantity):
         if function == np.sqrt:
             comoving_dic = {'a_scaling': a_sc/2,
                             'h_scaling': h_sc/2}
+        if function == np.square:
+            comoving_dic = {'a_scaling': a_sc*2,
+                            'h_scaling': h_sc*2}
         elif function == np.cbrt:
             comoving_dic = {'a_scaling': a_sc/3,
                             'h_scaling': h_sc/3}
         elif function == np.multiply:
             pass
-            # if isinstance(inputs[1], ComovingQuantity):
-            #     a_sc2 = inputs[1].comoving_dic['a_scaling']
-            #     h_sc2 = inputs[1].comoving_dic['h_scaling']
-            #     comoving_dic = {'a_scaling': a_sc + a_sc2,
-            #                     'h_scaling': h_sc + h_sc2}
+            if isinstance(inputs[1], ComovingQuantity):
+                a_sc2 = inputs[1].comoving_dic['a_scaling']
+                h_sc2 = inputs[1].comoving_dic['h_scaling']
+                comoving_dic = {'a_scaling': a_sc + a_sc2,
+                                'h_scaling': h_sc + h_sc2}
         elif function == np.true_divide:
             pass
-            # if isinstance(inputs[1], ComovingQuantity):
-            #     a_sc2 = inputs[1].comoving_dic['a_scaling']
-            #     h_sc2 = inputs[1].comoving_dic['h_scaling']
-            #     comoving_dic = {'a_scaling': a_sc - a_sc2,
-            #                     'h_scaling': h_sc - h_sc2}
+            if isinstance(inputs[1], ComovingQuantity):
+                a_sc2 = inputs[1].comoving_dic['a_scaling']
+                h_sc2 = inputs[1].comoving_dic['h_scaling']
+                comoving_dic = {'a_scaling': a_sc - a_sc2,
+                                'h_scaling': h_sc - h_sc2}
+        elif function == np.add:
+            pass
+        elif function == np.subtract:
+            pass
         elif function == np.power:
             comoving_dic = {'a_scaling': a_sc*inputs[1],
                             'h_scaling': h_sc*inputs[1]}
         else:
-            raise RuntimeError('not implemented')
+            raise RuntimeError('not implemented: {}'.format(function))
 
         new = super().__array_ufunc__(function, method, *inputs, **kwargs)
 

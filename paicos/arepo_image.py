@@ -184,7 +184,7 @@ if __name__ == '__main__':
     from paicos import root_dir
     from paicos import Snapshot
 
-    image_filename = root_dir + "/data/test_arepo_image_format.hdf5"
+    image_filename = root_dir + "/data/test_arepo_image_format_247.hdf5"
 
     snap = Snapshot(root_dir + '/data/', 247)
 
@@ -207,8 +207,9 @@ if __name__ == '__main__':
 
     # Save some images to the file (in a real example one would first import\\
     # and use a projection function)
-    image_file.save_image('random_data', np.random.random((200, 200)))
-    image_file.save_image('random_data2', np.random.random((400, 400)))
+    image_file.save_image('Density', np.random.random((200, 200)))
+    image_file.save_image('Masses', np.random.random((400, 400)))
+    image_file.save_image('Velocities', np.random.random((50, 40, 3)))
 
     # Move from temporary filename to final filename
     image_file.finalize()
@@ -220,7 +221,7 @@ if __name__ == '__main__':
 
     # Notice that we here also save attributes for coordinates,
     # these can be used to convert from comoving to non-comoving
-    image_file.save_image('random_data3', data,
+    image_file.save_image('Coordinates', data,
                           attrs=snap.P_attrs['0_Coordinates'])
 
     # Let us also save information about the 10 most massive FOF groups
@@ -236,5 +237,6 @@ if __name__ == '__main__':
 
     with h5py.File(image_filename, 'r') as f:
         print(list(f.keys()))
-        print(dict(f['random_data3'].attrs))
+        print(list(f['image_info'].keys()))
+        print(dict(f['Coordinates'].attrs))
         print(list(f['Catalog'].keys()))
