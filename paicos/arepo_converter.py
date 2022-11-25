@@ -141,6 +141,78 @@ class ArepoConverter:
 
         return pu.PaicosQuantity(data, u_units*pu_units, a=self.a, h=self.h)
 
+    def get_unit(self, name):
+        """
+        Here we find the units including the scaling with a and h
+        of a quantity.
+
+        The input 'name' can be either a data attribute
+        from arepo (which currently does not exist for all variables)
+        or it can be a string corresponding to one of the data types,
+        i.e. 'Velocities' or 'Coordinates'
+
+        For this latter, hardcoded, option, I have implemented a few of the
+        gas variables.
+        """
+
+        aunits = self.arepo_units
+        a = pu.small_a
+        h = pu.small_h
+        get_unit = self.get_unit
+
+        if isinstance(name, dict):
+            # Create comoving dictionary
+            comoving_dic = {}
+            for key in ['a_scaling', 'h_scaling']:
+                comoving_dic.update({key: name[key]})
+
+            comoving_dic.update({'small_h': self.h,
+                                 'scale_factor': self.a})
+            # Create units for the quantity
+            if 'units' in name:
+                units = 1*u.Unit(name['units'])
+            else:
+                # Arepo data attributes and the units from the Parameter
+                # group in the hdf5 file are here combined
+                units = aunits['unit_length']**(name['length_scaling']) * \
+                    aunits['unit_mass']**(name['mass_scaling']) * \
+                    aunits['unit_velocity']**(name['velocity_scaling']) * \
+                    a**comoving_dic['a_scaling'] * \
+                    h**comoving_dic['h_scaling']
+
+        elif isinstance(name, str):
+            aunits = self.arepo_units
+            if name == 'Coordinates':
+                units = aunits['unit_length'].to('kpc')*a/h
+            elif name == 'Density':
+                units = get_unit('Masses')/get_unit('Volumes')
+            elif name == 'Volumes':
+                units = 1/get_unit('Coordinates')**3
+            elif name == 'Masses':
+                units = aunits['unit_mass'].to('Msun')/h
+            elif name == 'EnergyDissipation':
+                units = aunits['unit_energy']/h
+            elif name == 'InternalEnergy':
+                units = aunits['unit_energy']/aunits['unit_mass']
+            elif name == 'MagneticField':
+                units = np.sqrt(aunits['unit_pressure'])*a**(-2)/h
+            elif name == 'BfieldGradient':
+                units = get_unit('MagneticField')/get_unit('Coordinates')
+            elif name == 'Velocities':
+                units = aunits['unit_velocity']*a**(1/2)
+            elif name == 'Velocities':
+                units = aunits['unit_velocity']*a**(1/2)
+            elif name == 'VelocityGradient':
+                units = get_unit('Velocities')/get_unit('Coordinates')
+            elif name == 'Temperature':
+                comoving_dic = {}
+                units = u.K
+            else:
+                err_msg = 'invalid option name={}, cannot find units'
+                raise RuntimeError(err_msg.format(name))
+
+        return units
+
     def get_comoving_dic_and_units(self, name):
         """
         Here we find the units and the scaling with a and h
