@@ -262,10 +262,14 @@ class PaicosQuantity(Quantity):
 
         # Get ckpc, cMpc, ckpc/h and Mkpc/h as used in literature
         if normal_unit == 'kpc' or normal_unit == 'Mpc':
-            if a_sc == 1:
-                label = r'\mathrm{c}' + unit_label
-            if h_sc == -1:
-                label = label + r'/h'
+            if (a_sc == 0) or (a_sc == 1):
+                if (h_sc == 0) or (h_sc == -1):
+                    if a_sc == 1:
+                        label = r'\mathrm{c}' + unit_label
+                    elif a_sc == 0:
+                        label = unit_label
+                    if h_sc == -1:
+                        label = label + r'/h'
 
         label = '$' + label + '$'
 
