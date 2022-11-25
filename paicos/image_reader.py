@@ -23,7 +23,7 @@ class ImageReader(dict):
         self.age = self.converter.age
         self.lookback_time = self.converter.lookback_time
         with h5py.File(self.filename, 'r') as f:
-            get_func = self.converter.get_comoving_quantity
+            get_func = self.converter.get_paicos_quantity
             self.extent = get_func('Coordinates',
                                    f['image_info'].attrs['extent'])
             self.widths = get_func('Coordinates',
@@ -36,7 +36,7 @@ class ImageReader(dict):
             self.load_data(key)
 
     def load_data(self, name):
-        get_func = self.converter.get_comoving_quantity
+        get_func = self.converter.get_paicos_quantity
         with h5py.File(self.filename, 'r') as f:
             if isinstance(f[name], h5py._hl.dataset.Dataset):
                 data = f[name][...]

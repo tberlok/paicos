@@ -1,6 +1,8 @@
 import h5py
 import numpy as np
 from astropy import units as u
+from paicos import units as pu
+from paicos import PaicosQuantity
 from astropy.cosmology import LambdaCDM
 
 
@@ -128,6 +130,17 @@ class ArepoConverter:
         data = np.array(data)
 
         return ComovingQuantity(data, comoving_dic=comoving_dic)*units
+
+    def get_paicos_quantity(self, name, data):
+
+        comoving_dic, u_units = self.get_comoving_dic_and_units(name)
+
+        data = np.array(data)
+
+        pu_units = pu.small_a**comoving_dic['a_scaling'] * \
+            pu.small_h**comoving_dic['h_scaling']
+
+        return PaicosQuantity(data, u_units*pu_units, a=self.a, h=self.h)
 
     def get_comoving_dic_and_units(self, name):
         """
