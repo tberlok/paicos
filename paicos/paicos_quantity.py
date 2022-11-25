@@ -2,6 +2,7 @@ from astropy.units import Quantity
 import numpy as np
 import astropy.units as u
 import units as pu
+import operator
 
 
 class PaicosQuantity(Quantity):
@@ -83,7 +84,7 @@ class PaicosQuantity(Quantity):
         self.h = getattr(obj, 'h', None)
         self.a = getattr(obj, 'a', None)
 
-    def _get_unit_dictionaries(self):
+    def __get_unit_dictionaries(self):
 
         codic = {}
         dic = {}
@@ -99,6 +100,13 @@ class PaicosQuantity(Quantity):
 
         return codic, dic
 
+    def _construct_unit_from_dic(self, dic):
+        """
+        Construct unit from a dictionary with the format returned
+        from __get_unit_dictionaries
+        """
+        return np.product([unit**dic[unit] for unit in dic])
+
     def _get_new_units(self, remove_list=[]):
         """
         Return units where base_strings have been modified.
@@ -112,20 +120,87 @@ class PaicosQuantity(Quantity):
 
     @property
     def no_smallh(self):
-        codic, dic = self._get_unit_dictionaries()
+        """
+        Remove scaling with h, returning a quantity with adjusted values
+        """
+        codic, dic = self.__get_unit_dictionaries()
         factor = self.h**codic[pu.small_h]
-        if factor == 1:
-            return PaicosQuantity(self.value, self.unit, h=self.h, a=self.a)
-        else:
-            new_unit = self._get_new_units([pu.small_h])
-            new = Quantity.__mul__(self, factor)
 
-            return PaicosQuantity(new.value, new_unit, h=self.h, a=self.a)
+        value = self.view(np.ndarray)
+        new_unit = self._get_new_units([pu.small_h])
+        return self._new_view(value*factor, new_unit)
+
+    @property
+    def separate_units(self):
+        codic, dic = self.__get_unit_dictionaries()
+        u_unit = self._construct_unit_from_dic(dic)
+        pu_unit = self._construct_unit_from_dic(codic)
+        return u_unit, pu_unit
+
+    @property
+    def cgs(self):
+        """
+        Returns a copy of the current `PaicosQuantity` instance with CGS units.
+        The value of the resulting object will be scaled.
+        """
+        u_unit, pu_unit = self.separate_units
+        cgs_unit = u_unit.cgs
+        new_unit = pu_unit*cgs_unit / cgs_unit.scale
+        return self._new_view(self.value * cgs_unit.scale, new_unit)
+
+    @property
+    def si(self):
+        """
+        Returns a copy of the current `PaicosQuantity` instance with SI units.
+        The value of the resulting object will be scaled.
+        """
+        u_unit, pu_unit = self.separate_units
+        si_unit = u_unit.si
+        new_unit = pu_unit*si_unit / si_unit.scale
+        return self._new_view(self.value * si_unit.scale, new_unit)
+
+    def to(self, unit, equivalencies=[], copy=True):
+        """
+        Convert to different units.
+        """
+        if isinstance(unit, str):
+            unit = u.Unit(unit)
+
+        err_msg = ("dependence on small_a and small_h automatically " +
+                   "handled, and should be included in input")
+        assert pu.small_a not in unit.bases, err_msg
+        assert pu.small_h not in unit.bases, err_msg
+
+        _, pu_unit = self.separate_units
+
+        return super().to(unit*pu_unit, equivalencies, copy)
+
+    # @property
+    # def astro(self):
+    #     """
+    #     TODO: This seems to not work.
+    #     """
+    #     return self.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
+
+    # def decompose(self, bases=[]):
+    #     """
+    #     Decompose into a different set of units, e.g.
+
+    #     A = B.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
+
+    #     pu.small_a and pu.small_h are automatically included in the bases.
+    #     """
+    #     if pu.small_a not in bases:
+    #         bases.append(pu.small_a)
+    #     if pu.small_h not in bases:
+    #         bases.append(pu.small_h)
+
+    #     return super().decompose(bases)
 
     def label(self, variable=''):
 
-        a_sc, a_sc_str = self._scaling_and_scaling_str(pu.small_a)
-        h_sc, h_sc_str = self._scaling_and_scaling_str(pu.small_h)
+        a_sc, a_sc_str = self.__scaling_and_scaling_str(pu.small_a)
+        h_sc, h_sc_str = self.__scaling_and_scaling_str(pu.small_h)
 
         co_label = a_sc_str + h_sc_str
 
@@ -149,29 +224,19 @@ class PaicosQuantity(Quantity):
 
     @property
     def to_physical(self):
-        codic, dic = self._get_unit_dictionaries()
-        factor = self.h**codic[pu.small_h]
-        factor *= self.a**codic[pu.small_a]
+        codic, dic = self.__get_unit_dictionaries()
+        factor = self.h**codic[pu.small_h] * self.a**codic[pu.small_a]
 
-        if factor == 1:
-            return PaicosQuantity(self.value, self.unit, h=self.h, a=self.a)
-        else:
-            new_unit = self._get_new_units([pu.small_a, pu.small_h])
+        value = self.view(np.ndarray)
+        new_unit = self._get_new_units([pu.small_a, pu.small_h])
+        return self._new_view(value*factor, new_unit)
 
-            new = Quantity.__mul__(self, factor)
-
-            return PaicosQuantity(new.value, new_unit, h=self.h, a=self.a)
-
-    def to_comoving(self, a_and_h_scaling):
-
-        raise RuntimeError('Not implemented')
-
-    def to_arepo_units(self):
-        pass
-
-    def _scaling_and_scaling_str(self, unit):
+    def __scaling_and_scaling_str(self, unit):
+        """
+        Helper function to create labels
+        """
         from fractions import Fraction
-        codic, dic = self._get_unit_dictionaries()
+        codic, dic = self.__get_unit_dictionaries()
         scaling = codic[unit]
         base_string = unit.to_string(format='unicode')
         scaling_str = str(Fraction(scaling).limit_denominator(10000))
@@ -188,17 +253,46 @@ class PaicosQuantity(Quantity):
         Comoving quantity loses the astropy units when creating a slice.
         This fixes that issue.
         """
-
         out = super().__getitem__(key)
-        new = PaicosQuantity(out.value, self.unit, h=self.h, a=self.a,
-                             copy=False)
-        return new
+        return self._new_view(out.value, self.unit)
+
+    def __sanity_check(self, value):
+        """
+        Function for sanity-checking addition, subtraction, multiplication
+        and division of quantities. They should all have same a and h.
+        """
+        err_msg = "Operation requires objects to have same a and h value."
+        if isinstance(value, PaicosQuantity):
+            if value.a != self.a:
+                info = ' Obj1.a={}, Obj2.a={}'.format(self.a, value.a)
+                raise RuntimeError(err_msg + info)
+            if value.h != self.h:
+                info = ' Obj1.h={}, Obj2.h={}'.format(self.h, value.h)
+                raise RuntimeError(err_msg + info)
+
+    def __add__(self, value):
+        self.__sanity_check(value)
+        return super().__add__(value)
+
+    def __sub__(self, value):
+        self.__sanity_check(value)
+        return super().__sub__(value)
+
+    def __mul__(self, value):
+        self.__sanity_check(value)
+        return super().__mul__(value)
+
+    def __truediv__(self, value):
+        self.__sanity_check(value)
+        return super().__truediv__(value)
 
 
 if __name__ == '__main__':
     A = PaicosQuantity(1, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
+    T = PaicosQuantity(2, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
     C = PaicosQuantity(np.ones((4, 4))*2.1,
                        'g cm^-3 small_a^-3 small_h^2', h=0.7, a=1/128)
 
     # Initialize 10 μG field at a = 1
     B = PaicosQuantity(10, 'uG small_a^-2 small_h', h=1, a=1)
+    D = PaicosQuantity(2, 'K')
