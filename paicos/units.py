@@ -266,9 +266,9 @@ class PaicosQuantity(Quantity):
             if a_sc == 1:
                 label = '$\\mathrm{c}' + length_label
             if h_sc == -1:
-                label += + r'/h$'
+                label += r'/h$'
             else:
-                label += + r'$'
+                label += r'$'
 
         return label
 
