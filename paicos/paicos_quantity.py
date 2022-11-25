@@ -73,16 +73,24 @@ class PaicosQuantity(Quantity):
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
                               order=order, subok=subok, ndmin=ndmin)
 
-        obj.h = h
-        obj.a = a
+        obj._h = h
+        obj._a = a
 
         return obj
 
     def __array_finalize__(self, obj):
         if obj is None:
             return
-        self.h = getattr(obj, 'h', None)
-        self.a = getattr(obj, 'a', None)
+        self._h = getattr(obj, 'h', None)
+        self._a = getattr(obj, 'a', None)
+
+    @property
+    def a(self):
+        return self._a
+
+    @property
+    def h(self):
+        return self._h
 
     def __get_unit_dictionaries(self):
 
