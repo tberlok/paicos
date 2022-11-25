@@ -7,7 +7,6 @@ from .projector import Projector
 from .projector2 import Projector2
 from .nested_projector import NestedProjector
 from .slicer import Slicer
-from .paicos_quantity import PaicosQuantity
 from .comoving_quantity import ComovingQuantity
 from .arepo_converter import ArepoConverter
 from .radial_profiles import RadialProfiles

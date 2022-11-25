@@ -2,7 +2,6 @@ from astropy.units import Quantity
 import numpy as np
 import astropy.units as u
 import units as pu
-import operator
 
 
 class PaicosQuantity(Quantity):
@@ -93,10 +92,8 @@ class PaicosQuantity(Quantity):
         return self._h
 
     def __get_unit_dictionaries(self):
-
         codic = {}
         dic = {}
-
         for unit, power in zip(self.unit.bases, self.unit.powers):
             if unit == pu.small_a or unit == pu.small_h:
                 codic[unit] = power
@@ -127,9 +124,23 @@ class PaicosQuantity(Quantity):
         return np.product(unit_list)
 
     @property
-    def no_smallh(self):
+    def separate_units(self):
+        codic, dic = self.__get_unit_dictionaries()
+        u_unit = self._construct_unit_from_dic(dic)
+        pu_unit = self._construct_unit_from_dic(codic)
+        return u_unit, pu_unit
+
+    @property
+    def hdf5_attrs(self):
         """
-        Remove scaling with h, returning a quantity with adjusted values
+        Give the units as a dictionary for hdf5 data set attributes
+        """
+        return {'units': self.unit.to_string()}
+
+    @property
+    def no_small_h(self):
+        """
+        Remove scaling with h, returning a quantity with adjusted values.
         """
         codic, dic = self.__get_unit_dictionaries()
         factor = self.h**codic[pu.small_h]
@@ -139,13 +150,6 @@ class PaicosQuantity(Quantity):
         return self._new_view(value*factor, new_unit)
 
     @property
-    def separate_units(self):
-        codic, dic = self.__get_unit_dictionaries()
-        u_unit = self._construct_unit_from_dic(dic)
-        pu_unit = self._construct_unit_from_dic(codic)
-        return u_unit, pu_unit
-
-    @property
     def cgs(self):
         """
         Returns a copy of the current `PaicosQuantity` instance with CGS units.
@@ -153,7 +157,7 @@ class PaicosQuantity(Quantity):
         """
         u_unit, pu_unit = self.separate_units
         cgs_unit = u_unit.cgs
-        new_unit = pu_unit*cgs_unit / cgs_unit.scale
+        new_unit = pu_unit * cgs_unit / cgs_unit.scale
         return self._new_view(self.value * cgs_unit.scale, new_unit)
 
     @property
@@ -164,12 +168,13 @@ class PaicosQuantity(Quantity):
         """
         u_unit, pu_unit = self.separate_units
         si_unit = u_unit.si
-        new_unit = pu_unit*si_unit / si_unit.scale
+        new_unit = pu_unit * si_unit / si_unit.scale
         return self._new_view(self.value * si_unit.scale, new_unit)
 
     def to(self, unit, equivalencies=[], copy=True):
         """
-        Convert to different units.
+        Convert to different units. Similar functionality to the astropy
+        Quantity.to() method.
         """
         if isinstance(unit, str):
             unit = u.Unit(unit)
@@ -206,6 +211,11 @@ class PaicosQuantity(Quantity):
     #     return super().decompose(bases)
 
     def label(self, variable=''):
+        """
+        Return a Latex string for use in plots. The optional
+        input variable could be the Latex symbol for the physical variable,
+        for instance \rho or \nabla\times\vec{v}.
+        """
 
         a_sc, a_sc_str = self.__scaling_and_scaling_str(pu.small_a)
         h_sc, h_sc_str = self.__scaling_and_scaling_str(pu.small_h)
@@ -232,6 +242,11 @@ class PaicosQuantity(Quantity):
 
     @property
     def to_physical(self):
+        """
+        Returns a copy of the current `PaicosQuantity` instance with the
+        a and h factors removed, i.e. transform from comoving to physical.
+        The value of the resulting object is scaled accordingly.
+        """
         codic, dic = self.__get_unit_dictionaries()
         factor = self.h**codic[pu.small_h] * self.a**codic[pu.small_a]
 
@@ -295,12 +310,12 @@ class PaicosQuantity(Quantity):
         return super().__truediv__(value)
 
 
-if __name__ == '__main__':
-    A = PaicosQuantity(1, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
-    T = PaicosQuantity(2, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
-    C = PaicosQuantity(np.ones((4, 4))*2.1,
-                       'g cm^-3 small_a^-3 small_h^2', h=0.7, a=1/128)
+# if __name__ == '__main__':
+#     A = PaicosQuantity(1, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
+#     T = PaicosQuantity(2, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
+#     C = PaicosQuantity(np.ones((4, 4))*2.1,
+#                        'g cm^-3 small_a^-3 small_h^2', h=0.7, a=1/128)
 
-    # Initialize 10 μG field at a = 1
-    B = PaicosQuantity(10, 'uG small_a^-2 small_h', h=1, a=1)
-    D = PaicosQuantity(2, 'K')
+#     # Initialize 10 μG field at a = 1
+#     B = PaicosQuantity(10, 'uG small_a^-2 small_h', h=1, a=1)
+#     D = PaicosQuantity(2, 'K')

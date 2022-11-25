@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 from astropy import units as u
 from paicos import units as pu
-from paicos import PaicosQuantity
+import paicos_quantity
 from astropy.cosmology import LambdaCDM
 
 
@@ -140,7 +140,7 @@ class ArepoConverter:
         pu_units = pu.small_a**comoving_dic['a_scaling'] * \
             pu.small_h**comoving_dic['h_scaling']
 
-        return PaicosQuantity(data, u_units*pu_units, a=self.a, h=self.h)
+        return pu.PaicosQuantity(data, u_units*pu_units, a=self.a, h=self.h)
 
     def get_comoving_dic_and_units(self, name):
         """
@@ -237,3 +237,4 @@ if __name__ == '__main__':
     print(B.to('uG'))
 
     B = converter.get_comoving_quantity('MagneticField', [1])
+    B_alt = converter.get_paicos_quantity('MagneticField', [1])
