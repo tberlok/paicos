@@ -32,7 +32,10 @@ u.add_enabled_equivalencies(u.temperature_energy())
 # https://github.com/astropy/astropy/issues/7396
 gauss_B = (u.g/u.cm)**(0.5)/u.s
 equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
+scaling = pu.small_a**(-2)*pu.small_h
+equiv_B_comoving = [(u.G*scaling, gauss_B*scaling, lambda x: x, lambda x: x)]
 u.add_enabled_equivalencies(equiv_B)
+u.add_enabled_equivalencies(equiv_B_comoving)
 
 
 class PaicosQuantity(Quantity):
