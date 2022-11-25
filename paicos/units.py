@@ -257,18 +257,18 @@ class PaicosQuantity(Quantity):
 
         unit_label = normal_unit.to_string(format='latex')[1:-1]
 
-        label = ('$' + variable + r'\;' + co_label + r'\; \left[' +
-                 unit_label + r'\right]$')
+        label = (variable + r'\;' + co_label + r'\; \left[' +
+                 unit_label + r'\right]')
 
         # Get ckpc, cMpc, ckpc/h and Mkpc/h as used in literature
         if normal_unit == 'kpc' or normal_unit == 'Mpc':
             length_label = unit_label[1:-1]
             if a_sc == 1:
-                label = '$\\mathrm{c}' + length_label
+                label = r'\mathrm{c}' + length_label
             if h_sc == -1:
-                label += r'/h$'
-            else:
-                label += r'$'
+                label += r'/h'
+
+        label = '$' + label + '$'
 
         return label
 
