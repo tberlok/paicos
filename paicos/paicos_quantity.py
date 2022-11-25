@@ -240,6 +240,15 @@ class PaicosQuantity(Quantity):
 
         return label
 
+    def _repr_latex_(self):
+        number_part = super()._repr_latex_().split('\\;')[0]
+        _, pu_units = self.separate_units
+        u_latex = (self.unit/pu_units).to_string(format='latex')[1:-1]
+        pu_latex = pu_units.to_string(format='latex')[1:-1]
+
+        modified = number_part + '\\;' + u_latex + '\times' + pu_latex + '$'
+        return modified
+
     @property
     def to_physical(self):
         """
