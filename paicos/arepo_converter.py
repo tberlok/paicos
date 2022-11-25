@@ -2,7 +2,6 @@ import h5py
 import numpy as np
 from astropy import units as u
 from paicos import units as pu
-import paicos_quantity
 from astropy.cosmology import LambdaCDM
 
 
