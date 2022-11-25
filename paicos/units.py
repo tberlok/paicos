@@ -264,10 +264,11 @@ class PaicosQuantity(Quantity):
         if normal_unit == 'kpc' or normal_unit == 'Mpc':
             length_label = unit_label[1:-1]
             if a_sc == 1:
-                label = r'$\mathrm{c}' + length_label + '$'
-
+                label = '$\\mathrm{c}' + length_label
             if h_sc == -1:
-                label = '$' + length_label + r'/h$'
+                label += + r'/h$'
+            else:
+                label += + r'$'
 
         return label
 
