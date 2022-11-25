@@ -11,6 +11,7 @@ from .comoving_quantity import ComovingQuantity
 from .arepo_converter import ArepoConverter
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
+from .image_reader import ImageReader
 # Some useful functions
 from .derived_variables import get_variable
 from .util import root_dir

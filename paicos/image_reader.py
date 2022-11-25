@@ -54,4 +54,4 @@ if __name__ == '__main__':
                      basename='test_arepo_image_format')
 
     print(im['Density'][:, :])
-    print(im['Density'][:, :].comoving_dic)
+    # print(im['Density'][:, :])
