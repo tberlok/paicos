@@ -324,6 +324,15 @@ class PaicosQuantity(Quantity):
                 info = ' Obj1.h={}, Obj2.h={}'.format(self.h, value.h)
                 raise RuntimeError(err_msg + info)
 
+    def _repr_latex_(self):
+        number_part = super()._repr_latex_().split('\\;')[0]
+        _, pu_units = self.separate_units
+        u_latex = (self.unit/pu_units).to_string(format='latex')[1:-1]
+        pu_latex = pu_units.to_string(format='latex')[1:-1]
+
+        modified = number_part + '\\;' + u_latex + '\times' + pu_latex + '$'
+        return modified
+
     def __add__(self, value):
         self.__sanity_check(value)
         return super().__add__(value)
