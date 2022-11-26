@@ -14,7 +14,7 @@ from .histogram import Histogram
 from .image_reader import ImageReader
 # Some useful functions
 from .derived_variables import get_variable
-from .util import root_dir
+from .util import root_dir, use_paicos_quantities
 # Cython functions
 from .cython.openmp_info import simple_reduction, print_openmp_settings
 from .cython.get_index_of_region_functions import get_index_of_region

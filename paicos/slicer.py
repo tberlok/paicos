@@ -91,6 +91,14 @@ class Slicer(ImageCreator):
         self.distance_to_nearest_cell = unflatten(d)
 
     def get_image(self, variable):
+        from warnings import warn
+        warn('This method will be soon deprecated. in favour of the ' +
+             ' method with name: slice_variable',
+             DeprecationWarning, stacklevel=2)
+
+        return variable[self.index]
+
+    def slice_variable(self, variable):
 
         return variable[self.index]
 
@@ -100,6 +108,7 @@ if __name__ == '__main__':
     from paicos import Snapshot
     from paicos import ArepoImage
     from paicos import root_dir
+    from matplotlib.colors import LogNorm
 
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
@@ -124,14 +133,24 @@ if __name__ == '__main__':
         snap.load_data(0, 'Velocities')
         snap.load_data(0, 'MagneticField')
 
-        Density = slicer.get_image(snap.P['0_Density'])
+        Density = slicer.slice_variable(snap.P['0_Density'])
 
-        image_file.save_image('Density', Density)
+        image_file.save_image('Density', Density.value, Density.hdf5_attrs)
 
         # Move from temporary filename to final filename
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.log10(Density), origin='lower',
-                        extent=slicer.extent)
+        axes[ii].imshow(Density.value, origin='lower',
+                        extent=slicer.extent.value, norm=LogNorm())
+
+    # Also an example where we slice a Paicos Quantity with units
+    rho = snap.converter.get_paicos_quantity(snap.P['0_Density'], 'Density')
+    density_slice = slicer.slice_variable(rho)
+    from astropy import constants as c
+    plt.figure(2)
+    density_slice = (density_slice.cgs/c.m_p.cgs).to_physical
+    plt.imshow(density_slice.value, norm=LogNorm())
+    plt.title(density_slice.label('n'))
+
     plt.show()

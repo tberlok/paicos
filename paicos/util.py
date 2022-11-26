@@ -1,4 +1,6 @@
 
+use_paicos_quantities = True
+
 
 def get_project_root_dir():
     import os

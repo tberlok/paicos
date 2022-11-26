@@ -93,7 +93,14 @@ class Projector(ImageCreator):
         else:
             raise RuntimeError('Unexpected type for variable')
 
-        variable = np.array(variable[self.index], dtype=np.float64)
+        from paicos import units as pu
+        if isinstance(variable, pu.PaicosQuantity):
+            variable_unit = variable.unit
+            variable = pu.PaicosQuantity(variable[self.index], variable.unit,
+                                         dtype=np.float64,
+                                         a=self.snap.a, h=self.snap.h)
+        else:
+            variable = np.array(variable[self.index], dtype=np.float64)
 
         xc = self.xc
         yc = self.yc
@@ -120,11 +127,20 @@ class Projector(ImageCreator):
                                        self.hsml, self.npix,
                                        xc, yc, self.width_x, self.width_y,
                                        boxsize, self.numthreads)
-        return projection.T
+        # Transpose
+        projection = projection.T
+        area_per_pixel = self.area/np.product(projection.shape)
+
+        if isinstance(variable, pu.PaicosQuantity):
+            projection = pu.PaicosQuantity(projection, variable_unit,
+                                           a=self.snap.a, h=self.snap.h)
+
+        return projection/area_per_pixel
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
     from paicos import Snapshot
     from paicos import ArepoImage
     from paicos import root_dir
@@ -151,15 +167,19 @@ if __name__ == '__main__':
         image_file = ArepoImage(filename, projector)
 
         Masses = projector.project_variable('Masses')
-        Volume = projector.project_variable('Volumes')
+        Volumes = projector.project_variable('Volumes')
 
-        image_file.save_image('Masses', Masses)
-        image_file.save_image('Volumes', Volume)
+        image_file.save_image('Masses', Masses.value, Masses.hdf5_attrs)
+        image_file.save_image('Volumes', Volumes, Volumes.hdf5_attrs)
 
         # Move from temporary filename to final filename
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.log10(Masses/Volume), origin='lower',
-                        extent=projector.extent)
+        axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
+                        extent=np.array(projector.extent), norm=LogNorm())
     plt.show()
+
+    M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
+    # Projection now has units
+    projected_mass = projector.project_variable(M)

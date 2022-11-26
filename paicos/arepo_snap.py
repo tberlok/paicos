@@ -1,5 +1,3 @@
-# --- import Python libs ---
-
 from .arepo_catalog import Catalog
 from .arepo_converter import ArepoConverter
 import numpy as np
@@ -109,7 +107,7 @@ class Snapshot:
                     print('PartType not in hdf5 file')
                 return None
 
-    def load_data(self, particle_type, blockname):
+    def load_data(self, particle_type, blockname, give_units=True):
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
@@ -164,6 +162,12 @@ class Snapshot:
             self.P[P_key][skip_part:skip_part+np_file] = f[datname]
 
             skip_part += np_file
+
+        from paicos import use_paicos_quantities
+
+        if use_paicos_quantities or give_units:
+            self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
+                                                               blockname)
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")

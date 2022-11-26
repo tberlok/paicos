@@ -39,6 +39,8 @@ class NestedProjector(Projector):
 
     def _get_bins(self):
         def nearest_power_of_two(x):
+            if hasattr(x, 'unit'):
+                x = x.value 
             return int(2**np.ceil(np.log2(x)))
 
         def log2int(x):
@@ -59,7 +61,7 @@ class NestedProjector(Projector):
             npix_low = npix_high
 
         n_grids = []
-        bins = [width]
+        bins = [width.value]
         for ii in range(log2int(npix_low), log2int(npix_high) + 1):
             n_grid = 2**ii
 
@@ -69,7 +71,7 @@ class NestedProjector(Projector):
             if n_grid == npix_high:
                 bins.append(0.0)
             else:
-                bins.append(width/n_grid*self.factor)
+                bins.append(width.value/n_grid*self.factor)
 
         return bins, n_grids
 
@@ -120,7 +122,14 @@ class NestedProjector(Projector):
         else:
             raise RuntimeError('Unexpected type for variable')
 
-        variable = np.array(variable[self.index], dtype=np.float64)
+        from paicos import units as pu
+        if isinstance(variable, pu.PaicosQuantity):
+            variable_unit = variable.unit
+            variable = pu.PaicosQuantity(variable[self.index], variable.unit,
+                                         dtype=np.float64,
+                                         a=self.snap.a, h=self.snap.h)
+        else:
+            variable = np.array(variable[self.index], dtype=np.float64)
 
         xc = self.xc
         yc = self.yc
@@ -161,7 +170,15 @@ class NestedProjector(Projector):
         if store_subimages:
             self.images = images
 
-        return projection.T
+        # Transpose
+        projection = projection.T
+        area_per_pixel = self.area/np.product(projection.shape)
+
+        if isinstance(variable, pu.PaicosQuantity):
+            projection = pu.PaicosQuantity(projection, variable_unit,
+                                           a=self.snap.a, h=self.snap.h)
+
+        return projection/area_per_pixel
 
 
 if __name__ == '__main__':
@@ -203,16 +220,16 @@ if __name__ == '__main__':
         normal_image = Masses/Volume
 
         if ii == 0:
-            vmin = normal_image.min()
-            vmax = normal_image.max()
+            vmin = normal_image.min().value
+            vmax = normal_image.max().value
 
         # Make a plot
-        axes[0, ii].imshow(normal_image, origin='lower',
-                           extent=p.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-        axes[1, ii].imshow(nested_image, origin='lower',
-                           extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-        axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
-                           extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
+        axes[0, ii].imshow(normal_image.value, origin='lower',
+                           extent=p.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
+        axes[1, ii].imshow(nested_image.value, origin='lower',
+                           extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
+        axes[2, ii].imshow(np.abs(normal_image-nested_image).value, origin='lower',
+                           extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
 
         axes[0, ii].set_title('Normal projection ({})'.format(direction))
         axes[1, ii].set_title('nested projection')
