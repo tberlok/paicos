@@ -1,5 +1,5 @@
 # The main classes
-import units
+from . import units
 from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog

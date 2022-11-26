@@ -1,7 +1,6 @@
 import astropy.units as u
 from astropy.units import Quantity
 import numpy as np
-import units as pu
 
 _ns = globals()
 
@@ -32,7 +31,7 @@ u.add_enabled_equivalencies(u.temperature_energy())
 # https://github.com/astropy/astropy/issues/7396
 gauss_B = (u.g/u.cm)**(0.5)/u.s
 equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
-scaling = pu.small_a**(-2)*pu.small_h
+scaling = small_a**(-2)*small_h
 equiv_B_comoving = [(u.G*scaling, gauss_B*scaling, lambda x: x, lambda x: x)]
 u.add_enabled_equivalencies(equiv_B)
 u.add_enabled_equivalencies(equiv_B_comoving)
@@ -61,7 +60,7 @@ class PaicosQuantity(Quantity):
 
     from paicos import units as pu
     from astropy import units as u
-    unit = u.g*u.cm**(-3)*pu.small_a**(-3)*pu.small_h**(2)
+    unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
 
     The naming of small_a and small_h is to avoid conflict with the already
     existing 'annum' (i.e. a year) and 'h' (hour) units.
@@ -129,11 +128,11 @@ class PaicosQuantity(Quantity):
         codic = {}
         dic = {}
         for unit, power in zip(self.unit.bases, self.unit.powers):
-            if unit == pu.small_a or unit == pu.small_h:
+            if unit == small_a or unit == small_h:
                 codic[unit] = power
             else:
                 dic[unit] = power
-        for key in [pu.small_h, pu.small_a]:
+        for key in [small_h, small_a]:
             if key not in codic:
                 codic[key] = 0
 
@@ -177,10 +176,10 @@ class PaicosQuantity(Quantity):
         Remove scaling with h, returning a quantity with adjusted values.
         """
         codic, dic = self.__get_unit_dictionaries()
-        factor = self.h**codic[pu.small_h]
+        factor = self.h**codic[small_h]
 
         value = self.view(np.ndarray)
-        new_unit = self._get_new_units([pu.small_h])
+        new_unit = self._get_new_units([small_h])
         return self._new_view(value*factor, new_unit)
 
     @property
@@ -217,9 +216,9 @@ class PaicosQuantity(Quantity):
         # the pu_unit is included or not
         # err_msg = ("dependence on small_a and small_h automatically " +
         #            "handled, and should be not included in input")
-        # assert pu.small_a not in unit.bases, err_msg
-        # assert pu.small_h not in unit.bases, err_msg
-        if (pu.small_a in unit.bases) or (pu.small_h in unit.bases):
+        # assert small_a not in unit.bases, err_msg
+        # assert small_h not in unit.bases, err_msg
+        if (small_a in unit.bases) or (small_h in unit.bases):
             return super().to(unit, equivalencies, copy)
         else:
             _, pu_unit = self.separate_units
@@ -258,7 +257,7 @@ class PaicosQuantity(Quantity):
 
         A = B.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
 
-        pu.small_a and pu.small_h are automatically included in the bases.
+        small_a and small_h are automatically included in the bases.
         """
         u_unit, pu_unit = self.separate_units
         if len(bases) == 0 or pu_unit == u.Unit(''):
@@ -266,8 +265,8 @@ class PaicosQuantity(Quantity):
         else:
             if isinstance(bases, set):
                 bases = list(bases)
-            bases.append(pu.small_a)
-            bases.append(pu.small_h)
+            bases.append(small_a)
+            bases.append(small_h)
             bases = set(bases)
             return super().decompose(bases)
 
@@ -278,12 +277,12 @@ class PaicosQuantity(Quantity):
         for instance \rho or \nabla\times\vec{v}.
         """
 
-        a_sc, a_sc_str = self.__scaling_and_scaling_str(pu.small_a)
-        h_sc, h_sc_str = self.__scaling_and_scaling_str(pu.small_h)
+        a_sc, a_sc_str = self.__scaling_and_scaling_str(small_a)
+        h_sc, h_sc_str = self.__scaling_and_scaling_str(small_h)
 
         co_label = a_sc_str + h_sc_str
 
-        normal_unit = self._get_new_units([pu.small_h, pu.small_a])
+        normal_unit = self._get_new_units([small_h, small_a])
 
         unit_label = normal_unit.to_string(format='latex')[1:-1]
 
@@ -313,10 +312,10 @@ class PaicosQuantity(Quantity):
         The value of the resulting object is scaled accordingly.
         """
         codic, dic = self.__get_unit_dictionaries()
-        factor = self.h**codic[pu.small_h] * self.a**codic[pu.small_a]
+        factor = self.h**codic[small_h] * self.a**codic[small_a]
 
         value = self.view(np.ndarray)
-        new_unit = self._get_new_units([pu.small_a, pu.small_h])
+        new_unit = self._get_new_units([small_a, small_h])
         return self._new_view(value*factor, new_unit)
 
     def __scaling_and_scaling_str(self, unit):
@@ -385,8 +384,8 @@ class PaicosQuantity(Quantity):
 
 
 # if __name__ == '__main__':
-#     A = PaicosQuantity(1, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
-#     T = PaicosQuantity(2, pu.small_a**2*pu.small_h*u.cm**4, h=0.7, a=1/128)
+#     A = PaicosQuantity(1, small_a**2*small_h*u.cm**4, h=0.7, a=1/128)
+#     T = PaicosQuantity(2, small_a**2*small_h*u.cm**4, h=0.7, a=1/128)
 #     C = PaicosQuantity(np.ones((4, 4))*2.1,
 #                        'g cm^-3 small_a^-3 small_h^2', h=0.7, a=1/128)
 
