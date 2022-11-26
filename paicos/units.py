@@ -213,36 +213,63 @@ class PaicosQuantity(Quantity):
         if isinstance(unit, str):
             unit = u.Unit(unit)
 
-        err_msg = ("dependence on small_a and small_h automatically " +
-                   "handled, and should be included in input")
-        assert pu.small_a not in unit.bases, err_msg
-        assert pu.small_h not in unit.bases, err_msg
+        # TODO: Fix this so that it works regardless of whether
+        # the pu_unit is included or not
+        # err_msg = ("dependence on small_a and small_h automatically " +
+        #            "handled, and should be not included in input")
+        # assert pu.small_a not in unit.bases, err_msg
+        # assert pu.small_h not in unit.bases, err_msg
+        if (pu.small_a in unit.bases) or (pu.small_h in unit.bases):
+            return super().to(unit, equivalencies, copy)
+        else:
+            _, pu_unit = self.separate_units
+            return super().to(unit*pu_unit, equivalencies, copy)
 
-        _, pu_unit = self.separate_units
+    @property
+    def arepo(self):
+        """
+        Return quantity in Arepo code units.
+        """
+        from astropy.units import UnitConversionError
+        arepo_bases = set([u.Unit('arepo_mass'),
+                           u.Unit('arepo_length'),
+                           u.Unit('arepo_time')])
+        try:
+            return self.decompose(bases=arepo_bases)
+        except UnitConversionError as inst:
+            err_msg = ('Conversion to arepo_units does not work well for ' +
+                       'Temperature and magnetic field strength in Gauss. ' +
+                       'Astropy throws the following error: ' + str(inst))
 
-        return super().to(unit*pu_unit, equivalencies, copy)
+            raise UnitConversionError(err_msg)
 
-    # @property
-    # def astro(self):
-    #     """
-    #     TODO: This seems to not work.
-    #     """
-    #     return self.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
+        return None
 
-    # def decompose(self, bases=[]):
-    #     """
-    #     Decompose into a different set of units, e.g.
+    @property
+    def astro(self):
+        """
+        Return quantity in typical units used in cosmological simulations
+        """
+        return self.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV, u.K])
 
-    #     A = B.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
+    def decompose(self, bases=[]):
+        """
+        Decompose into a different set of units, e.g.
 
-    #     pu.small_a and pu.small_h are automatically included in the bases.
-    #     """
-    #     if pu.small_a not in bases:
-    #         bases.append(pu.small_a)
-    #     if pu.small_h not in bases:
-    #         bases.append(pu.small_h)
+        A = B.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
 
-    #     return super().decompose(bases)
+        pu.small_a and pu.small_h are automatically included in the bases.
+        """
+        u_unit, pu_unit = self.separate_units
+        if len(bases) == 0 or pu_unit == u.Unit(''):
+            return super().decompose(bases)
+        else:
+            if isinstance(bases, set):
+                bases = list(bases)
+            bases.append(pu.small_a)
+            bases.append(pu.small_h)
+            bases = set(bases)
+            return super().decompose(bases)
 
     def label(self, variable=''):
         """

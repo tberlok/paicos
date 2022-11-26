@@ -59,7 +59,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo mass unit",
-            format={"latex": r"M_{\\mathrm{A}}", "unicode": r"M_A"},
+            format={"latex": r"arepo\_mass"},
         )
         arepo_time = u.def_unit(
             ["arepo_time"],
@@ -67,7 +67,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo time unit",
-            format={"latex": r"t_{\\mathrm{A}}", "unicode": r"t_A"},
+            format={"latex": r"arepo\_time"},
         )
         arepo_length = u.def_unit(
             ["arepo_length"],
@@ -75,7 +75,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo length unit",
-            format={"latex": r"L_{\\mathrm{A}}", "unicode": r"L"},
+            format={"latex": r"arepo\_length"},
         )
         arepo_velocity = u.def_unit(
             ["arepo_velocity"],
@@ -83,7 +83,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo velocity unit",
-            format={"latex": r"v_{\\mathrm{A}}", "unicode": r"L"},
+            format={"latex": r"arepo\_velocity"},
         )
         arepo_pressure = u.def_unit(
             ["arepo_pressure"],
@@ -91,7 +91,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo pressure unit",
-            format={"latex": r"P_{\\mathrm{A}}", "unicode": r"P"},
+            format={"latex": r"arepo\_pressure"},
         )
         arepo_energy = u.def_unit(
             ["arepo_energy"],
@@ -99,7 +99,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo energy unit",
-            format={"latex": r"E_{\\mathrm{A}}", "unicode": r"E"},
+            format={"latex": r"arepo\_energy"},
         )
         arepo_density = u.def_unit(
             ["arepo_density"],
@@ -107,7 +107,7 @@ class ArepoConverter:
             prefixes=False,
             namespace=_ns,
             doc="Arepo density unit",
-            format={"latex": r"\\rho_{\\mathrm{A}}", "unicode": r"ρ"},
+            format={"latex": r"arepo\_density"},
         )
         # This could be a loop...
         u.def_physical_type(arepo_mass, "mass")
@@ -151,7 +151,7 @@ class ArepoConverter:
         self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
         self.lookback_time = cosmo.lookback_time(self.z)
 
-    def get_paicos_quantity(self, name, data, arepo_code_units=False):
+    def get_paicos_quantity(self, name, data, arepo_code_units=True):
 
         unit = self.find_unit(name, arepo_code_units)
 
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     rho = converter.get_paicos_quantity('Density', rho)
 
     Mstars = 1
-    Mstars = converter.get_paicos_quantity('Masses', Mstars, False)
+    Mstars = converter.get_paicos_quantity('Masses', Mstars)
 
     B = converter.get_paicos_quantity('MagneticField', [1])
 
