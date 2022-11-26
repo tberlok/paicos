@@ -151,7 +151,7 @@ class ArepoConverter:
         self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
         self.lookback_time = cosmo.lookback_time(self.z)
 
-    def get_paicos_quantity(self, name, data, arepo_code_units=True):
+    def get_paicos_quantity(self, data, name, arepo_code_units=True):
 
         unit = self.find_unit(name, arepo_code_units)
 
@@ -245,18 +245,18 @@ if __name__ == '__main__':
     converter = ArepoConverter(root_dir + '/data/slice_x.hdf5')
 
     rho = np.array([2, 4])
-    rho = converter.get_paicos_quantity('Density', rho)
+    rho = converter.get_paicos_quantity(rho, 'Density')
 
     Mstars = 1
-    Mstars = converter.get_paicos_quantity('Masses', Mstars)
+    Mstars = converter.get_paicos_quantity(Mstars, 'Masses')
 
-    B = converter.get_paicos_quantity('MagneticField', [1])
+    B = converter.get_paicos_quantity([1], 'MagneticField')
 
-    T = converter.get_paicos_quantity('Temperature', 1)
+    T = converter.get_paicos_quantity( [1], 'Temperature')
 
-    B = converter.get_paicos_quantity('MagneticField', [1])
+    B = converter.get_paicos_quantity([1], 'MagneticField')
 
-    v = converter.get_paicos_quantity('Velocities', [2])
+    v = converter.get_paicos_quantity([2], 'Velocities')
 
     mv_stars = Mstars*v
 

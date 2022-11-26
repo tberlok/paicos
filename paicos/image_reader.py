@@ -24,12 +24,12 @@ class ImageReader(dict):
         self.lookback_time = self.converter.lookback_time
         with h5py.File(self.filename, 'r') as f:
             get_func = self.converter.get_paicos_quantity
-            self.extent = get_func('Coordinates',
-                                   f['image_info'].attrs['extent'])
-            self.widths = get_func('Coordinates',
-                                   f['image_info'].attrs['widths'])
-            self.center = get_func('Coordinates',
-                                   f['image_info'].attrs['center'])
+            self.extent = get_func(f['image_info'].attrs['extent'],
+                                   'Coordinates')
+            self.widths = get_func(f['image_info'].attrs['widths'],
+                                   'Coordinates')
+            self.center = get_func(f['image_info'].attrs['center'],
+                                   'Coordinates')
 
         # Load all data sets
         for key in keys:
@@ -42,9 +42,9 @@ class ImageReader(dict):
                 data = f[name][...]
                 attrs = dict(f[name].attrs)
                 if len(attrs) > 0:
-                    self[name] = get_func(attrs, data)
+                    self[name] = get_func(data, attrs)
                 else:
-                    self[name] = get_func(name, data)
+                    self[name] = get_func(data, name)
 
 
 if __name__ == '__main__':
