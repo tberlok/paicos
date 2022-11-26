@@ -100,7 +100,10 @@ class PaicosQuantity(Quantity):
     """
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
-                subok=False, ndmin=0, h=1, a=1):
+                subok=False, ndmin=0, h=None, a=None):
+
+        assert h is not None, 'Paicos quantity is missing a value for h'
+        assert a is not None, 'Paicos quantity is missing a value for a'
 
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
                               order=order, subok=subok, ndmin=ndmin)
@@ -111,8 +114,18 @@ class PaicosQuantity(Quantity):
         return obj
 
     def __array_finalize__(self, obj):
-        if obj is None:
+        """
+        Heavily inspired by the astropy Quantity version
+        """
+        super_array_finalize = super().__array_finalize__
+        if super_array_finalize is not None:
+            super_array_finalize(obj)
+
+        # If we're a new object or viewing an ndarray, nothing has to be done.
+        if obj is None or obj.__class__ is np.ndarray:
             return
+
+        # Set Paicos specific parameters
         self._h = getattr(obj, 'h', None)
         self._a = getattr(obj, 'a', None)
 
@@ -168,7 +181,7 @@ class PaicosQuantity(Quantity):
         """
         Give the units as a dictionary for hdf5 data set attributes
         """
-        return {'units': self.unit.to_string()}
+        return {'unit': self.unit.to_string()}
 
     @property
     def no_small_h(self):
@@ -335,13 +348,13 @@ class PaicosQuantity(Quantity):
             scaling_str = base_string + '^{' + scaling_str + '}'
         return scaling, scaling_str
 
-    def __getitem__(self, key):
-        """
-        Comoving quantity loses the astropy units when creating a slice.
-        This fixes that issue.
-        """
-        out = super().__getitem__(key)
-        return self._new_view(out.value, self.unit)
+    # def __getitem__(self, key):
+    #     """
+    #     Comoving quantity loses the astropy units when creating a slice.
+    #     This fixes that issue.
+    #     """
+    #     out = super().__getitem__(key)
+    #     return self._new_view(out.value, self.unit)
 
     def __sanity_check(self, value):
         """
