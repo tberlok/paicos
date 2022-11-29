@@ -1,5 +1,6 @@
 import numpy as np
 from paicos import ImageCreator
+from paicos import use_paicos_quantities
 
 
 class Projector(ImageCreator):
@@ -19,12 +20,21 @@ class Projector(ImageCreator):
         self._check_if_omp_has_issues(numthreads)
 
         snap = self.snap
-        xc = self.xc
-        yc = self.yc
-        zc = self.zc
-        width_x = self.width_x
-        width_y = self.width_y
-        width_z = self.width_z
+
+        if use_paicos_quantities:
+            xc = self.xc.value
+            yc = self.yc.value
+            zc = self.zc.value
+            width_x = self.width_x.value
+            width_y = self.width_y.value
+            width_z = self.width_z.value
+        else:
+            xc = self.xc
+            yc = self.yc
+            zc = self.zc
+            width_x = self.width_x
+            width_y = self.width_y
+            width_z = self.width_z
 
         snap.get_volumes()
         snap.load_data(0, "Coordinates")
@@ -102,30 +112,42 @@ class Projector(ImageCreator):
         else:
             variable = np.array(variable[self.index], dtype=np.float64)
 
-        xc = self.xc
-        yc = self.yc
-        zc = self.zc
+        if use_paicos_quantities:
+            xc = self.xc.value
+            yc = self.yc.value
+            zc = self.zc.value
+            width_x = self.width_x.value
+            width_y = self.width_y.value
+            width_z = self.width_z.value
+        else:
+            xc = self.xc
+            yc = self.yc
+            zc = self.zc
+            width_x = self.width_x
+            width_y = self.width_y
+            width_z = self.width_z
+
         boxsize = self.snap.box
         if self.direction == 'x':
             projection = project_image(self.pos[:, 1],
                                        self.pos[:, 2],
                                        variable,
                                        self.hsml, self.npix,
-                                       yc, zc, self.width_y, self.width_z,
+                                       yc, zc, width_y, width_z,
                                        boxsize, self.numthreads)
         elif self.direction == 'y':
             projection = project_image(self.pos[:, 0],
                                        self.pos[:, 2],
                                        variable,
                                        self.hsml, self.npix,
-                                       xc, zc, self.width_x, self.width_z,
+                                       xc, zc, width_x, width_z,
                                        boxsize, self.numthreads)
         elif self.direction == 'z':
             projection = project_image(self.pos[:, 0],
                                        self.pos[:, 1],
                                        variable,
                                        self.hsml, self.npix,
-                                       xc, yc, self.width_x, self.width_y,
+                                       xc, yc, width_x, width_y,
                                        boxsize, self.numthreads)
         # Transpose
         projection = projection.T
@@ -147,7 +169,7 @@ if __name__ == '__main__':
 
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
-    R200c = snap.Cat.Group['Group_R_Crit200'][0]
+    R200c = snap.Cat.Group['Group_R_Crit200'][0].value
     # widths = [10000, 10000, 2*R200c]
     widths = [10000, 10000, 10000]
     width_vec = (
