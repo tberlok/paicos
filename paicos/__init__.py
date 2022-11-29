@@ -1,4 +1,5 @@
 # The main classes
+from .util import root_dir, use_paicos_quantities
 from . import units
 from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
@@ -7,14 +8,12 @@ from .projector import Projector
 from .projector2 import Projector2
 from .nested_projector import NestedProjector
 from .slicer import Slicer
-from .comoving_quantity import ComovingQuantity
 from .arepo_converter import ArepoConverter
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
 from .image_reader import ImageReader
 # Some useful functions
 from .derived_variables import get_variable
-from .util import root_dir, use_paicos_quantities
 # Cython functions
 from .cython.openmp_info import simple_reduction, print_openmp_settings
 from .cython.get_index_of_region_functions import get_index_of_region

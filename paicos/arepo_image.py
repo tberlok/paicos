@@ -1,6 +1,6 @@
 import h5py
 import numpy as np
-from .util import use_paicos_quantities
+from paicos import use_paicos_quantities
 
 
 class ImageCreator:
@@ -12,18 +12,19 @@ class ImageCreator:
 
         self.center = np.array(center)
         self.widths = np.array(widths)
+
         if use_paicos_quantities:
             self.center = snap.converter.get_paicos_quantity(self.center,
                                                              'Coordinates')
             self.widths = snap.converter.get_paicos_quantity(self.widths,
                                                              'Coordinates')
 
-        self.xc = center[0]
-        self.yc = center[1]
-        self.zc = center[2]
-        self.width_x = widths[0]
-        self.width_y = widths[1]
-        self.width_z = widths[2]
+        self.xc = self.center[0]
+        self.yc = self.center[1]
+        self.zc = self.center[2]
+        self.width_x = self.widths[0]
+        self.width_y = self.widths[1]
+        self.width_z = self.widths[2]
 
         self.direction = direction
 
@@ -43,11 +44,14 @@ class ImageCreator:
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.yc - self.width_y/2, self.yc + self.width_y/2]
 
-        self.extent = np.array(self.extent)
+        # print(self.extent)
+        # self.extent = np.array(self.extent)
 
         if use_paicos_quantities:
-            self.extent = snap.converter.get_paicos_quantity(self.extent,
-                                                             'Coordinates')
+            from paicos.units import PaicosQuantity
+            self.extent = PaicosQuantity(self.extent, a=snap.a, h=snap.h)
+        else:
+            self.extent = np.array(self.extent)
 
         area = (self.extent[1]-self.extent[0])*(self.extent[3]-self.extent[2])
         self.area = area

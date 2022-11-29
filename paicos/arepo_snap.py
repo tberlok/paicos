@@ -76,7 +76,7 @@ class Snapshot:
             try:
                 self.Cat = Catalog(
                     self.basedir, self.snapnum, verbose=self.verbose,
-                    subfind_catalog=True)
+                    subfind_catalog=True, converter=self.converter)
             except FileNotFoundError:
                 self.Cat = None
 
@@ -85,7 +85,7 @@ class Snapshot:
                 try:
                     self.Cat = Catalog(
                         self.basedir, self.snapnum, verbose=self.verbose,
-                        subfind_catalog=False)
+                        subfind_catalog=False, converter=self.converter)
                 except FileNotFoundError:
                     import warnings
                     warnings.warn('no catalog found', FileNotFoundError)
@@ -166,8 +166,12 @@ class Snapshot:
         from paicos import use_paicos_quantities
 
         if use_paicos_quantities or give_units:
-            self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
-                                                               blockname)
+            try:
+                self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
+                                                                    blockname)
+            except:
+                from warnings import warn
+                warn('Failed to give {} units'.format(P_key))
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
@@ -222,7 +226,7 @@ class Snapshot:
             mmean = mmean_ionized
 
         # temperature in Kelvin
-        self.P["0_Temperatures"] = (2.0/3.0 * self.P["0_InternalEnergy"] *
+        self.P["0_Temperatures"] = (2.0/3.0 * self.P["0_InternalEnergy"].value *
                                     u_v**2 * mmean * mhydrogen).to('K').value
 
         if self.verbose:
