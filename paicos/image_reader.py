@@ -4,8 +4,8 @@ from paicos import ArepoConverter
 
 class ImageReader(dict):
 
-    def __init__(self, basedir, snapnum, basename="projection", verbose=False):
-        pass
+    def __init__(self, basedir, snapnum, basename="projection", load_all=True,
+                 verbose=False):
 
         #
         self.filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
@@ -32,8 +32,9 @@ class ImageReader(dict):
                                    'Coordinates')
 
         # Load all data sets
-        for key in keys:
-            self.load_data(key)
+        if load_all:
+            for key in keys:
+                self.load_data(key)
 
     def load_data(self, name):
         get_func = self.converter.get_paicos_quantity
