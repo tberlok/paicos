@@ -109,21 +109,6 @@ class ArepoConverter:
             doc="Arepo density unit",
             format={"latex": r"arepo\_density"},
         )
-        # This could be a loop...
-        u.def_physical_type(arepo_mass, "mass")
-        u.def_physical_type(arepo_time, "time")
-        u.def_physical_type(arepo_length, "length")
-        u.def_physical_type(arepo_velocity, "velocity")
-        u.def_physical_type(arepo_pressure, "pressure")
-        u.def_physical_type(arepo_energy, "energy")
-        u.def_physical_type(arepo_pressure, "density")
-        u.add_enabled_units(arepo_mass)
-        u.add_enabled_units(arepo_time)
-        u.add_enabled_units(arepo_length)
-        u.add_enabled_units(arepo_velocity)
-        u.add_enabled_units(arepo_pressure)
-        u.add_enabled_units(arepo_energy)
-        u.add_enabled_units(arepo_density)
 
         self.arepo_units_in_cgs = {'unit_length': unit_length,
                                    'unit_mass': unit_mass,
@@ -140,9 +125,20 @@ class ArepoConverter:
                             'unit_energy': arepo_energy,
                             'unit_pressure': arepo_pressure,
                             'unit_density': arepo_density}
+
+        # Enable arepo units globally
+        for key in self.arepo_units:
+            u.add_enabled_units(self.arepo_units[key])
+            phys_type = key.split('_')[1]
+            u.def_physical_type(self.arepo_units[key], phys_type)
+
         self.a = self.scale_factor = scale_factor
         self.z = self.redshift = redshift
         self.h = HubbleParam
+
+        self.length = self.get_paicos_quantity(1, 'Coordinates')
+        self.mass = self.get_paicos_quantity(1, 'Masses')
+        self.velocity = self.get_paicos_quantity(1, 'Velocities')
 
         # Set up LambdaCDM cosmology to calculate times, etc
         self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
@@ -159,7 +155,7 @@ class ArepoConverter:
 
         return pu.PaicosQuantity(data, unit, a=self.a, h=self.h)
 
-    def find_unit(self, name, arepo_code_units=False):
+    def find_unit(self, name, arepo_code_units=True):
         """
         Here we find the units including the scaling with a and h
         of a quantity.
@@ -229,6 +225,8 @@ class ArepoConverter:
                 units = aunits['unit_velocity']*a**(1/2)
             elif name == 'VelocityGradient':
                 units = find('Velocities')/find('Coordinates')
+            elif name == 'Enstrophy':
+                units = (find('VelocityGradient'))**2
             elif name == 'Temperature':
                 comoving_dic = {}
                 units = u.K
