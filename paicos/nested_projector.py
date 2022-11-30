@@ -7,7 +7,7 @@ class NestedProjector(Projector):
     This implements an SPH-like projection of gas variables using nested grids.
     """
 
-    def __init__(self, arepo_snap, center, widths, direction,
+    def __init__(self, snap, center, widths, direction,
                  npix=512, nvol=8, numthreads=16, factor=3, npix_min=128,
                  verbose=False):
 
