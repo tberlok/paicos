@@ -124,16 +124,26 @@ class NestedProjector(Projector):
 
         from paicos import units as pu
         if isinstance(variable, pu.PaicosQuantity):
-            variable_unit = variable.unit
-            variable = pu.PaicosQuantity(variable[self.index], variable.unit,
-                                         dtype=np.float64,
-                                         a=self.snap.a, h=self.snap.h)
+            variable_unit = str(variable.unit)
+            variable = np.array(variable[self.index].value, dtype=np.float64)
         else:
             variable = np.array(variable[self.index], dtype=np.float64)
 
-        xc = self.xc
-        yc = self.yc
-        zc = self.zc
+        from paicos import use_paicos_quantities
+        if use_paicos_quantities:
+            xc = self.xc.value
+            yc = self.yc.value
+            zc = self.zc.value
+            width_x = self.width_x.value
+            width_y = self.width_y.value
+            width_z = self.width_z.value
+        else:
+            xc = self.xc
+            yc = self.yc
+            zc = self.zc
+            width_x = self.width_x
+            width_y = self.width_y
+            width_z = self.width_z
         boxsize = self.snap.box
 
         images = []
@@ -147,21 +157,21 @@ class NestedProjector(Projector):
                                        pos_n[:, 2],
                                        variable_n,
                                        hsml_n, n_grid,
-                                       yc, zc, self.width_y, self.width_z,
+                                       yc, zc, width_y, width_z,
                                        boxsize, self.numthreads)
             elif self.direction == 'y':
                 proj_n = project_image(pos_n[:, 0],
                                        pos_n[:, 2],
                                        variable_n,
                                        hsml_n, n_grid,
-                                       xc, zc, self.width_x, self.width_z,
+                                       xc, zc, width_x, width_z,
                                        boxsize, self.numthreads)
             elif self.direction == 'z':
                 proj_n = project_image(pos_n[:, 0],
                                        pos_n[:, 1],
                                        variable_n,
                                        hsml_n, n_grid,
-                                       xc, yc, self.width_x, self.width_y,
+                                       xc, yc, width_x, width_y,
                                        boxsize, self.numthreads)
             images.append(proj_n)
 
@@ -174,7 +184,7 @@ class NestedProjector(Projector):
         projection = projection.T
         area_per_pixel = self.area/np.product(projection.shape)
 
-        if isinstance(variable, pu.PaicosQuantity):
+        if use_paicos_quantities:
             projection = pu.PaicosQuantity(projection, variable_unit,
                                            a=self.snap.a, h=self.snap.h)
 
@@ -189,7 +199,7 @@ if __name__ == '__main__':
 
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
-    R200c = snap.Cat.Group['Group_R_Crit200'][0]
+    R200c = snap.Cat.Group['Group_R_Crit200'][0].value
 
     width_vec = (
         [2*R200c, 10000, 10000],

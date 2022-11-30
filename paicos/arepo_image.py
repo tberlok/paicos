@@ -10,14 +10,14 @@ class ImageCreator:
 
         self.snap = snap
 
-        self.center = np.array(center)
-        self.widths = np.array(widths)
-
         if use_paicos_quantities:
-            self.center = snap.converter.get_paicos_quantity(self.center,
+            self.center = snap.converter.get_paicos_quantity(center,
                                                              'Coordinates')
-            self.widths = snap.converter.get_paicos_quantity(self.widths,
+            self.widths = snap.converter.get_paicos_quantity(widths,
                                                              'Coordinates')
+        else:
+            self.center = np.array(center)
+            self.widths = np.array(widths)
 
         self.xc = self.center[0]
         self.yc = self.center[1]

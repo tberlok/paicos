@@ -149,8 +149,13 @@ class ArepoConverter:
 
     def get_paicos_quantity(self, data, name, arepo_code_units=True):
 
+        if hasattr(data, 'unit'):
+            print('Data already has units, returning!')
+            return data
+
         unit = self.find_unit(name, arepo_code_units)
 
+        # print(data)
         data = np.array(data)
 
         return pu.PaicosQuantity(data, unit, a=self.a, h=self.h)
@@ -183,19 +188,19 @@ class ArepoConverter:
                 return self.find_unit(name, False)
 
         if isinstance(name, dict):
-            # Create comoving dictionary
-            comoving_dic = {}
-            for key in ['a_scaling', 'h_scaling']:
-                comoving_dic.update({key: name[key]})
-
-            comoving_dic.update({'small_h': self.h,
-                                 'scale_factor': self.a})
             # Create units for the quantity
-            if 'units' in name:
-                units = 1*u.Unit(name['units'])
+            if 'unit' in name:
+                units = 1*u.Unit(name['unit'])
             else:
                 # Arepo data attributes and the units from the Parameter
                 # group in the hdf5 file are here combined
+                # Create comoving dictionary
+                comoving_dic = {}
+                for key in ['a_scaling', 'h_scaling']:
+                    comoving_dic.update({key: name[key]})
+
+                comoving_dic.update({'small_h': self.h,
+                                     'scale_factor': self.a})
                 units = aunits['unit_length']**(name['length_scaling']) * \
                     aunits['unit_mass']**(name['mass_scaling']) * \
                     aunits['unit_velocity']**(name['velocity_scaling']) * \
