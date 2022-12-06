@@ -52,6 +52,7 @@ class Snapshot:
 
         self.Header = dict(f['Header'].attrs)
         self.Parameters = dict(f['Parameters'].attrs)
+        self.Config = dict(f['Config'].attrs)
 
         f.close()
 
