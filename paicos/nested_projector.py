@@ -30,7 +30,8 @@ class NestedProjector(Projector):
             index = i_digit == (ii + 1)
             count += np.sum(index)
             if self.verbose:
-                print('n_grid={} contains {} particles'.format(n_grid, np.sum(index)))
+                print('n_grid={} contains {} particles'.format(
+                    n_grid, np.sum(index)))
 
         assert n_particles == count, 'need to include all cells!'
 
@@ -39,8 +40,6 @@ class NestedProjector(Projector):
 
     def _get_bins(self):
         def nearest_power_of_two(x):
-            if hasattr(x, 'unit'):
-                x = x.value 
             return int(2**np.ceil(np.log2(x)))
 
         def log2int(x):
@@ -48,7 +47,11 @@ class NestedProjector(Projector):
 
         hsml = self.hsml
 
-        width = self.extent[1] - self.extent[0]
+        from paicos import util
+        if util.use_paicos_quantities:
+            width = (self.extent[1] - self.extent[0]).value
+        else:
+            width = self.extent[1] - self.extent[0]
 
         npix_low = nearest_power_of_two(width/np.max(hsml)*self.factor)
         npix_high = nearest_power_of_two(width/np.min(hsml)*self.factor)
@@ -61,7 +64,7 @@ class NestedProjector(Projector):
             npix_low = npix_high
 
         n_grids = []
-        bins = [width.value]
+        bins = [width]
         for ii in range(log2int(npix_low), log2int(npix_high) + 1):
             n_grid = 2**ii
 
@@ -71,7 +74,7 @@ class NestedProjector(Projector):
             if n_grid == npix_high:
                 bins.append(0.0)
             else:
-                bins.append(width.value/n_grid*self.factor)
+                bins.append(width/n_grid*self.factor)
 
         return bins, n_grids
 
@@ -129,8 +132,8 @@ class NestedProjector(Projector):
         else:
             variable = np.array(variable[self.index], dtype=np.float64)
 
-        from paicos import use_paicos_quantities
-        if use_paicos_quantities:
+        from paicos import util
+        if util.use_paicos_quantities:
             xc = self.xc.value
             yc = self.yc.value
             zc = self.zc.value
@@ -184,7 +187,7 @@ class NestedProjector(Projector):
         projection = projection.T
         area_per_pixel = self.area/np.product(projection.shape)
 
-        if use_paicos_quantities:
+        if util.use_paicos_quantities:
             projection = pu.PaicosQuantity(projection, variable_unit,
                                            a=self.snap.a, h=self.snap.h)
 
@@ -196,23 +199,31 @@ if __name__ == '__main__':
     from matplotlib.colors import LogNorm
     from paicos import Snapshot
     from paicos import root_dir
+    import paicos as pa
+
+    pa.use_units(True)
 
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
-    R200c = snap.Cat.Group['Group_R_Crit200'][0].value
+
+    if pa.util.use_paicos_quantities:
+        R200c = snap.Cat.Group['Group_R_Crit200'][0].value
+    else:
+        R200c = snap.Cat.Group['Group_R_Crit200'][0]
 
     width_vec = (
         [2*R200c, 10000, 10000],
         [10000, 2*R200c, 10000],
         [10000, 10000, 2*R200c],
-        )
+    )
 
     plt.rc('image', origin='lower', cmap='RdBu_r', interpolation='None')
     from paicos import Projector
     plt.figure(1)
     plt.clf()
     fig, axes = plt.subplots(num=1, ncols=3, nrows=3,
-                             sharex='col', sharey='col')#, sharey=True)
+                             sharex='col', sharey='col')
+
     for ii, direction in enumerate(['x', 'y', 'z']):
         widths = width_vec[ii]
         p_nested = NestedProjector(snap, center, widths, direction, npix=512)
@@ -229,17 +240,30 @@ if __name__ == '__main__':
 
         normal_image = Masses/Volume
 
-        if ii == 0:
-            vmin = normal_image.min().value
-            vmax = normal_image.max().value
+        if pa.util.use_paicos_quantities:
+            if ii == 0:
+                vmin = normal_image.min().value
+                vmax = normal_image.max().value
 
-        # Make a plot
-        axes[0, ii].imshow(normal_image.value, origin='lower',
-                           extent=p.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-        axes[1, ii].imshow(nested_image.value, origin='lower',
-                           extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-        axes[2, ii].imshow(np.abs(normal_image-nested_image).value, origin='lower',
-                           extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
+            # Make a plot
+            axes[0, ii].imshow(normal_image.value, origin='lower',
+                               extent=p.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
+            axes[1, ii].imshow(nested_image.value, origin='lower',
+                               extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
+            axes[2, ii].imshow(np.abs(normal_image-nested_image).value, origin='lower',
+                               extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
+        else:
+            if ii == 0:
+                vmin = normal_image.min()
+                vmax = normal_image.max()
+
+            # Make a plot
+            axes[0, ii].imshow(normal_image, origin='lower',
+                               extent=p.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
+            axes[1, ii].imshow(nested_image, origin='lower',
+                               extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
+            axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
+                               extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
 
         axes[0, ii].set_title('Normal projection ({})'.format(direction))
         axes[1, ii].set_title('nested projection')

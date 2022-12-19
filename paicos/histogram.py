@@ -1,4 +1,6 @@
 import numpy as np
+from astropy import units as u
+from paicos import units as pu
 
 
 class Histogram:
@@ -46,7 +48,7 @@ if __name__ == '__main__':
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
-        r_max = 10000
+        r_max = 10000*r.unit_quantity
         index = r < r_max*1.1
 
         bins = np.linspace(0, r_max, 150)
@@ -56,7 +58,7 @@ if __name__ == '__main__':
             snap.load_data(0, key)
 
         snap.get_volumes()
-        snap.get_temperatures()
+        # snap.get_temperatures()
 
         B2 = np.sum((snap.P['0_MagneticField'])**2, axis=1)
         Volumes = snap.P['0_Volumes']
@@ -66,21 +68,23 @@ if __name__ == '__main__':
             h_r = Histogram(r[index], bins, verbose=True)
             B2TimesVolume = h_r.hist((B2*Volumes)[index])
             Volumes = h_r.hist(Volumes[index])
-            TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
+            # TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
             Masses = h_r.hist(Masses[index])
 
             axes[0].loglog(h_r.bin_centers, Masses/Volumes)
             axes[1].loglog(h_r.bin_centers, B2TimesVolume/Volumes)
-            axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
+            # axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
         else:
             B2TimesVolume, edges = np.histogram(r[index], weights=(B2*Volumes)[index], bins=bins)
             Volumes, edges = np.histogram(r[index], weights=Volumes[index], bins=bins)
-            TTimesMasses, edges = np.histogram(r[index], weights=(Masses*snap.P['0_Temperatures'])[index], bins=bins)
+            # TTimesMasses, edges = np.histogram(r[index], weights=(Masses*snap.P['0_Temperatures'])[index], bins=bins)
             Masses, edges = np.histogram(r[index], weights=Masses[index], bins=bins)
             bin_centers = 0.5*(edges[1:] + edges[:-1])
 
             axes[0].loglog(bin_centers, Masses/Volumes, '--')
             axes[1].loglog(bin_centers, B2TimesVolume/Volumes, '--')
-            axes[2].loglog(bin_centers, TTimesMasses/Masses, '--')
+            axes[0].set_xlabel(bin_centers.label(r'\mathrm{radius}\;'))
+            axes[0].set_ylabel((Masses/Volumes).label('\\rho'))
+            # axes[2].loglog(bin_centers, TTimesMasses/Masses, '--')
 
     plt.show()

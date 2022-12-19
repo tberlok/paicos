@@ -1,6 +1,6 @@
 import numpy as np
 from paicos import ImageCreator
-from paicos import use_paicos_quantities
+import paicos as pa
 
 
 class Projector(ImageCreator):
@@ -21,7 +21,7 @@ class Projector(ImageCreator):
 
         snap = self.snap
 
-        if use_paicos_quantities:
+        if pa.util.use_paicos_quantities:
             xc = self.xc.value
             yc = self.yc.value
             zc = self.zc.value
@@ -112,7 +112,7 @@ class Projector(ImageCreator):
         else:
             variable = np.array(variable[self.index], dtype=np.float64)
 
-        if use_paicos_quantities:
+        if pa.util.use_paicos_quantities:
             xc = self.xc.value
             yc = self.yc.value
             zc = self.zc.value
@@ -167,41 +167,49 @@ if __name__ == '__main__':
     from paicos import ArepoImage
     from paicos import root_dir
 
-    snap = Snapshot(root_dir + '/data', 247)
-    center = snap.Cat.Group['GroupPos'][0]
-    R200c = snap.Cat.Group['Group_R_Crit200'][0].value
-    # widths = [10000, 10000, 2*R200c]
-    widths = [10000, 10000, 10000]
-    width_vec = (
-        [2*R200c, 10000, 20000],
-        [10000, 2*R200c, 20000],
-        [10000, 20000, 2*R200c],
-        )
+    for use_units in [False, True]:
 
-    plt.figure(1)
-    plt.clf()
-    fig, axes = plt.subplots(num=1, ncols=3)
-    for ii, direction in enumerate(['x', 'y', 'z']):
-        widths = width_vec[ii]
-        projector = Projector(snap, center, widths, direction, npix=512)
+        pa.use_units(use_units)
 
-        filename = root_dir + '/data/projection_{}.hdf5'.format(direction)
-        image_file = ArepoImage(filename, projector)
+        snap = Snapshot(root_dir + '/data', 247)
+        center = snap.Cat.Group['GroupPos'][0]
+        if pa.util.use_paicos_quantities:
+            R200c = snap.Cat.Group['Group_R_Crit200'][0].value
+        else:
+            R200c = snap.Cat.Group['Group_R_Crit200'][0]
+        # widths = [10000, 10000, 2*R200c]
+        widths = [10000, 10000, 10000]
+        width_vec = (
+            [2*R200c, 10000, 20000],
+            [10000, 2*R200c, 20000],
+            [10000, 20000, 2*R200c],
+            )
 
-        Masses = projector.project_variable('Masses')
-        Volumes = projector.project_variable('Volumes')
+        plt.figure(1)
+        plt.clf()
+        fig, axes = plt.subplots(num=1, ncols=3)
+        for ii, direction in enumerate(['x', 'y', 'z']):
+            widths = width_vec[ii]
+            projector = Projector(snap, center, widths, direction, npix=512)
 
-        image_file.save_image('Masses', Masses.value, Masses.hdf5_attrs)
-        image_file.save_image('Volumes', Volumes, Volumes.hdf5_attrs)
+            filename = root_dir + '/data/projection_{}.hdf5'.format(direction)
+            image_file = ArepoImage(filename, projector)
 
-        # Move from temporary filename to final filename
-        image_file.finalize()
+            Masses = projector.project_variable('Masses')
+            print(Masses[0, 0])
+            Volumes = projector.project_variable('Volumes')
 
-        # Make a plot
-        axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
-                        extent=np.array(projector.extent), norm=LogNorm())
-    plt.show()
+            image_file.save_image('Masses', Masses)
+            image_file.save_image('Volumes', Volumes)
 
-    M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
-    # Projection now has units
-    projected_mass = projector.project_variable(M)
+            # Move from temporary filename to final filename
+            image_file.finalize()
+
+            # Make a plot
+            axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
+                            extent=np.array(projector.extent), norm=LogNorm())
+        plt.show()
+
+        M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
+        # Projection now has units
+        projected_mass = projector.project_variable(M)

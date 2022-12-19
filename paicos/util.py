@@ -1,5 +1,5 @@
 
-use_paicos_quantities = True
+use_paicos_quantities = False
 
 
 def get_project_root_dir():

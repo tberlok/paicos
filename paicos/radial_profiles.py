@@ -18,7 +18,7 @@ class RadialProfiles:
         self.verbose = verbose
 
         self.snap.load_data(0, 'Coordinates')
-        pos = np.array(self.snap.P['0_Coordinates'])
+        pos = self.snap.P['0_Coordinates']
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
-    r_max = 10000
+    r_max = 10000*center.unit_quantity
 
     bins = np.linspace(0, r_max, 150)
 

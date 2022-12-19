@@ -107,7 +107,7 @@ class Snapshot:
                     print('PartType not in hdf5 file')
                 return None
 
-    def load_data(self, particle_type, blockname, give_units=True):
+    def load_data(self, particle_type, blockname, give_units=False):
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
@@ -163,9 +163,10 @@ class Snapshot:
 
             skip_part += np_file
 
-        from paicos import use_paicos_quantities
+        from . import util
+        # from paicos import util
 
-        if use_paicos_quantities or give_units:
+        if util.use_paicos_quantities or give_units:
             try:
                 self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
                                                                     blockname)

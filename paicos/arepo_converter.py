@@ -155,7 +155,6 @@ class ArepoConverter:
 
         unit = self.find_unit(name, arepo_code_units)
 
-        # print(data)
         data = np.array(data)
 
         return pu.PaicosQuantity(data, unit, a=self.a, h=self.h)
@@ -224,6 +223,8 @@ class ArepoConverter:
                 units = aunits['unit_pressure']**(1/2)*a**(-2)*h
             elif name == 'BfieldGradient':
                 units = find('MagneticField')/find('Coordinates')
+            elif name == 'MagneticField':
+                units = find('BfieldGradient')
             elif name == 'Velocities':
                 units = aunits['unit_velocity']*a**(1/2)
             elif name == 'Velocities':
@@ -241,6 +242,39 @@ class ArepoConverter:
 
         return units
 
+    def give_units(self, name, data):
+        """
+        For backward compatibility, this method returns
+        an astropy object. Might be removed in the future.
+        """
+        if hasattr(data, 'unit'):
+            raise RuntimeError('error in input')
+        quantity = self.get_paicos_quantity(data, name)
+        return quantity.value*quantity.unit
+
+    def to_physical(self, name, data):
+        """
+        For backward compatibility, this method returns a
+        numerical value. Might be removed in the future.
+        """
+        if hasattr(data, 'unit'):
+            raise RuntimeError('error in input')
+        quantity = self.get_paicos_quantity(data, name)
+        quantity = quantity.to_physical
+        return quantity.value
+
+    def to_physical_and_give_units(self, name, data):
+        """
+        For backward compatibility, this method returns
+        an astropy object. Might be removed in the future.
+        """
+        if hasattr(data, 'unit'):
+            raise RuntimeError('error in input')
+        quantity = self.get_paicos_quantity(data, name)
+        quantity = quantity.to_physical
+        # Return an astropy quantity
+        return quantity.value*quantity.unit
+
 
 if __name__ == '__main__':
     from paicos import root_dir
@@ -255,7 +289,7 @@ if __name__ == '__main__':
 
     B = converter.get_paicos_quantity([1], 'MagneticField')
 
-    T = converter.get_paicos_quantity( [1], 'Temperature')
+    T = converter.get_paicos_quantity([1], 'Temperature')
 
     B = converter.get_paicos_quantity([1], 'MagneticField')
 

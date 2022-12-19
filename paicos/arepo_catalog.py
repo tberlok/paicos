@@ -9,7 +9,7 @@ class Catalog:
     """
 
     def __init__(self, basedir, snapnum, verbose=False, subfind_catalog=True,
-                 converter=None):
+                 converter=None, give_units=False):
 
         if subfind_catalog:
             single_file = "/fof_subhalo_tab_{:03d}.hdf5"
@@ -131,9 +131,11 @@ class Catalog:
 
             f.close()
 
-            from paicos import use_paicos_quantities
+            from . import util
 
-            if use_paicos_quantities and converter is not None:
+            give_units = util.use_paicos_quantities or give_units
+
+            if give_units and converter is not None:
 
                 mass_keys = ['GroupMass',
                              'Group_M_Crit200',

@@ -151,6 +151,10 @@ class PaicosQuantity(Quantity):
 
         return codic, dic
 
+    @property
+    def unit_quantity(self):
+        return PaicosQuantity(1., self.unit, a=self.a, h=self.h)
+
     def _construct_unit_from_dic(self, dic):
         """
         Construct unit from a dictionary with the format returned
@@ -225,12 +229,8 @@ class PaicosQuantity(Quantity):
         if isinstance(unit, str):
             unit = u.Unit(unit)
 
-        # TODO: Fix this so that it works regardless of whether
-        # the pu_unit is included or not
-        # err_msg = ("dependence on small_a and small_h automatically " +
-        #            "handled, and should be not included in input")
-        # assert small_a not in unit.bases, err_msg
-        # assert small_h not in unit.bases, err_msg
+        # Fix so that it works regardless
+        # of whether the pu_unit is included or not
         if (small_a in unit.bases) or (small_h in unit.bases):
             return super().to(unit, equivalencies, copy)
         else:
@@ -394,15 +394,3 @@ class PaicosQuantity(Quantity):
     def __truediv__(self, value):
         self.__sanity_check(value)
         return super().__truediv__(value)
-
-
-# if __name__ == '__main__':
-#     A = PaicosQuantity(1, small_a**2*small_h*u.cm**4, h=0.7, a=1/128)
-#     T = PaicosQuantity(2, small_a**2*small_h*u.cm**4, h=0.7, a=1/128)
-#     C = PaicosQuantity(np.ones((4, 4))*2.1,
-#                        'g cm^-3 small_a^-3 small_h^2', h=0.7, a=1/128)
-
-#     # Initialize 10 μG field at a = 1
-#     B = PaicosQuantity(10, 'uG small_a^-2 small_h', h=1, a=1)
-#     D = PaicosQuantity(2, 'K')
-

@@ -1,6 +1,18 @@
 # The main classes
-from .util import root_dir, use_paicos_quantities
+from . import util
+from .util import root_dir
 from . import units
+
+
+def use_units(use_units):
+    """
+    pa.use_units(True) turns on paicos quantities globally
+    pa.use_units(False) loads in data without applying units
+    """
+    # from . import util
+    util.use_paicos_quantities = use_units
+
+
 from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog

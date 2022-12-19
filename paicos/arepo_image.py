@@ -1,6 +1,5 @@
 import h5py
 import numpy as np
-from paicos import use_paicos_quantities
 
 
 class ImageCreator:
@@ -10,13 +9,22 @@ class ImageCreator:
 
         self.snap = snap
 
-        if use_paicos_quantities:
+        from paicos import util
+
+        if hasattr(center, 'unit'):
+            self.center = center
+        elif util.use_paicos_quantities:
             self.center = snap.converter.get_paicos_quantity(center,
-                                                             'Coordinates')
-            self.widths = snap.converter.get_paicos_quantity(widths,
                                                              'Coordinates')
         else:
             self.center = np.array(center)
+
+        if hasattr(widths, 'unit'):
+            self.widths = widths
+        elif util.use_paicos_quantities:
+            self.widths = snap.converter.get_paicos_quantity(widths,
+                                                             'Coordinates')
+        else:
             self.widths = np.array(widths)
 
         self.xc = self.center[0]
@@ -47,7 +55,7 @@ class ImageCreator:
         # print(self.extent)
         # self.extent = np.array(self.extent)
 
-        if use_paicos_quantities:
+        if util.use_paicos_quantities:
             from paicos.units import PaicosQuantity
             self.extent = PaicosQuantity(self.extent, a=snap.a, h=snap.h)
         else:
@@ -139,7 +147,11 @@ class ArepoImage:
         """
 
         with h5py.File(self.tmp_image_filename, 'r+') as f:
-            f.create_dataset(name, data=data)
+            if hasattr(data, 'unit') and attrs is None:
+                f.create_dataset(name, data=data.value)
+                attrs = {'unit': data.unit.to_string()}
+            else:
+                f.create_dataset(name, data=data)
             if isinstance(attrs, dict):
                 for key in attrs.keys():
                     f[name].attrs[key] = attrs[key]
