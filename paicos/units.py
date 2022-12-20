@@ -379,7 +379,7 @@ class PaicosQuantity(Quantity):
         u_latex = (self.unit/pu_units).to_string(format='latex')[1:-1]
         pu_latex = pu_units.to_string(format='latex')[1:-1]
 
-        if pu_latex != u.Unit(''):
+        if pu_units != u.Unit(''):
             modified = number_part + '\\;' + u_latex + \
                        '\\times' + pu_latex + '$'
         else:
