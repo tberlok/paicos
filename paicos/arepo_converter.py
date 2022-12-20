@@ -187,12 +187,12 @@ class ArepoConverter:
             aunits = self.arepo_units_in_cgs
 
         # Turn off a and h if we are not comoving or if h = 1
-        if self.ComovingIntegrationOn:
+        if self.ComovingIntegrationOn == 1:
             a = pu.small_a
         else:
             a = u.Unit('')
 
-        if self.HubbleParam == 1:
+        if self.h == 1:
             h = u.Unit('')
         else:
             h = pu.small_h
