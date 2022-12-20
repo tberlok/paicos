@@ -51,6 +51,7 @@ class ArepoConverter:
             OmegaLambda = f['Header'].attrs['OmegaLambda']
 
             HubbleParam = f['Parameters'].attrs['HubbleParam']
+            ComovingIntegrationOn = f['Parameters'].attrs['ComovingIntegrationOn']
 
         _ns = globals()
         arepo_mass = u.def_unit(
@@ -132,9 +133,14 @@ class ArepoConverter:
             phys_type = key.split('_')[1]
             u.def_physical_type(self.arepo_units[key], phys_type)
 
+        self.ComovingIntegrationOn = ComovingIntegrationOn
+
         self.a = self.scale_factor = scale_factor
         self.z = self.redshift = redshift
         self.h = HubbleParam
+
+        if self.h == 0:
+            self.h = 1
 
         self.length = self.get_paicos_quantity(1, 'Coordinates')
         self.mass = self.get_paicos_quantity(1, 'Masses')
@@ -174,12 +180,22 @@ class ArepoConverter:
         For this latter, hardcoded, option, I have implemented a few of the
         gas variables.
         """
+        import astropy.units as u
         if arepo_code_units:
             aunits = self.arepo_units
         else:
             aunits = self.arepo_units_in_cgs
-        a = pu.small_a
-        h = pu.small_h
+
+        # Turn off a and h if we are not comoving or if h = 1
+        if self.ComovingIntegrationOn:
+            a = pu.small_a
+        else:
+            a = u.Unit('')
+
+        if self.HubbleParam == 1:
+            h = u.Unit('')
+        else:
+            h = pu.small_h
 
         if arepo_code_units:
             def find(name):
