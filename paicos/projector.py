@@ -1,6 +1,5 @@
 import numpy as np
 from paicos import ImageCreator
-import paicos as pa
 
 
 class Projector(ImageCreator):
@@ -11,6 +10,7 @@ class Projector(ImageCreator):
     def __init__(self, snap, center, widths, direction,
                  npix=512, nvol=8, numthreads=16):
         from paicos import get_index_of_region
+        from paicos import units
 
         super().__init__(snap, center, widths, direction, npix=npix,
                          numthreads=numthreads)
@@ -21,7 +21,7 @@ class Projector(ImageCreator):
 
         snap = self.snap
 
-        if pa.util.use_paicos_quantities:
+        if units.enabled:
             xc = self.xc.value
             yc = self.yc.value
             zc = self.zc.value
@@ -87,6 +87,7 @@ class Projector(ImageCreator):
         return get_variable(self.snap, variable_str)
 
     def project_variable(self, variable):
+        from paicos import units
 
         if self.use_omp:
             from paicos import project_image_omp as project_image
@@ -103,16 +104,16 @@ class Projector(ImageCreator):
         else:
             raise RuntimeError('Unexpected type for variable')
 
-        from paicos import units as pu
-        if isinstance(variable, pu.PaicosQuantity):
+        if isinstance(variable, units.PaicosQuantity):
             variable_unit = variable.unit
-            variable = pu.PaicosQuantity(variable[self.index], variable.unit,
-                                         dtype=np.float64,
-                                         a=self.snap.a, h=self.snap.h)
+            variable = units.PaicosQuantity(variable[self.index],
+                                            variable.unit,
+                                            dtype=np.float64,
+                                            a=self.snap.a, h=self.snap.h)
         else:
             variable = np.array(variable[self.index], dtype=np.float64)
 
-        if pa.util.use_paicos_quantities:
+        if units.enabled:
             xc = self.xc.value
             yc = self.yc.value
             zc = self.zc.value
@@ -153,9 +154,9 @@ class Projector(ImageCreator):
         projection = projection.T
         area_per_pixel = self.area/np.product(projection.shape)
 
-        if isinstance(variable, pu.PaicosQuantity):
-            projection = pu.PaicosQuantity(projection, variable_unit,
-                                           a=self.snap.a, h=self.snap.h)
+        if isinstance(variable, units.PaicosQuantity):
+            projection = units.PaicosQuantity(projection, variable_unit,
+                                              a=self.snap.a, h=self.snap.h)
 
         return projection/area_per_pixel
 
@@ -163,17 +164,16 @@ class Projector(ImageCreator):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
-    from paicos import Snapshot
-    from paicos import ArepoImage
     from paicos import root_dir
+    import paicos as pa
 
     for use_units in [False, True]:
 
         pa.use_units(use_units)
 
-        snap = Snapshot(root_dir + '/data', 247)
+        snap = pa.Snapshot(root_dir + '/data', 247)
         center = snap.Cat.Group['GroupPos'][0]
-        if pa.util.use_paicos_quantities:
+        if pa.units.enabled:
             R200c = snap.Cat.Group['Group_R_Crit200'][0].value
         else:
             R200c = snap.Cat.Group['Group_R_Crit200'][0]
@@ -193,7 +193,7 @@ if __name__ == '__main__':
             projector = Projector(snap, center, widths, direction, npix=512)
 
             filename = root_dir + '/data/projection_{}.hdf5'.format(direction)
-            image_file = ArepoImage(filename, projector)
+            image_file = pa.ArepoImage(filename, projector)
 
             Masses = projector.project_variable('Masses')
             print(Masses[0, 0])
@@ -210,6 +210,7 @@ if __name__ == '__main__':
                             extent=np.array(projector.extent), norm=LogNorm())
         plt.show()
 
-        M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
-        # Projection now has units
-        projected_mass = projector.project_variable(M)
+        if not use_units:
+            M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
+            # Projection now has units
+            projected_mass = projector.project_variable(M)

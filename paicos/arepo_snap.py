@@ -164,10 +164,9 @@ class Snapshot:
 
             skip_part += np_file
 
-        from . import util
-        # from paicos import util
+        from . import units
 
-        if util.use_paicos_quantities or give_units:
+        if units.enabled or give_units:
             try:
                 self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
                                                                     blockname)
@@ -238,8 +237,8 @@ class Snapshot:
         gm1 = gamma - 1
 
         # temperature in Kelvin
-        from . import util
-        if util.use_paicos_quantities:
+        from . import units
+        if units.enabled:
             self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
                                         mmean * mhydrogen).to('K')
         else:

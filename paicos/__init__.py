@@ -10,7 +10,7 @@ def use_units(use_units):
     pa.use_units(False) loads in data without applying units
     """
     # from . import util
-    util.use_paicos_quantities = use_units
+    units.enabled = use_units
 
 
 from .arepo_image import ArepoImage, ImageCreator

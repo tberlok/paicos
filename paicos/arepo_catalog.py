@@ -131,9 +131,8 @@ class Catalog:
 
             f.close()
 
-            from . import util
-
-            give_units = util.use_paicos_quantities or give_units
+            from . import units
+            give_units = units.enabled or give_units
 
             if give_units and converter is not None:
 

@@ -1,7 +1,4 @@
 
-use_paicos_quantities = False
-
-
 def get_project_root_dir():
     import os
     path = os.path.dirname(os.path.abspath(__file__))
@@ -35,4 +32,5 @@ def load_dataset(hdf5file, name):
     Load dataset, returning a paicos quantity if the attributes
     contain units
     """
+    raise RuntimeError('Needs to be implemented!')
     pass

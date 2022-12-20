@@ -150,7 +150,9 @@ class ArepoConverter:
     def get_paicos_quantity(self, data, name, arepo_code_units=True):
 
         if hasattr(data, 'unit'):
-            print('Data already has units, returning!')
+            msg = 'Data already had units, returning! {}'.format(name)
+            raise RuntimeError(msg)
+            # print()
             return data
 
         unit = self.find_unit(name, arepo_code_units)
@@ -238,7 +240,6 @@ class ArepoConverter:
             elif name == 'Enstrophy':
                 units = (find('VelocityGradient'))**2
             elif name == 'Temperature':
-                comoving_dic = {}
                 units = u.K
             else:
                 err_msg = 'invalid option name={}, cannot find units'

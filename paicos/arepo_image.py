@@ -9,11 +9,11 @@ class ImageCreator:
 
         self.snap = snap
 
-        from paicos import util
+        from paicos import units
 
         if hasattr(center, 'unit'):
             self.center = center
-        elif util.use_paicos_quantities:
+        elif units.enabled:
             self.center = snap.converter.get_paicos_quantity(center,
                                                              'Coordinates')
         else:
@@ -21,7 +21,7 @@ class ImageCreator:
 
         if hasattr(widths, 'unit'):
             self.widths = widths
-        elif util.use_paicos_quantities:
+        elif units.enabled:
             self.widths = snap.converter.get_paicos_quantity(widths,
                                                              'Coordinates')
         else:
@@ -52,12 +52,8 @@ class ImageCreator:
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.yc - self.width_y/2, self.yc + self.width_y/2]
 
-        # print(self.extent)
-        # self.extent = np.array(self.extent)
-
-        if util.use_paicos_quantities:
-            from paicos.units import PaicosQuantity
-            self.extent = PaicosQuantity(self.extent, a=snap.a, h=snap.h)
+        if units.enabled:
+            self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h)
         else:
             self.extent = np.array(self.extent)
 

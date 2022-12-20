@@ -74,7 +74,7 @@ class RadialProfiles:
 
                 # snap.load_data(part, "SubfindHsml")
                 dm_mass = self.snap.Header["MassTable"][part]
-                if pa.util.use_paicos_quantities:
+                if pa.units.enabled:
                     dm_mass = self.snap.converter.get_paicos_quantity(dm_mass,
                                                                       'Masses')
 
@@ -159,8 +159,7 @@ if __name__ == '__main__':
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
-    # if pa.units.enabled:
-    if pa.util.use_paicos_quantities:
+    if pa.units.enabled:
         r_max = 10000*center.unit_quantity
     else:
         r_max = 10000

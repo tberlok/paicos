@@ -2,6 +2,9 @@ import astropy.units as u
 from astropy.units import Quantity
 import numpy as np
 
+# Boolean determining whether we use Paicos quantities as a default
+enabled = False
+
 _ns = globals()
 
 small_a = u.def_unit(

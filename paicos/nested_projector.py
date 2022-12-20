@@ -47,8 +47,8 @@ class NestedProjector(Projector):
 
         hsml = self.hsml
 
-        from paicos import util
-        if util.use_paicos_quantities:
+        from paicos import units
+        if units.enabled:
             width = (self.extent[1] - self.extent[0]).value
         else:
             width = self.extent[1] - self.extent[0]
@@ -109,6 +109,7 @@ class NestedProjector(Projector):
         return get_variable(self.snap, variable_str)
 
     def project_variable(self, variable, store_subimages=False):
+        from paicos import units
 
         if self.use_omp:
             from paicos import project_image_omp as project_image
@@ -125,15 +126,13 @@ class NestedProjector(Projector):
         else:
             raise RuntimeError('Unexpected type for variable')
 
-        from paicos import units as pu
-        if isinstance(variable, pu.PaicosQuantity):
+        if isinstance(variable, units.PaicosQuantity):
             variable_unit = str(variable.unit)
             variable = np.array(variable[self.index].value, dtype=np.float64)
         else:
             variable = np.array(variable[self.index], dtype=np.float64)
 
-        from paicos import util
-        if util.use_paicos_quantities:
+        if units.enabled:
             xc = self.xc.value
             yc = self.yc.value
             zc = self.zc.value
@@ -187,9 +186,9 @@ class NestedProjector(Projector):
         projection = projection.T
         area_per_pixel = self.area/np.product(projection.shape)
 
-        if util.use_paicos_quantities:
-            projection = pu.PaicosQuantity(projection, variable_unit,
-                                           a=self.snap.a, h=self.snap.h)
+        if units.enabled:
+            projection = units.PaicosQuantity(projection, variable_unit,
+                                              a=self.snap.a, h=self.snap.h)
 
         return projection/area_per_pixel
 
@@ -206,7 +205,7 @@ if __name__ == '__main__':
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
-    if pa.util.use_paicos_quantities:
+    if pa.units.enabled:
         R200c = snap.Cat.Group['Group_R_Crit200'][0].value
     else:
         R200c = snap.Cat.Group['Group_R_Crit200'][0]
@@ -240,7 +239,7 @@ if __name__ == '__main__':
 
         normal_image = Masses/Volume
 
-        if pa.util.use_paicos_quantities:
+        if pa.units.enabled:
             if ii == 0:
                 vmin = normal_image.min().value
                 vmax = normal_image.max().value
