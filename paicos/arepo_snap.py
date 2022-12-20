@@ -50,6 +50,7 @@ class Snapshot:
 
         self.Header = dict(f['Header'].attrs)
         self.Parameters = dict(f['Parameters'].attrs)
+        self.Config = dict(f['Config'].attrs)
 
         f.close()
 
@@ -217,7 +218,7 @@ class Snapshot:
 
         fhydrogen = 0.76
 
-        if "ElectronAbundance" in self.info(0):
+        if "ElectronAbundance" in self.info(0, False):
             self.load_data(0, "ElectronAbundance")
             mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
                            fhydrogen*self.P["0_ElectronAbundance"])
@@ -226,9 +227,25 @@ class Snapshot:
                 (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
             mmean = mmean_ionized
 
+        if 'GAMMA' in self.Config:
+            gamma = self.Config['GAMMA']
+        elif 'ISOTHERMAL' in self.Config:
+            msg = 'temperature is constant when ISOTHERMAL in Config'
+            raise RuntimeError(msg)
+        else:
+            gamma = 5/3
+
+        gm1 = gamma - 1
+
         # temperature in Kelvin
-        self.P["0_Temperatures"] = (2.0/3.0 * self.P["0_InternalEnergy"].value *
-                                    u_v**2 * mmean * mhydrogen).to('K').value
+        from . import util
+        if util.use_paicos_quantities:
+            self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
+                                        mmean * mhydrogen).to('K')
+        else:
+            self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
+                                        u_v**2 * mmean * mhydrogen
+                                        ).to('K').value
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")

@@ -207,12 +207,16 @@ class ArepoConverter:
                     h**comoving_dic['h_scaling']
 
         elif isinstance(name, str):
+            unitless_vars = ['ElectronAbundance', 'MachNumber',
+                             'GFM_Metallicity']
             if name == 'Coordinates':
                 units = aunits['unit_length']*a/h
             elif name == 'Density':
                 units = find('Masses')/find('Volumes')
             elif name == 'Volumes':
                 units = find('Coordinates')**3
+            elif name in unitless_vars:
+                units = ''
             elif name == 'Masses':
                 units = aunits['unit_mass']/h
             elif name == 'EnergyDissipation':
@@ -223,7 +227,7 @@ class ArepoConverter:
                 units = aunits['unit_pressure']**(1/2)*a**(-2)*h
             elif name == 'BfieldGradient':
                 units = find('MagneticField')/find('Coordinates')
-            elif name == 'MagneticField':
+            elif name == 'MagneticFieldDivergence':
                 units = find('BfieldGradient')
             elif name == 'Velocities':
                 units = aunits['unit_velocity']*a**(1/2)
