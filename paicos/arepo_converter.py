@@ -37,7 +37,7 @@ class ArepoConverter:
         """
 
         with h5py.File(hdf5file, 'r') as f:
-            scale_factor = f['Header'].attrs['Time']
+            scale_factor = time = f['Header'].attrs['Time']
             redshift = f['Header'].attrs['Redshift']
             unit_length = f['Parameters'].attrs['UnitLength_in_cm'] * u.cm
             unit_mass = f['Parameters'].attrs['UnitMass_in_g'] * u.g
@@ -135,23 +135,26 @@ class ArepoConverter:
 
         self.ComovingIntegrationOn = ComovingIntegrationOn
 
-        self.a = self.scale_factor = scale_factor
-        self.z = self.redshift = redshift
         self.h = HubbleParam
 
-        if self.h == 0:
-            self.h = 1
+        if ComovingIntegrationOn == 1:
+            self.a = self.scale_factor = scale_factor
+            self.z = self.redshift = redshift
+            # Set up LambdaCDM cosmology to calculate times, etc
+            self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
+                                           Ob0=OmegaBaryon, Ode0=OmegaLambda)
+            # Current age of the universe and look back time
+            self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
+            self.lookback_time = cosmo.lookback_time(self.z)
+        else:
+            self.time = time * self.arepo_units['unit_time']
+            self.a = 1
+            if self.h == 0:
+                self.h = 1
 
         self.length = self.get_paicos_quantity(1, 'Coordinates')
         self.mass = self.get_paicos_quantity(1, 'Masses')
         self.velocity = self.get_paicos_quantity(1, 'Velocities')
-
-        # Set up LambdaCDM cosmology to calculate times, etc
-        self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
-                                       Ob0=OmegaBaryon, Ode0=OmegaLambda)
-        # Current age of the universe and look back time
-        self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
-        self.lookback_time = cosmo.lookback_time(self.z)
 
     def get_paicos_quantity(self, data, name, arepo_code_units=True):
 

@@ -41,10 +41,6 @@ class Snapshot:
         if self.verbose:
             print("snapshot", snapnum, "found")
 
-        self.converter = ArepoConverter(self.first_snapfile_name)
-        self.age = self.converter.age
-        self.lookback_time = self.converter.lookback_time
-
         # get header of first file
         f = h5py.File(self.first_snapfile_name, 'r')
 
@@ -53,6 +49,13 @@ class Snapshot:
         self.Config = dict(f['Config'].attrs)
 
         f.close()
+
+        self.converter = ArepoConverter(self.first_snapfile_name)
+        if self.Parameters['ComovingIntegrationOn'] == 1:
+            self.age = self.converter.age
+            self.lookback_time = self.converter.lookback_time
+        else:
+            self.time = self.converter.time
 
         self.nfiles = self.Header["NumFilesPerSnapshot"]
         self.npart = self.Header["NumPart_Total"]

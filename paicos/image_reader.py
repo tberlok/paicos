@@ -20,8 +20,13 @@ class ImageReader(dict):
         self.h = self.Header['HubbleParam']
         self.scale_factor = self.a = self.Header['Time']
         self.converter = ArepoConverter(self.filename)
-        self.age = self.converter.age
-        self.lookback_time = self.converter.lookback_time
+
+        if self.Parameters['ComovingIntegrationOn'] == 1:
+            self.age = self.converter.age
+            self.lookback_time = self.converter.lookback_time
+        else:
+            self.time = self.converter.time
+
         with h5py.File(self.filename, 'r') as f:
             get_func = self.converter.get_paicos_quantity
             self.extent = get_func(f['image_info'].attrs['extent'],
