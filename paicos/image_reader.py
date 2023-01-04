@@ -13,7 +13,7 @@ class ImageReader(dict):
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)
             self.Config = dict(f['Config'].attrs)
-            self.Param = dict(f['Parameters'].attrs)
+            self.Parameters = dict(f['Parameters'].attrs)
             keys = list(f.keys())
 
         self.redshift = self.z = self.Header['Redshift']
