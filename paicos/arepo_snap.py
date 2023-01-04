@@ -78,7 +78,7 @@ class Snapshot:
 
         for ii, dim in enumerate(['X', 'Y', 'Z']):
             if 'LONG_' + dim in self.Config:
-                self.box_size[ii] *= self.Config['LONG_' + dim]
+                box_size[ii] *= self.Config['LONG_' + dim]
 
         from . import units
         if units.enabled:
