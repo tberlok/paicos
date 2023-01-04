@@ -41,6 +41,14 @@ class ImageReader(dict):
             for key in keys:
                 self.load_data(key)
 
+        # Get derived images from projection-files
+        for key in keys:
+            if 'Times' in key:
+                # Keys of the form 'MagneticFieldSquaredTimesVolumes'
+                # are split up
+                start, end = key.split('Times')
+                self[start] = self[key]/self[end]
+
     def load_data(self, name):
         get_func = self.converter.get_paicos_quantity
         with h5py.File(self.filename, 'r') as f:
