@@ -1,5 +1,7 @@
 import h5py
 import numpy as np
+from paicos.util import save_dataset
+import paicos as pa
 
 
 class RadialProfiles:
@@ -18,7 +20,7 @@ class RadialProfiles:
         self.verbose = verbose
 
         self.snap.load_data(0, 'Coordinates')
-        pos = np.array(self.snap.P['0_Coordinates'])
+        pos = self.snap.P['0_Coordinates']
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
@@ -72,6 +74,9 @@ class RadialProfiles:
 
                 # snap.load_data(part, "SubfindHsml")
                 dm_mass = self.snap.Header["MassTable"][part]
+                if pa.units.enabled:
+                    dm_mass = self.snap.converter.get_paicos_quantity(dm_mass,
+                                                                      'Masses')
 
                 if part != 2:
                     masses = np.ones(self.snap.P[str(part) +
@@ -86,11 +91,11 @@ class RadialProfiles:
                 r = r[index]
                 hist, edges = np.histogram(r, bins=bins, weights=masses)
                 with h5py.File(self.tmp_radial_filename, 'r+') as f:
-                    f.create_dataset('DM_Masses_part' + str(part), data=hist)
+                    save_dataset(f, 'DM_Masses_part' + str(part), data=hist)
 
         bin_volumes = np.diff(4/3*np.pi*bins**3)
         with h5py.File(self.tmp_radial_filename, 'r+') as f:
-            f.create_dataset('bin_volumes', data=bin_volumes)
+            save_dataset(f, 'bin_volumes', data=bin_volumes)
 
         # Move to final hdf5 file
         # self.finalize()
@@ -109,7 +114,7 @@ class RadialProfiles:
         variable = get_variable(self.snap, variable_str)[self.index]
 
         with h5py.File(self.tmp_radial_filename, 'r+') as f:
-            f.create_dataset(variable_str, data=self.h_r.hist(variable))
+            save_dataset(f, variable_str, self.h_r.hist(variable))
 
         if self.verbose:
             dur = time.time() - t
@@ -127,9 +132,9 @@ class RadialProfiles:
         self.arepo_snap_filename = snap.first_snapfile_name
 
         with h5py.File(self.tmp_radial_filename, 'w') as f:
-            f.create_dataset('bin_centers', data=self.h_r.bin_centers)
-            f.create_dataset('bins', data=self.h_r.bins)
-            f.create_dataset('center', data=self.center)
+            save_dataset(f, 'bin_centers', self.h_r.bin_centers)
+            save_dataset(f, 'bins', data=self.h_r.bins)
+            save_dataset(f, 'center', data=self.center)
 
     def copy_over_snapshot_information(self):
         """
@@ -149,10 +154,15 @@ if __name__ == '__main__':
     from paicos import Snapshot
     from paicos import root_dir
 
+    pa.use_units(True)
+
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
-    r_max = 10000
+    if pa.units.enabled:
+        r_max = 10000*center.unit_quantity
+    else:
+        r_max = 10000
 
     bins = np.linspace(0, r_max, 150)
 

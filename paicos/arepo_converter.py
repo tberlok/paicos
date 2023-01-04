@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from astropy import units as u
+from paicos import units as pu
 from astropy.cosmology import LambdaCDM
 
 
@@ -35,16 +36,8 @@ class ArepoConverter:
         groups found in arepo snapshots.
         """
 
-        # Allows conversion between K and eV
-        u.add_enabled_equivalencies(u.temperature_energy())
-        # Allows conversion to Gauss (potential issues?)
-        # https://github.com/astropy/astropy/issues/7396
-        gauss_B = (u.g/u.cm)**(0.5)/u.s
-        equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
-        u.add_enabled_equivalencies(equiv_B)
-
         with h5py.File(hdf5file, 'r') as f:
-            scale_factor = f['Header'].attrs['Time']
+            scale_factor = time = f['Header'].attrs['Time']
             redshift = f['Header'].attrs['Redshift']
             unit_length = f['Parameters'].attrs['UnitLength_in_cm'] * u.cm
             unit_mass = f['Parameters'].attrs['UnitMass_in_g'] * u.g
@@ -58,80 +51,128 @@ class ArepoConverter:
             OmegaLambda = f['Header'].attrs['OmegaLambda']
 
             HubbleParam = f['Parameters'].attrs['HubbleParam']
+            ComovingIntegrationOn = f['Parameters'].attrs['ComovingIntegrationOn']
 
-        self.arepo_units = {'unit_length': unit_length,
-                            'unit_mass': unit_mass,
-                            'unit_velocity': unit_velocity,
-                            'unit_time': unit_time,
-                            'unit_energy': unit_energy,
-                            'unit_pressure': unit_pressure,
-                            'unit_density': unit_density}
-        self.a = self.scale_factor = scale_factor
-        self.z = self.redshift = redshift
+        _ns = globals()
+        arepo_mass = u.def_unit(
+            ["arepo_mass", "a_mass"],
+            unit_mass,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo mass unit",
+            format={"latex": r"arepo\_mass"},
+        )
+        arepo_time = u.def_unit(
+            ["arepo_time"],
+            unit_time,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo time unit",
+            format={"latex": r"arepo\_time"},
+        )
+        arepo_length = u.def_unit(
+            ["arepo_length"],
+            unit_length,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo length unit",
+            format={"latex": r"arepo\_length"},
+        )
+        arepo_velocity = u.def_unit(
+            ["arepo_velocity"],
+            unit_velocity,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo velocity unit",
+            format={"latex": r"arepo\_velocity"},
+        )
+        arepo_pressure = u.def_unit(
+            ["arepo_pressure"],
+            unit_pressure,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo pressure unit",
+            format={"latex": r"arepo\_pressure"},
+        )
+        arepo_energy = u.def_unit(
+            ["arepo_energy"],
+            unit_energy,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo energy unit",
+            format={"latex": r"arepo\_energy"},
+        )
+        arepo_density = u.def_unit(
+            ["arepo_density"],
+            unit_density,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo density unit",
+            format={"latex": r"arepo\_density"},
+        )
+
+        self.arepo_units_in_cgs = {'unit_length': unit_length,
+                                   'unit_mass': unit_mass,
+                                   'unit_velocity': unit_velocity,
+                                   'unit_time': unit_time,
+                                   'unit_energy': unit_energy,
+                                   'unit_pressure': unit_pressure,
+                                   'unit_density': unit_density}
+
+        self.arepo_units = {'unit_length': arepo_length,
+                            'unit_mass': arepo_mass,
+                            'unit_velocity': arepo_velocity,
+                            'unit_time': arepo_time,
+                            'unit_energy': arepo_energy,
+                            'unit_pressure': arepo_pressure,
+                            'unit_density': arepo_density}
+
+        # Enable arepo units globally
+        for key in self.arepo_units:
+            u.add_enabled_units(self.arepo_units[key])
+            phys_type = key.split('_')[1]
+            u.def_physical_type(self.arepo_units[key], phys_type)
+
+        self.ComovingIntegrationOn = ComovingIntegrationOn
+
         self.h = HubbleParam
 
-        # Set up LambdaCDM cosmology to calculate times, etc
-        self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
-                                       Ob0=OmegaBaryon, Ode0=OmegaLambda)
-        # Current age of the universe and look back time
-        self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
-        self.lookback_time = cosmo.lookback_time(self.z)
+        if ComovingIntegrationOn == 1:
+            self.a = self.scale_factor = scale_factor
+            self.z = self.redshift = redshift
+            # Set up LambdaCDM cosmology to calculate times, etc
+            self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
+                                           Ob0=OmegaBaryon, Ode0=OmegaLambda)
+            # Current age of the universe and look back time
+            self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
+            self.lookback_time = cosmo.lookback_time(self.z)
+        else:
+            self.time = time * self.arepo_units['unit_time']
+            self.a = 1
+            if self.h == 0:
+                self.h = 1
 
-    def to_physical(self, name, data):
-        """
-        Convert arepo data from comoving to physical values.
+        self.length = self.get_paicos_quantity(1, 'Coordinates')
+        self.mass = self.get_paicos_quantity(1, 'Masses')
+        self.velocity = self.get_paicos_quantity(1, 'Velocities')
 
-        name: either a string or a dictionary. If a string, then it should
-        data is a numpy array.
+    def get_paicos_quantity(self, data, name, arepo_code_units=True):
 
-        Input names are the arepo hdf5 dataset names.
-        """
+        if hasattr(data, 'unit'):
+            msg = 'Data already had units, returning! {}'.format(name)
+            raise RuntimeError(msg)
+            # print()
+            return data
 
-        comoving_dic, units = self.get_comoving_dic_and_units(name)
-
-        if type(data) is list:
-            data = np.array(data)
-
-        factor = self.a**(comoving_dic['a_scaling']) * \
-            self.h**(comoving_dic['h_scaling'])
-
-        return data * factor
-
-    def give_units(self, name, data):
-        """
-        Give arepo data units using the units stored in the Parameter group
-        in arepo hdf5 outputs. The standard output is CGS using astropy
-        quantities. Converting to other units is straightforward using the
-        astropy method .to(). For instance, we convert to kpc
-        for 'Coordinates'.
-
-        """
-        comoving_dic, units = self.get_comoving_dic_and_units(name)
-
-        if type(data) is list:
-            data = np.array(data)
-        return data*units
-
-    def to_physical_and_give_units(self, name, data):
-        """
-        This is simply a convenience method which calls two other methods.
-        """
-        data = self.to_physical(name, data)
-        data = self.give_units(name, data)
-        return data
-
-    def get_comoving_quantity(self, name, data):
-        from paicos import ComovingQuantity
-
-        comoving_dic, units = self.get_comoving_dic_and_units(name)
+        unit = self.find_unit(name, arepo_code_units)
 
         data = np.array(data)
 
-        return ComovingQuantity(data, comoving_dic=comoving_dic)*units
+        return pu.PaicosQuantity(data, unit, a=self.a, h=self.h)
 
-    def get_comoving_dic_and_units(self, name):
+    def find_unit(self, name, arepo_code_units=True):
         """
-        Here we find the units and the scaling with a and h
+        Here we find the units including the scaling with a and h
         of a quantity.
 
         The input 'name' can be either a data attribute
@@ -142,65 +183,121 @@ class ArepoConverter:
         For this latter, hardcoded, option, I have implemented a few of the
         gas variables.
         """
+        import astropy.units as u
+        if arepo_code_units:
+            aunits = self.arepo_units
+        else:
+            aunits = self.arepo_units_in_cgs
+
+        # Turn off a and h if we are not comoving or if h = 1
+        if self.ComovingIntegrationOn == 1:
+            a = pu.small_a
+        else:
+            a = u.Unit('')
+
+        if self.h == 1:
+            h = u.Unit('')
+        else:
+            h = pu.small_h
+
+        if arepo_code_units:
+            def find(name):
+                return self.find_unit(name, True)
+        else:
+            def find(name):
+                return self.find_unit(name, False)
 
         if isinstance(name, dict):
-            # Create comoving dictionary
-            comoving_dic = {}
-            for key in ['a_scaling', 'h_scaling']:
-                comoving_dic.update({key: name[key]})
-
-            comoving_dic.update({'small_h': self.h,
-                                 'scale_factor': self.a})
             # Create units for the quantity
-            if 'units' in name:
-                units = 1*u.Unit(name['units'])
+            if 'unit' in name:
+                units = 1*u.Unit(name['unit'])
             else:
                 # Arepo data attributes and the units from the Parameter
                 # group in the hdf5 file are here combined
-                aunits = self.arepo_units
+                # Create comoving dictionary
+                comoving_dic = {}
+                for key in ['a_scaling', 'h_scaling']:
+                    comoving_dic.update({key: name[key]})
+
+                comoving_dic.update({'small_h': self.h,
+                                     'scale_factor': self.a})
                 units = aunits['unit_length']**(name['length_scaling']) * \
                     aunits['unit_mass']**(name['mass_scaling']) * \
-                    aunits['unit_velocity']**(name['velocity_scaling'])
+                    aunits['unit_velocity']**(name['velocity_scaling']) * \
+                    a**comoving_dic['a_scaling'] * \
+                    h**comoving_dic['h_scaling']
 
         elif isinstance(name, str):
+            unitless_vars = ['ElectronAbundance', 'MachNumber',
+                             'GFM_Metallicity']
             if name == 'Coordinates':
-                comoving_dic = {'a_scaling': 1, 'h_scaling': -1}
-                units = self.arepo_units['unit_length'].to('kpc')
+                units = aunits['unit_length']*a/h
             elif name == 'Density':
-                comoving_dic = {'a_scaling': -3, 'h_scaling': 2}
-                units = self.arepo_units['unit_density']
-            elif name == 'Volume':
-                comoving_dic = {'a_scaling': 3, 'h_scaling': -3}
-                units = 1/self.arepo_units['unit_length'].to('kpc')**3
+                units = find('Masses')/find('Volumes')
+            elif name == 'Volumes':
+                units = find('Coordinates')**3
+            elif name in unitless_vars:
+                units = ''
             elif name == 'Masses':
-                comoving_dic = {'h_scaling': -1}
-                units = self.arepo_units['unit_mass'].to('Msun')
+                units = aunits['unit_mass']/h
             elif name == 'EnergyDissipation':
-                comoving_dic = {'h_scaling': -1}
-                units = self.arepo_units['unit_energy']
+                units = aunits['unit_energy']/h
             elif name == 'InternalEnergy':
-                comoving_dic = {}
-                units = self.arepo_units['unit_energy']/self.arepo_units['unit_mass']
+                units = aunits['unit_energy']/aunits['unit_mass']
             elif name == 'MagneticField':
-                comoving_dic = {'a_scaling': -2, 'h_scaling': 1}
-                units = np.sqrt(self.arepo_units['unit_pressure'])
+                units = aunits['unit_pressure']**(1/2)*a**(-2)*h
+            elif name == 'BfieldGradient':
+                units = find('MagneticField')/find('Coordinates')
+            elif name == 'MagneticFieldDivergence':
+                units = find('BfieldGradient')
             elif name == 'Velocities':
-                comoving_dic = {'a_scaling': 0.5}
-                units = self.arepo_units['unit_velocity']
+                units = aunits['unit_velocity']*a**(1/2)
+            elif name == 'Velocities':
+                units = aunits['unit_velocity']*a**(1/2)
+            elif name == 'VelocityGradient':
+                units = find('Velocities')/find('Coordinates')
+            elif name == 'Enstrophy':
+                units = (find('VelocityGradient'))**2
             elif name == 'Temperature':
-                comoving_dic = {}
                 units = u.K
             else:
                 err_msg = 'invalid option name={}, cannot find units'
                 raise RuntimeError(err_msg.format(name))
-            for key in ['a_scaling', 'h_scaling']:
-                if key not in comoving_dic:
-                    comoving_dic.update({key: 0})
 
-            # Finally add
-            comoving_dic.update({'small_h': self.h,
-                                 'scale_factor': self.a})
-        return comoving_dic, units
+        return units
+
+    def give_units(self, name, data):
+        """
+        For backward compatibility, this method returns
+        an astropy object. Might be removed in the future.
+        """
+        if hasattr(data, 'unit'):
+            raise RuntimeError('error in input')
+        quantity = self.get_paicos_quantity(data, name)
+        return quantity.value*quantity.unit
+
+    def to_physical(self, name, data):
+        """
+        For backward compatibility, this method returns a
+        numerical value. Might be removed in the future.
+        """
+        if hasattr(data, 'unit'):
+            raise RuntimeError('error in input')
+        quantity = self.get_paicos_quantity(data, name)
+        quantity = quantity.to_physical
+        return quantity.value
+
+    def to_physical_and_give_units(self, name, data):
+        """
+        For backward compatibility, this method returns
+        an astropy object. Might be removed in the future.
+        """
+        if hasattr(data, 'unit'):
+            raise RuntimeError('error in input')
+        quantity = self.get_paicos_quantity(data, name)
+        quantity = quantity.to_physical
+        # Return an astropy quantity
+        return quantity.value*quantity.unit
 
 
 if __name__ == '__main__':
@@ -209,18 +306,20 @@ if __name__ == '__main__':
     converter = ArepoConverter(root_dir + '/data/slice_x.hdf5')
 
     rho = np.array([2, 4])
-    rho = converter.to_physical_and_give_units('Density', rho)
+    rho = converter.get_paicos_quantity(rho, 'Density')
 
     Mstars = 1
-    Mstars = converter.to_physical_and_give_units('Masses', Mstars)
+    Mstars = converter.get_paicos_quantity(Mstars, 'Masses')
 
-    B = converter.to_physical_and_give_units('MagneticField', [1])
+    B = converter.get_paicos_quantity([1], 'MagneticField')
 
-    T = converter.give_units('Temperature', 1)
+    T = converter.get_paicos_quantity([1], 'Temperature')
 
-    B = converter.to_physical_and_give_units('MagneticField', [1])
+    B = converter.get_paicos_quantity([1], 'MagneticField')
+
+    v = converter.get_paicos_quantity([2], 'Velocities')
+
+    mv_stars = Mstars*v
 
     print(T.to('keV'))
     print(B.to('uG'))
-
-    B = converter.get_comoving_quantity('MagneticField', [1])

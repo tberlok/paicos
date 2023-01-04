@@ -1,5 +1,3 @@
-# --- import Python libs ---
-
 from .arepo_catalog import Catalog
 from .arepo_converter import ArepoConverter
 import numpy as np
@@ -43,10 +41,6 @@ class Snapshot:
         if self.verbose:
             print("snapshot", snapnum, "found")
 
-        self.converter = ArepoConverter(self.first_snapfile_name)
-        self.age = self.converter.age
-        self.lookback_time = self.converter.lookback_time
-
         # get header of first file
         f = h5py.File(self.first_snapfile_name, 'r')
 
@@ -55,6 +49,13 @@ class Snapshot:
         self.Config = dict(f['Config'].attrs)
 
         f.close()
+
+        self.converter = ArepoConverter(self.first_snapfile_name)
+        if self.Parameters['ComovingIntegrationOn'] == 1:
+            self.age = self.converter.age
+            self.lookback_time = self.converter.lookback_time
+        else:
+            self.time = self.converter.time
 
         self.nfiles = self.Header["NumFilesPerSnapshot"]
         self.npart = self.Header["NumPart_Total"]
@@ -73,13 +74,25 @@ class Snapshot:
             print("at z =", self.z)
 
         self.box = self.Header["BoxSize"]
+        box_size = [self.box, self.box, self.box]
+
+        for ii, dim in enumerate(['X', 'Y', 'Z']):
+            if 'LONG_' + dim in self.Config:
+                box_size[ii] *= self.Config['LONG_' + dim]
+
+        from . import units
+        if units.enabled:
+            self.box_size = self.converter.get_paicos_quantity(box_size,
+                                                               'Coordinates')
+        else:
+            self.box_size = np.array(box_size)
 
         # get subfind catalog
         if load_catalog:
             try:
                 self.Cat = Catalog(
                     self.basedir, self.snapnum, verbose=self.verbose,
-                    subfind_catalog=True)
+                    subfind_catalog=True, converter=self.converter)
             except FileNotFoundError:
                 self.Cat = None
 
@@ -88,7 +101,7 @@ class Snapshot:
                 try:
                     self.Cat = Catalog(
                         self.basedir, self.snapnum, verbose=self.verbose,
-                        subfind_catalog=False)
+                        subfind_catalog=False, converter=self.converter)
                 except FileNotFoundError:
                     import warnings
                     warnings.warn('no catalog found', FileNotFoundError)
@@ -110,7 +123,7 @@ class Snapshot:
                     print('PartType not in hdf5 file')
                 return None
 
-    def load_data(self, particle_type, blockname):
+    def load_data(self, particle_type, blockname, give_units=False):
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
@@ -166,6 +179,16 @@ class Snapshot:
 
             skip_part += np_file
 
+        from . import units
+
+        if units.enabled or give_units:
+            try:
+                self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
+                                                                    blockname)
+            except:
+                from warnings import warn
+                warn('Failed to give {} units'.format(P_key))
+
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
 
@@ -209,7 +232,7 @@ class Snapshot:
 
         fhydrogen = 0.76
 
-        if "ElectronAbundance" in self.info(0):
+        if "ElectronAbundance" in self.info(0, False):
             self.load_data(0, "ElectronAbundance")
             mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
                            fhydrogen*self.P["0_ElectronAbundance"])
@@ -218,9 +241,25 @@ class Snapshot:
                 (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
             mmean = mmean_ionized
 
+        if 'GAMMA' in self.Config:
+            gamma = self.Config['GAMMA']
+        elif 'ISOTHERMAL' in self.Config:
+            msg = 'temperature is constant when ISOTHERMAL in Config'
+            raise RuntimeError(msg)
+        else:
+            gamma = 5/3
+
+        gm1 = gamma - 1
+
         # temperature in Kelvin
-        self.P["0_Temperatures"] = (2.0/3.0 * self.P["0_InternalEnergy"] *
-                                    u_v**2 * mmean * mhydrogen).to('K').value
+        from . import units
+        if units.enabled:
+            self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
+                                        mmean * mhydrogen).to('K')
+        else:
+            self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
+                                        u_v**2 * mmean * mhydrogen
+                                        ).to('K').value
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")

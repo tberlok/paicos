@@ -1,4 +1,6 @@
 import numpy as np
+from astropy import units as u
+from paicos import units as pu
 
 
 class Histogram:
@@ -23,16 +25,29 @@ class Histogram:
 
     def hist(self, weights):
         from paicos import get_hist_from_weights_and_idigit
+
+        if hasattr(weights, 'unit'):
+            if isinstance(weights, pu.PaicosQuantity):
+                factor = weights.unit_quantity
+            else:
+                factor = 1.0*weights.unit
+            weights = weights.value
+        else:
+            factor = 1.0
+
         f = get_hist_from_weights_and_idigit(self.bins.shape[0],
                                              weights.astype(np.float64),
                                              self.idigit)
-        return f
+        return f * factor
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from paicos import Snapshot
     from paicos import root_dir
+    import paicos as pa
+
+    pa.use_units(True)
 
     plt.figure(1)
     plt.clf()
@@ -46,7 +61,11 @@ if __name__ == '__main__':
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
-        r_max = 10000
+        if pa.units.enabled:
+            r_max = 10000 * r.unit_quantity
+        else:
+            r_max = 10000
+
         index = r < r_max*1.1
 
         bins = np.linspace(0, r_max, 150)
@@ -64,23 +83,29 @@ if __name__ == '__main__':
 
         if ii == 0:
             h_r = Histogram(r[index], bins, verbose=True)
-            B2TimesVolume = h_r.hist((B2*Volumes)[index])
+            B2TimesVolumes = h_r.hist((B2*Volumes)[index])
             Volumes = h_r.hist(Volumes[index])
             TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
             Masses = h_r.hist(Masses[index])
 
             axes[0].loglog(h_r.bin_centers, Masses/Volumes)
-            axes[1].loglog(h_r.bin_centers, B2TimesVolume/Volumes)
+            axes[1].loglog(h_r.bin_centers, B2TimesVolumes/Volumes)
             axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
+
+            if pa.units.enabled:
+                axes[0].set_xlabel(h_r.bin_centers.label(r'\mathrm{radius}\;'))
+                axes[0].set_ylabel((Masses/Volumes).label('\\rho'))
+                axes[1].set_ylabel((B2TimesVolumes/Volumes).label('B^2'))
+                axes[2].set_ylabel((TTimesMasses/Masses).label('T'))
         else:
-            B2TimesVolume, edges = np.histogram(r[index], weights=(B2*Volumes)[index], bins=bins)
+            B2TimesVolumes, edges = np.histogram(r[index], weights=(B2*Volumes)[index], bins=bins)
             Volumes, edges = np.histogram(r[index], weights=Volumes[index], bins=bins)
             TTimesMasses, edges = np.histogram(r[index], weights=(Masses*snap.P['0_Temperatures'])[index], bins=bins)
             Masses, edges = np.histogram(r[index], weights=Masses[index], bins=bins)
             bin_centers = 0.5*(edges[1:] + edges[:-1])
 
             axes[0].loglog(bin_centers, Masses/Volumes, '--')
-            axes[1].loglog(bin_centers, B2TimesVolume/Volumes, '--')
+            axes[1].loglog(bin_centers, B2TimesVolumes/Volumes, '--')
             axes[2].loglog(bin_centers, TTimesMasses/Masses, '--')
 
     plt.show()

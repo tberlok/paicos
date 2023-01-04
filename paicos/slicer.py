@@ -11,17 +11,30 @@ class Slicer(ImageCreator):
                  npix=512, numthreads=16):
 
         from scipy.spatial import KDTree
+        from paicos import units
 
         super().__init__(snap, center, widths, direction, npix=npix,
                          numthreads=numthreads)
 
         snap = self.snap
-        xc = self.xc
-        yc = self.yc
-        zc = self.zc
-        width_x = self.width_x
-        width_y = self.width_y
-        width_z = self.width_z
+        if units.enabled:
+            xc = self.xc.value
+            yc = self.yc.value
+            zc = self.zc.value
+            width_x = self.width_x.value
+            width_y = self.width_y.value
+            width_z = self.width_z.value
+            extent = self.extent.value
+            center = self.center.value
+        else:
+            xc = self.xc
+            yc = self.yc
+            zc = self.zc
+            width_x = self.width_x
+            width_y = self.width_y
+            width_z = self.width_z
+            extent = self.extent
+            center = self.center
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
@@ -59,14 +72,14 @@ class Slicer(ImageCreator):
             return arr.flatten().reshape((npix_height, npix_width))
 
         npix_width = npix
-        width = self.extent[1] - self.extent[0]
-        height = self.extent[3] - self.extent[2]
+        width = extent[1] - extent[0]
+        height = extent[3] - extent[2]
 
         # TODO: Make assertion that dx=dy
         npix_height = int(height/width*npix_width)
 
-        w = self.extent[0] + (np.arange(npix_width) + 0.5)*width/npix_width
-        h = self.extent[2] + (np.arange(npix_height) + 0.5)*height/npix_height
+        w = extent[0] + (np.arange(npix_width) + 0.5)*width/npix_width
+        h = extent[2] + (np.arange(npix_height) + 0.5)*height/npix_height
 
         ww, hh = np.meshgrid(w, h)
         w = ww.flatten()
@@ -91,17 +104,27 @@ class Slicer(ImageCreator):
         self.distance_to_nearest_cell = unflatten(d)
 
     def get_image(self, variable):
+        from warnings import warn
+        warn('This method will be soon deprecated. in favour of the ' +
+             ' method with name: slice_variable',
+             DeprecationWarning, stacklevel=2)
+
+        return variable[self.index]
+
+    def slice_variable(self, variable):
 
         return variable[self.index]
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from paicos import Snapshot
-    from paicos import ArepoImage
+    import paicos as pa
     from paicos import root_dir
+    from matplotlib.colors import LogNorm
 
-    snap = Snapshot(root_dir + '/data', 247)
+    pa.use_units(False)
+
+    snap = pa.Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
     width_vec = (
@@ -118,13 +141,13 @@ if __name__ == '__main__':
         slicer = Slicer(snap, center, widths, direction, npix=512)
 
         image_filename = root_dir + '/data/slice_{}.hdf5'.format(direction)
-        image_file = ArepoImage(image_filename, slicer)
+        image_file = pa.ArepoImage(image_filename, slicer)
 
         snap.load_data(0, 'Density')
         snap.load_data(0, 'Velocities')
         snap.load_data(0, 'MagneticField')
 
-        Density = slicer.get_image(snap.P['0_Density'])
+        Density = slicer.slice_variable(snap.P['0_Density'])
 
         image_file.save_image('Density', Density)
 
@@ -132,6 +155,22 @@ if __name__ == '__main__':
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.log10(Density), origin='lower',
-                        extent=slicer.extent)
+        if pa.units.enabled:
+            axes[ii].imshow(Density.value, origin='lower',
+                            extent=slicer.extent.value, norm=LogNorm())
+        else:
+            axes[ii].imshow(Density, origin='lower',
+                            extent=slicer.extent, norm=LogNorm())
+
+    if not pa.units.enabled:
+        # Also an example where we slice a Paicos Quantity with units
+        rho = snap.converter.get_paicos_quantity(snap.P['0_Density'],
+                                                 'Density')
+        density_slice = slicer.slice_variable(rho)
+        from astropy import constants as c
+        plt.figure(2)
+        density_slice = (density_slice.cgs/c.m_p.cgs).to_physical
+        plt.imshow(density_slice.value, norm=LogNorm())
+        plt.title(density_slice.label('n'))
+
     plt.show()

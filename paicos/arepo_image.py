@@ -9,15 +9,30 @@ class ImageCreator:
 
         self.snap = snap
 
-        self.center = np.array(center)
-        self.xc = center[0]
-        self.yc = center[1]
-        self.zc = center[2]
+        from paicos import units
 
-        self.widths = np.array(widths)
-        self.width_x = widths[0]
-        self.width_y = widths[1]
-        self.width_z = widths[2]
+        if hasattr(center, 'unit'):
+            self.center = center
+        elif units.enabled:
+            self.center = snap.converter.get_paicos_quantity(center,
+                                                             'Coordinates')
+        else:
+            self.center = np.array(center)
+
+        if hasattr(widths, 'unit'):
+            self.widths = widths
+        elif units.enabled:
+            self.widths = snap.converter.get_paicos_quantity(widths,
+                                                             'Coordinates')
+        else:
+            self.widths = np.array(widths)
+
+        self.xc = self.center[0]
+        self.yc = self.center[1]
+        self.zc = self.center[2]
+        self.width_x = self.widths[0]
+        self.width_y = self.widths[1]
+        self.width_z = self.widths[2]
 
         self.direction = direction
 
@@ -37,7 +52,13 @@ class ImageCreator:
             self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
                            self.yc - self.width_y/2, self.yc + self.width_y/2]
 
-        self.extent = np.array(self.extent)
+        if units.enabled:
+            self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h)
+        else:
+            self.extent = np.array(self.extent)
+
+        area = (self.extent[1]-self.extent[0])*(self.extent[3]-self.extent[2])
+        self.area = area
 
 
 class ArepoImage:
@@ -122,7 +143,11 @@ class ArepoImage:
         """
 
         with h5py.File(self.tmp_image_filename, 'r+') as f:
-            f.create_dataset(name, data=data)
+            if hasattr(data, 'unit') and attrs is None:
+                f.create_dataset(name, data=data.value)
+                attrs = {'unit': data.unit.to_string()}
+            else:
+                f.create_dataset(name, data=data)
             if isinstance(attrs, dict):
                 for key in attrs.keys():
                     f[name].attrs[key] = attrs[key]

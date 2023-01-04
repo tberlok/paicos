@@ -26,6 +26,7 @@ def get_variable(snap, variable_str):
             variable = snap.P['0_Masses']
         elif variable_str == 'GFM_MetallicityTimesMasses':
             snap.load_data(0, 'GFM_Metallicity')
+            snap.load_data(0, 'Masses')
             variable = snap.P['0_Masses']*snap.P['0_GFM_Metallicity']
         elif variable_str == 'Volumes':
             snap.get_volumes()
