@@ -70,15 +70,15 @@ def project_image2(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec,
         z = zvec[ip] - z0
 
         # Apply periodic boundary condition
-        if x < 0.0:
-            x = x + boxsize
-        elif x > boxsize:
-            x = x - boxsize
+        # if x < 0.0:
+        #     x = x + boxsize
+        # elif x > boxsize:
+        #     x = x - boxsize
 
-        if y < 0.0:
-            y = y + boxsize
-        elif y > boxsize:
-            y = y - boxsize
+        # if y < 0.0:
+        #     y = y + boxsize
+        # elif y > boxsize:
+        #     y = y - boxsize
 
 
         boundary_factor = 1.0
@@ -193,15 +193,15 @@ def project_image2_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec,
             z = zvec[ip] - z0
 
             # Apply periodic boundary condition
-            if x < 0.0:
-                x = x + boxsize
-            elif x > boxsize:
-                x = x - boxsize
+            # if x < 0.0:
+            #     x = x + boxsize
+            # elif x > boxsize:
+            #     x = x - boxsize
 
-            if y < 0.0:
-                y = y + boxsize
-            elif y > boxsize:
-                y = y - boxsize
+            # if y < 0.0:
+            #     y = y + boxsize
+            # elif y > boxsize:
+            #     y = y - boxsize
 
 
             boundary_factor = 1.0
@@ -327,15 +327,15 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
         y = yvec[ip] - y0
 
         # Apply periodic boundary condition
-        if x < 0.0:
-            x = x + boxsize
-        elif x > boxsize:
-            x = x - boxsize
+        # if x < 0.0:
+        #     x = x + boxsize
+        # elif x > boxsize:
+        #     x = x - boxsize
 
-        if y < 0.0:
-            y = y + boxsize
-        elif y > boxsize:
-            y = y - boxsize
+        # if y < 0.0:
+        #     y = y + boxsize
+        # elif y > boxsize:
+        #     y = y - boxsize
 
         # Position of particle in units of sidelength (0, sidelength)
         x = x*nx/sidelength_x
@@ -436,15 +436,15 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
             y = yvec[ip] - y0
 
             # Apply periodic boundary condition
-            if x < 0.0:
-                x = x + boxsize
-            elif x > boxsize:
-                x = x - boxsize
+            # if x < 0.0:
+            #     x = x + boxsize
+            # elif x > boxsize:
+            #     x = x - boxsize
 
-            if y < 0.0:
-                y = y + boxsize
-            elif y > boxsize:
-                y = y - boxsize
+            # if y < 0.0:
+            #     y = y + boxsize
+            # elif y > boxsize:
+            #     y = y - boxsize
 
             # Position of particle in units of sidelength (0, sidelength)
             x = x*nx/sidelength_x
