@@ -74,6 +74,18 @@ class Snapshot:
             print("at z =", self.z)
 
         self.box = self.Header["BoxSize"]
+        box_size = [self.box, self.box, self.box]
+
+        for ii, dim in enumerate(['X', 'Y', 'Z']):
+            if 'LONG_' + dim in self.Config:
+                self.box_size[ii] *= self.Config['LONG_' + dim]
+
+        from . import units
+        if units.enabled:
+            self.box_size = self.converter.get_paicos_quantity(box_size,
+                                                               'Coordinates')
+        else:
+            self.box_size = np.array(box_size)
 
         # get subfind catalog
         if load_catalog:
