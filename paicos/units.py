@@ -74,15 +74,12 @@ class PaicosQuantity(Quantity):
     Methods/properties
     ----------
 
-    no_smallh: returns a new comoving quantity where the h-factors have
+    no_small_h: returns a new comoving quantity where the h-factors have
                been removed and the numeric value adjusted accordingly.
 
     to_physical: returns a new  object where both a and h factors have been
                  removed, i.e. we have switched from comoving values to
                  the physical value.
-
-    to_parameters(a=None, h=None): Returns a new object where the values of
-                                   a and h have been changed.
 
     label: Return a Latex label for use in plots.
 
@@ -93,7 +90,7 @@ class PaicosQuantity(Quantity):
     A = PaicosQuantity(2, units, h=0.7, a=1/128)
 
     # Create a new comoving quantity where the h-factors have been removed
-    B = A.no_smallh
+    B = A.no_small_h
 
     # Create a new quantity where both a and h factor have been removed,
     # i.e. we have switched from a comoving quantity to the physical value
@@ -350,14 +347,6 @@ class PaicosQuantity(Quantity):
         else:
             scaling_str = base_string + '^{' + scaling_str + '}'
         return scaling, scaling_str
-
-    # def __getitem__(self, key):
-    #     """
-    #     Comoving quantity loses the astropy units when creating a slice.
-    #     This fixes that issue.
-    #     """
-    #     out = super().__getitem__(key)
-    #     return self._new_view(out.value, self.unit)
 
     def __sanity_check(self, value):
         """

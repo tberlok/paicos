@@ -4,23 +4,72 @@ from paicos import ImageCreator
 
 class Projector(ImageCreator):
     """
-    This implements an SPH-like projection of gas variables.
+    A class that allows creating an image of a given variable by projecting
+    it onto a 2D plane.
+
+    The Projector class is a subclass of the ImageCreator class.
+    The Projector class creates an image of a given variable by projecting
+    it onto a 2D plane.
+
+    It takes in several parameters such as a snapshot object, center and
+    widths of the region, direction of projection, and various optional
+    parameters for number of pixels, smoothing length and number of threads
+    for parallelization. It then calls various functions from the paicos
+    package, including get_index_of_region, load_data, and get_volumes. This
+    class also has a function called _check_if_omp_has_issues which checks if
+    the parallelization via OpenMP works, and sets the number of threads
+    accordingly.
     """
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, nvol=8, numthreads=16):
+
+        """
+        Initialize the Projector class.
+
+        Parameters
+        ----------
+        snap : Snapshot
+            A snapshot object of Snapshot class from paicos package.
+
+        center : numpy array
+            Center of the region on which projection is to be done, e.g.
+            center = [xc, yc, zc].
+
+        widths : numpy array
+            Widths of the region on which projection is to be done,
+            e.g.m widths=[width_x, width_y, width_z].
+
+        direction : str
+            Direction of the projection, e.g. 'x', 'y' or 'z'.
+
+        npix : int, optional
+            Number of pixels in the horizontal direction of the image,
+            by default 512.
+
+        nvol : int, optional
+            Integer used to determine the smoothing length, by default 8
+
+        numthreads : int, optional
+            Number of threads used in parallelization, by default 16
+        """
+
         from paicos import get_index_of_region
         from paicos import units
 
+        # call the superclass constructor to initialize the ImageCreator class
         super().__init__(snap, center, widths, direction, npix=npix,
                          numthreads=numthreads)
 
+        # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
+        # check if OpenMP has any issues with the number of threads
         self._check_if_omp_has_issues(numthreads)
 
         snap = self.snap
 
+        # check if units are enabled and assign the center and widths accordingly
         if units.enabled:
             xc = self.xc.value
             yc = self.yc.value
@@ -36,24 +85,15 @@ class Projector(ImageCreator):
             width_y = self.width_y
             width_z = self.width_z
 
+        # get the volumes and load the cell positions from the snapshot
         snap.get_volumes()
         snap.load_data(0, "Coordinates")
         self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
 
-        if self.direction == 'x':
-            self.index = get_index_of_region(pos, xc, yc, zc,
-                                             width_x, width_y, width_z,
-                                             snap.box)
-
-        elif self.direction == 'y':
-            self.index = get_index_of_region(pos, xc, yc, zc,
-                                             width_x, width_y, width_z,
-                                             snap.box)
-
-        elif self.direction == 'z':
-            self.index = get_index_of_region(pos, xc, yc, zc,
-                                             width_x, width_y, width_z,
-                                             snap.box)
+        # get the index of the region of projection
+        self.index = get_index_of_region(pos, xc, yc, zc,
+                                         width_x, width_y, width_z,
+                                         snap.box)
 
         self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
@@ -63,6 +103,15 @@ class Projector(ImageCreator):
         self.pos = self.pos[self.index]
 
     def _check_if_omp_has_issues(self, numthreads):
+        """
+        Check if the parallelization via OpenMP works.
+
+        Parameters
+        ----------
+        numthreads : int
+            Number of threads used in parallelization
+        """
+
         from paicos import simple_reduction
         n = simple_reduction(1000, numthreads)
         if n == 1000:
@@ -81,12 +130,39 @@ class Projector(ImageCreator):
             warnings.warn(msg)
 
     def _get_variable(self, variable_str):
+        """
+        Retrieves the variable, it can be either passed as string, a function
+        or an array.
+
+        Parameters
+        ----------
+        variable_str : str
+
+        Returns
+        -------
+        numpy array
+            The variable in form of numpy array
+        """
 
         from paicos import get_variable
 
         return get_variable(self.snap, variable_str)
 
     def project_variable(self, variable):
+        """
+        projects a given variable onto a 2D plane.
+
+        Parameters
+        ----------
+        variable : str, function, numpy array
+            variable, it can be passed as string, function or an array
+
+        Returns
+        -------
+        numpy array
+            The image of the projected variable
+        """
+
         from paicos import units
 
         if self.use_omp:
@@ -98,7 +174,7 @@ class Projector(ImageCreator):
         if isinstance(variable, str):
             variable = self._get_variable(variable)
         elif isinstance(variable, types.FunctionType):
-            variable = variable(self.arepo_snap)
+            variable = variable(self.snap)
         elif isinstance(variable, np.ndarray):
             pass
         else:

@@ -6,14 +6,14 @@ import paicos as pa
 
 class RadialProfiles:
 
-    def __init__(self, radial_filename, arepo_snap, center, r_max, bins,
+    def __init__(self, radial_filename, snap, center, r_max, bins,
                  verbose=False):
         from paicos import Histogram
         if verbose:
             import time
             t = time.time()
 
-        self.snap = arepo_snap
+        self.snap = snap
 
         self.center = np.array(center)
 
