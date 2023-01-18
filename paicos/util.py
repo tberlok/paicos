@@ -34,3 +34,29 @@ def load_dataset(hdf5file, name):
     """
     raise RuntimeError('Needs to be implemented!')
     pass
+
+
+def remove_astro_units(func):
+    """
+    This is a decorator function that takes in a function and returns a new
+    function that removes any astro units from the function's arguments and
+    keyword arguments before calling the original function. The decorator
+    checks if the argument or keyword argument has a 'unit' attribute and, if
+    so, replaces it with its 'value' attribute. This is useful for functions
+    that do not support astro units or need to work with raw values.
+    """
+    def inner(*args, **kwargs):
+        # Create new args
+        new_args = list(args)
+        for ii in range(len(new_args)):
+            if hasattr(new_args[ii], 'unit'):
+                new_args[ii] = new_args[ii].value
+
+        # Create new kwargs
+        new_kwargs = dict(kwargs)
+        for key in kwargs.keys():
+            if hasattr(kwargs[key], 'unit'):
+                new_kwargs[key] = kwargs[key].value
+
+        return func(*new_args, **new_kwargs)
+    return inner

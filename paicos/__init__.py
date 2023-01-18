@@ -23,6 +23,7 @@ from .slicer import Slicer
 from .arepo_converter import ArepoConverter
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
+from .histogram2D import Histogram2D
 from .image_reader import ImageReader
 # Some useful functions
 from .derived_variables import get_variable
@@ -37,3 +38,5 @@ from .cython.sph_projectors import project_image, project_image_omp
 from .cython.sph_projectors import project_image2, project_image2_omp
 from .cython.get_derived_variables import get_magnitude_of_vector, get_curvature
 from .cython.histogram import get_hist_from_weights_and_idigit
+from .cython.histogram import get_hist2d_from_weights
+from .cython.histogram import find_normalizing_norm_of_2d_hist
