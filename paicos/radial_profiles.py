@@ -20,7 +20,7 @@ class RadialProfiles:
         self.verbose = verbose
 
         self.snap.load_data(0, 'Coordinates')
-        pos = self.snap.P['0_Coordinates']
+        pos = self.snap['0_Coordinates']
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
@@ -52,10 +52,10 @@ class RadialProfiles:
             self.add_profile('GFM_MetallicityTimesMasses')
 
         # Delete all gas variables for memory efficiency
-        keys = list(self.snap.P.keys())
+        keys = list(self.snap.keys())
         for key in keys:
             if key[0] == '0':
-                del self.snap.P[key]
+                del self.snap[key]
 
         # Now do the dark matter
 
@@ -67,7 +67,7 @@ class RadialProfiles:
             if self.snap.info(part, False) is not None:
                 self.snap.load_data(part, "Coordinates")
 
-                pos = self.snap.P[str(part) + '_Coordinates']
+                pos = self.snap[str(part) + '_Coordinates']
 
                 # Radius from center of cluster
                 r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
@@ -79,12 +79,12 @@ class RadialProfiles:
                                                                       'Masses')
 
                 if part != 2:
-                    masses = np.ones(self.snap.P[str(part) +
+                    masses = np.ones(self.snap[str(part) +
                                      '_Coordinates'].shape[0],
                                      dtype=np.float32) * dm_mass
                 else:
                     self.snap.load_data(part, "Masses")
-                    masses = self.snap.P['2_Masses']
+                    masses = self.snap['2_Masses']
 
                 index = r < r_max*1.1
                 masses = masses[index]

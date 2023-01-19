@@ -86,16 +86,16 @@ class Projector(ImageCreator):
             width_z = self.width_z
 
         # get the volumes and load the cell positions from the snapshot
-        snap.get_volumes()
-        snap.load_data(0, "Coordinates")
-        self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
+        # snap.get_derived_data(0, 
+        # snap.load_data(0, "Coordinates")
+        self.pos = pos = np.array(snap["0_Coordinates"], dtype=np.float64)
 
         # get the index of the region of projection
         self.index = get_index_of_region(pos, xc, yc, zc,
                                          width_x, width_y, width_z,
                                          snap.box)
 
-        self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
+        self.hsml = np.cbrt(nvol*(snap["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
 
         self.hsml = np.array(self.hsml, dtype=np.float64)
@@ -278,9 +278,9 @@ if __name__ == '__main__':
             image_file.save_image('Masses', Masses)
             image_file.save_image('Volumes', Volumes)
 
-            snap.get_temperatures()
+            # snap.get_temperatures()
             TemperaturesTimesMasses = projector.project_variable(
-                                    snap.P['0_Temperatures'] * snap.P['0_Masses'])
+                                    snap['0_Temperatures'] * snap['0_Masses'])
             image_file.save_image('TemperaturesTimesMasses', TemperaturesTimesMasses)
 
             # Move from temporary filename to final filename
@@ -292,6 +292,6 @@ if __name__ == '__main__':
         plt.show()
 
         if not use_units:
-            M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
+            M = snap.converter.get_paicos_quantity(snap['0_Masses'], 'Masses')
             # Projection now has units
             projected_mass = projector.project_variable(M)

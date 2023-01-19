@@ -41,11 +41,11 @@ class Slicer(ImageCreator):
                 assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
-        snap.get_volumes()
-        snap.load_data(0, "Coordinates")
-        pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
+        # snap.get_volumes()
+        # snap.load_data(0, "Coordinates")
+        pos = np.array(snap["0_Coordinates"], dtype=np.float64)
 
-        thickness = np.array(4.0*np.cbrt((snap.P["0_Volumes"]) /
+        thickness = np.array(4.0*np.cbrt((snap["0_Volumes"]) /
                              (4.0*np.pi/3.0)), dtype=np.float64)
 
         if direction == 'x':
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     from paicos import root_dir
     from matplotlib.colors import LogNorm
 
-    pa.use_units(False)
+    pa.use_units(True)
 
     snap = pa.Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
@@ -143,11 +143,11 @@ if __name__ == '__main__':
         image_filename = root_dir + '/data/slice_{}.hdf5'.format(direction)
         image_file = pa.ArepoImage(image_filename, slicer)
 
-        snap.load_data(0, 'Density')
-        snap.load_data(0, 'Velocities')
-        snap.load_data(0, 'MagneticField')
+        # snap.load_data(0, 'Density')
+        # snap.load_data(0, 'Velocities')
+        # snap.load_data(0, 'MagneticField')
 
-        Density = slicer.slice_variable(snap.P['0_Density'])
+        Density = slicer.slice_variable(snap['0_Density'])
 
         image_file.save_image('Density', Density)
 
@@ -164,7 +164,7 @@ if __name__ == '__main__':
 
     if not pa.units.enabled:
         # Also an example where we slice a Paicos Quantity with units
-        rho = snap.converter.get_paicos_quantity(snap.P['0_Density'],
+        rho = snap.converter.get_paicos_quantity(snap['0_Density'],
                                                  'Density')
         density_slice = slicer.slice_variable(rho)
         from astropy import constants as c

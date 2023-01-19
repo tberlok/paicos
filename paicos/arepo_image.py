@@ -3,9 +3,28 @@ import numpy as np
 
 
 class ImageCreator:
-
+    """
+    This is a base class for creating images from a snapshot.
+    """
     def __init__(self, snap, center, widths, direction, npix=512,
                  numthreads=1):
+        """
+        Initialize the ImageCreator class. This method will be called
+        by subclasses such as Projector or Slicer.
+
+        Parameters:
+            snap (object): Snapshot object from which the image is created
+
+            center: Center of the image (3D coordinates)
+
+            widths: Width of the image in each direction (3D coordinates)
+
+            direction (str): Direction of the image ('x', 'y', 'z')
+
+            npix (int): Number of pixels in the image (default is 512)
+
+            numthreads (int): Number of threads to use (default is 1)
+        """
 
         self.snap = snap
 
@@ -70,9 +89,6 @@ class ArepoImage:
     can be time-consuming for high-resolution simulations with large
     snapshots. The purpose of this class is to define a derived data format
     which can be used to store images for later plotting with matplotlib.
-
-    The creation of the 2D array is decoupled from this class, so that any
-    custom method may be used (e.g. arepo-snap-util).
 
     """
     def __init__(self, image_filename, image_creator, mode='w'):

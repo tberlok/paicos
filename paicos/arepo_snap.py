@@ -6,13 +6,73 @@ import time
 import h5py
 
 
-class Snapshot:
+class Snapshot(dict):
     """
-    A class for reading in Arepo snapshots.
-    Based on script written by Ewald Puchwein
+    This is a Python class for reading Arepo snapshots, which are simulations
+    of the evolution of the universe using a code called Arepo. The class is
+    based on a script originally written by Ewald Puchwein, which has since
+    then been modified and included in Paicos.
+
+    The class takes in the path of the directory containing the snapshot, the
+    snapshot number, and an optional snap_basename parameter, and uses this
+    information to locate and open the snapshot files. The class also loads
+    the snapshot's header, parameters, and configuration, and uses them to
+    create a converter object that can be used to convert units in the
+    snapshot. The class also includes methods to extract the redshift, scale
+    factor, and other properties of the snapshot, as well as the subfind
+    catalog if present.
+
+    Important methods and attributes.
+
+    snap = Snapshot()
+
+    snap.Parameters (dict): Contains information from the parameter
+                            file used in the simulation (e.g. param.txt).
+
+    snap.Config (dict): Contains information from the Config
+                        file used in the simulation (e.g. Config.txt).
+
+    snap.Header (dict): Contains information about this particular snapshot
+                        such as its time (e.g scale factor).
+
+    snap.z (float): redshift
+
+    snap.h (float): reduced Hubble param (e.g. 0.67)
+
+    snap.age: the age of the Universe (only for cosmological runs)
+    snap.lookback_time: the age of the Universe (only for cosmological runs)
+
+    snap.time: the time stamp of the snapshot (only for non-cosmological runs)
+
+    snap.box_size: the dimensions of the simulation domain
+
     """
     def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False,
-                 no_snapdir=False, load_catalog=True):
+                 no_snapdir=False, load_catalog=None):
+        """
+        Initialize the Snapshot class.
+
+        Parameters:
+
+        basedir (str): path of the directory containing the snapshot
+                       (e.g. the 'output' folder)
+
+        snapnum (int): snapshot number
+
+        snap_basename (str): name of the snapshot file, default is "snap"
+
+        verbose (bool): whether to print information about the snapshot,
+        default is False
+
+        no_snapdir (bool): whether there is no snap directory, i.e.,
+                           default is False
+
+        load_catalog (bool): whether to load the subfind catalog.
+                             The default None is internally changed to
+                             True for comoving simulations and to
+                             False for non-comoving simulations.
+    """
+
         self.basedir = basedir
         self.snapnum = snapnum
         self.snap_basename = snap_basename
@@ -87,7 +147,13 @@ class Snapshot:
         else:
             self.box_size = np.array(box_size)
 
-        # get subfind catalog
+        # get subfind catalog?
+        if load_catalog is None:
+            if self.Parameters['ComovingIntegrationOn'] == 1:
+                load_catalog = True
+            else:
+                load_catalog = False
+
         if load_catalog:
             try:
                 self.Cat = Catalog(
@@ -106,30 +172,76 @@ class Snapshot:
                     import warnings
                     warnings.warn('no catalog found', FileNotFoundError)
 
-        self.P = dict()   # particle data
+        # self.P = dict()   # particle data
         self.P_attrs = dict()  # attributes
 
     def info(self, PartType, verbose=True):
+        """
+        This function provides information about the keys of a certain
+        particle type in a snapshot file.
+
+        Args: PartType (int): An integer representing the particle type of
+        interest. verbose (bool, optional): A flag indicating whether or not
+        to print the keys to the console. Defaults to True.
+
+        Returns: list or None : If the PartType exists in the file, a list of
+        keys for that PartType is returned, otherwise None.
+
+        This function opens the snapshot file and checks if the PartType
+        passed as an argument exists in the file. If it does, it retrieves the
+        keys of that PartType and if verbose is True, prints the keys to the
+        console, otherwise it returns the keys. If the PartType does not exist
+        in the file, the function will print "PartType not in hdf5 file" to
+        the console.
+
+        The function can be useful for examining the contents of a snapshot
+        file and determining what data is available for a given particle
+        type.
+        """
         PartType_str = 'PartType{}'.format(PartType)
         with h5py.File(self.first_snapfile_name, 'r') as file:
             if PartType_str in list(file.keys()):
                 keys = list(file[PartType_str].keys())
                 if verbose:
-                    print('keys for ' + PartType_str + ' are')
+                    print('\nKeys for ' + PartType_str + ' are')
                     print(keys)
-                return keys
+                    if PartType == 0:
+                        from .derived_variables import get_variable_function
+                        print('\n\nPossible derived variables are:')
+                        keys = get_variable_function('', True)
+                        print(keys)
+                    return None
+                else:
+                    return keys
             else:
-                if verbose:
-                    print('PartType not in hdf5 file')
-                return None
+                print('PartType not in hdf5 file')
 
     def load_data(self, particle_type, blockname, give_units=False):
+        """
+        Load data from hdf5 file(s). Example usage:
+
+        snap = Snapshot(...)
+
+        snap.load_data(0, 'Density')
+
+        Note that subsequent calls does not reload the data. Reloading
+        the data can be done explicitly:
+
+        snap.remove_data(0, 'Density')
+        snap.load_data(0, 'Density')
+
+        """
+
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
+        if blockname not in self.info(particle_type, False):
+            msg = 'Unable to load parttype {}, blockname {} as this field is not in the hdf5 file'
+            raise RuntimeError(msg.format(particle_type, blockname))
+
         datname = "PartType"+str(particle_type)+"/"+blockname
         PartType_str = 'PartType{}'.format(particle_type)
-        if P_key in self.P:
+        if P_key in self:
             if self.verbose:
                 print(blockname, "for species",
                       particle_type, "already in memory")
@@ -140,7 +252,7 @@ class Snapshot:
             start_time = time.time()
 
         if blockname == "Masses" and self.masstable[particle_type] > 0:
-            self.P[P_key] = self.masstable[particle_type] * \
+            self[P_key] = self.masstable[particle_type] * \
                 np.ones(self.npart[particle_type], dtype=np.float32)
             if self.verbose:
                 print("... got value from MassTable in header!")
@@ -162,10 +274,10 @@ class Snapshot:
 
             if ifile == 0:   # initialize array
                 if f[datname].shape.__len__() == 1:
-                    self.P[P_key] = np.empty(
+                    self[P_key] = np.empty(
                         self.npart[particle_type], dtype=f[datname].dtype)
                 else:
-                    self.P[P_key] = np.empty(
+                    self[P_key] = np.empty(
                         (self.npart[particle_type], f[datname].shape[1]),
                         dtype=f[datname].dtype)
                 # Load attributes
@@ -175,7 +287,7 @@ class Snapshot:
                                             'scale_factor': self.a})
                 self.P_attrs[P_key] = data_attributes
 
-            self.P[P_key][skip_part:skip_part+np_file] = f[datname]
+            self[P_key][skip_part:skip_part+np_file] = f[datname]
 
             skip_part += np_file
 
@@ -183,8 +295,8 @@ class Snapshot:
 
         if units.enabled or give_units:
             try:
-                self.P[P_key] = self.converter.get_paicos_quantity(self.P[P_key],
-                                                                    blockname)
+                self[P_key] = self.converter.get_paicos_quantity(self[P_key],
+                                                                 blockname)
             except:
                 from warnings import warn
                 warn('Failed to give {} units'.format(P_key))
@@ -192,77 +304,108 @@ class Snapshot:
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
 
+    def get_derived_data(self, particle_type, blockname, verbose=False):
+        """
+        Get derived quantities. Example usage:
+
+        snap = Snapshot(...)
+
+        snap.get_derived_data(0, 'Temperatures')
+
+        """
+        from .derived_variables import get_variable_function
+
+        P_key = str(particle_type)+"_"+blockname
+
+        msg = ('\n\n{} is in the hdf5 file(s), please use load_data instead ' +
+               'of get_derived_data').format(blockname)
+        assert blockname not in self.info(particle_type, False), msg
+
+        if particle_type == 0:
+            if verbose:
+                print('Attempting to get derived variable: {}...'.format(P_key),
+                      end='')
+            func = get_variable_function(blockname)
+            self[P_key] = func(self)
+            if verbose:
+                print('\t[Done]')
+        else:
+            raise RuntimeError('Derived variables only implemented for gas!')
+
+    def __getitem__(self, key):
+        """
+        This method is a special method in Python classes, known as a "magic
+        method" that allows instances of the class to be accessed like a
+        dictionary, using the bracket notation.
+
+        This method is used to access the data stored in the class, it takes a
+        single argument:
+
+        key : a string that represents the data that is being accessed, it
+        should be in the format of parttype_name, where parttype is an integer
+        and name is the name of the data block. It first checks if the key is
+        already in the class, if not it checks if the key is in the format of
+        parttype_name and if the parttype exists in the file and the name is a
+        valid key in the hdf5 file. If it is, the method loads the data from
+        the hdf5 file, otherwise it calls the get_derived_data method to
+        calculate the derived data. If the key does not meet the expected
+        format or the parttype or data block does not exist it raises a
+        RuntimeError with a message explaining the expected format.
+
+        The method returns the value of the data block if it is found or
+        loaded, otherwise it raises an error.
+
+        This method allows for easy and convenient access to the data stored
+        in the class, without the need for explicit method calls to load or
+        calculate the data.
+
+        That is, one can do snap['0_Density'] and the data will automatically
+        be loaded.
+        """
+
+        if key not in self.keys():
+            if not key[0].isnumeric() or key[1] != '_':
+                msg = ('\n\nKeys are expected to consist of an integer ' +
+                       '(the particle type) and a blockname, separated by a ' +
+                       ' _. For instance 0_Density. You can get the ' +
+                       'available fields like so: snap.info(0)')
+                raise RuntimeError(msg)
+            parttype = int(key[0])
+            name = key[2:]
+            if name in self.info(parttype, False):
+                self.load_data(parttype, name)
+            else:
+                self.get_derived_data(parttype, name, verbose=True)
+
+        return super().__getitem__(key)
+
     def remove_data(self, particle_type, blockname):
         """
         Remove data from object. Sometimes useful for for large datasets
         """
         P_key = str(particle_type)+"_"+blockname
-        if P_key in self.P:
-            del self.P[P_key]
+        if P_key in self:
+            del self[P_key]
         if P_key in self.P_attrs:
             del self.P_attrs[P_key]
 
     def get_volumes(self):
-        if "0_Volumes" in self.P:
-            return
-
-        if self.verbose:
-            print("computing volumes ...")
-            start_time = time.time()
-
-        self.load_data(0, "Masses")
-        self.load_data(0, "Density")
-        self.P["0_Volumes"] = self.P["0_Masses"] / self.P["0_Density"]
-
-        if self.verbose:
-            print("... done! (took", time.time()-start_time, "s)")
+        self["0_Volumes"]
+        from warnings import warn
+        warn(("This method will be soon deprecated in favor of automatic " +
+             " loading using:\n\n" +
+              " snap['0_Volumes']\n\n or the explicit command\n\n" +
+              "snap.get_derived_data(0, 'Volumes')"),
+             DeprecationWarning, stacklevel=2)
 
     def get_temperatures(self):
-        from astropy import constants as c
-        mhydrogen = c.m_e + c.m_p
-        u_v = self.converter.arepo_units['unit_velocity']
-        if "0_Temperatures" in self.P:
-            return
-
-        if self.verbose:
-            print("computing temperatures ...")
-            start_time = time.time()
-
-        self.load_data(0, "InternalEnergy")
-
-        fhydrogen = 0.76
-
-        if "ElectronAbundance" in self.info(0, False):
-            self.load_data(0, "ElectronAbundance")
-            mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
-                           fhydrogen*self.P["0_ElectronAbundance"])
-        else:
-            mmean_ionized = (1.0+(1.0-fhydrogen)/fhydrogen) / \
-                (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
-            mmean = mmean_ionized
-
-        if 'GAMMA' in self.Config:
-            gamma = self.Config['GAMMA']
-        elif 'ISOTHERMAL' in self.Config:
-            msg = 'temperature is constant when ISOTHERMAL in Config'
-            raise RuntimeError(msg)
-        else:
-            gamma = 5/3
-
-        gm1 = gamma - 1
-
-        # temperature in Kelvin
-        from . import units
-        if units.enabled:
-            self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
-                                        mmean * mhydrogen).to('K')
-        else:
-            self.P["0_Temperatures"] = (gm1 * self.P["0_InternalEnergy"] *
-                                        u_v**2 * mmean * mhydrogen
-                                        ).to('K').value
-
-        if self.verbose:
-            print("... done! (took", time.time()-start_time, "s)")
+        self['0_Temperatures']
+        from warnings import warn
+        warn(("This method will be soon deprecated in favor of automatic " +
+             " loading using:\n\n" +
+              " snap['0_Temperatures']\n\n or the explicit command\n\n" +
+              "snap.get_derived_data(0, 'Temperatures')"),
+             DeprecationWarning, stacklevel=2)
 
     # find subhalos that particles belong to
     def get_host_subhalos(self, particle_type):

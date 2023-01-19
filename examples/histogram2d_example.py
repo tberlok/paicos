@@ -8,20 +8,15 @@ pa.use_units(True)
 snap = pa.Snapshot(root_dir + '/data', 247)
 center = snap.Cat.Group['GroupPos'][0]
 
-snap.load_data(0, 'Density')
-snap.load_data(0, 'Masses')
-snap.get_temperatures()
-snap.get_volumes()
-
-T = snap.P['0_Temperatures']
+T = snap['0_Temperatures']
 if pa.units.enabled:
-    rho = snap.P['0_Density'].to_physical.astro
-    M = snap.P['0_Masses'].to_physical.astro
-    V = snap.P['0_Volumes'].to_physical.astro
+    rho = snap['0_Density'].to_physical.astro
+    M = snap['0_Masses'].to_physical.astro
+    V = snap['0_Volumes'].to_physical.astro
 else:
-    rho = snap.P['0_Density']
-    M = snap.P['0_Masses']
-    V = snap.P['0_Volumes']
+    rho = snap['0_Density']
+    M = snap['0_Masses']
+    V = snap['0_Volumes']
 
 # Set up bins
 bins_T = [T.min(), T.max()/10, 200]
