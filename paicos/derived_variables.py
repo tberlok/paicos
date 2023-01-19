@@ -1,4 +1,5 @@
 import numpy as np
+from astropy import constants as c
 
 
 def get_variable_function(variable_str, info=False):
@@ -49,7 +50,6 @@ def get_variable_function(variable_str, info=False):
         return variable
 
     def Temperatures(snap):
-        from astropy import constants as c
         mhydrogen = c.m_e + c.m_p
         u_v = snap.converter.arepo_units['unit_velocity']
 
@@ -147,6 +147,30 @@ def get_variable_function(variable_str, info=False):
 
         return variable
 
+    def MeanMolecularWeight(snap):
+        if 'GFM_Metals' in snap.info(0, False):
+            hydrogen_abundance = snap['0_GFM_Metals'][:, 0]
+        else:
+            hydrogen_abundance = 0.76
+
+        if 'ElectronAbundance' in snap.info(0, False):
+            electron_abundance = snap['0_ElectronAbundance']
+            # partially ionized
+            mean_molecular_weight = 4./ (1. + 3. * hydrogen_abundance +
+                            4. * hydrogen_abundance * electron_abundance)
+        else:
+            # fully ionized
+            mean_molecular_weight = 4. / (5. * hydrogen_abundance + 3.)
+        return mean_molecular_weight
+
+    def NumberDensity(snap):
+        density = snap['0_Density']
+        mean_molecular_weight = MeanMolecularWeight(snap=snap)
+        # LJ: Not sure whether the constant should be given units here?
+        proton_mass = c.m_p.to('g')
+        number_density_gas = density / (mean_molecular_weight * proton_mass)
+        return number_density_gas
+
     functions = {
         "GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
         "Volumes": Volumes,
@@ -159,7 +183,9 @@ def get_variable_function(variable_str, info=False):
         "TemperatureTimesMasses": TemperatureTimesMasses,
         "Current": Current,
         "Enstrophy": Enstrophy,
-        "EnstrophyTimesMasses": EnstrophyTimesMasses
+        "EnstrophyTimesMasses": EnstrophyTimesMasses,
+        "MeanMolecularWeight": MeanMolecularWeight,
+        "NumberDensity": NumberDensity
     }
 
     if info:
