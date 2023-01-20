@@ -1,6 +1,6 @@
-scipy
-cython
-numpy
+scipy >= 1.9.3
+numpy >= 1.19.4
+cython >= 0.29.21
 matplotlib
 h5py
-astropy
+astropy >= 4.3
