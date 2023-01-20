@@ -47,8 +47,9 @@ class Snapshot(dict):
     snap.box_size: the dimensions of the simulation domain
 
     """
+
     def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False,
-                 no_snapdir=False, load_catalog=None):
+                 no_snapdir=False, load_catalog=None, selection_index=None):
         """
         Initialize the Snapshot class.
 
@@ -78,6 +79,9 @@ class Snapshot(dict):
         self.snap_basename = snap_basename
         self.verbose = verbose
         self.no_snapdir = no_snapdir
+        self.load_catalog = load_catalog
+
+        self.selection_index = selection_index
 
         # in case single file
         self.snapname = self.basedir + "/" + \
@@ -291,6 +295,16 @@ class Snapshot(dict):
 
             skip_part += np_file
 
+        # Only keep the cells with True in the selection index array
+        if self.selection_index is not None:
+            shape = self[P_key].shape
+            if len(shape) == 1:
+                self[P_key] = self[P_key][self.selection_index]
+            elif len(shape) == 2:
+                self[P_key] = self[P_key][self.selection_index, :]
+            else:
+                raise RuntimeError('Data has unexpected shape!')
+
         from . import units
 
         if units.enabled or give_units:
@@ -393,7 +407,7 @@ class Snapshot(dict):
         self["0_Volumes"]
         from warnings import warn
         warn(("This method will be soon deprecated in favor of automatic " +
-             " loading using:\n\n" +
+              " loading using:\n\n" +
               " snap['0_Volumes']\n\n or the explicit command\n\n" +
               "snap.get_derived_data(0, 'Volumes')"),
              DeprecationWarning, stacklevel=2)
@@ -402,7 +416,7 @@ class Snapshot(dict):
         self['0_Temperatures']
         from warnings import warn
         warn(("This method will be soon deprecated in favor of automatic " +
-             " loading using:\n\n" +
+              " loading using:\n\n" +
               " snap['0_Temperatures']\n\n or the explicit command\n\n" +
               "snap.get_derived_data(0, 'Temperatures')"),
              DeprecationWarning, stacklevel=2)
@@ -440,3 +454,27 @@ class Snapshot(dict):
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
+
+    def select(self, selection_index):
+
+        if self.selection is not None:
+            # This snap object is already a selection, combine the criteria!
+
+
+        select_snap = Snapshot(self.basedir, self.snapnum,
+                               snap_basename=self.snap_basename,
+                               verbose=self.verbose,
+                               no_snapdir=self.no_snapdir,
+                               load_catalog=self.load_catalog,
+                               selection_index=selection_index)
+
+        for key in self.keys():
+            shape = self[key].shape
+            if len(shape) == 1:
+                select_snap[key] = self[key][selection_index]
+            elif len(shape) == 2:
+                select_snap[key] = self[key][selection_index, :]
+            else:
+                raise RuntimeError('Data has unexpected shape!')
+
+        return select_snap
