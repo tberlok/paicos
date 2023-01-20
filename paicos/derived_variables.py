@@ -9,39 +9,28 @@ def get_variable_function(variable_str, info=False):
     assert type(variable_str) is str
 
     def GFM_MetallicityTimesMasses(snap):
-        snap.load_data(0, 'GFM_Metallicity')
-        snap.load_data(0, 'Masses')
         return snap['0_Masses']*snap['0_GFM_Metallicity']
 
     def Volumes(snap):
-        snap.load_data(0, "Masses")
-        snap.load_data(0, "Density")
         return snap["0_Masses"] / snap["0_Density"]
 
     def EnergyDissipation(snap):
-        snap.load_data(0, 'EnergyDissipation')
         return snap['0_EnergyDissipation']
 
     def MachnumberTimesEnergyDissipation(snap):
-        snap.load_data(0, 'Machnumber')
-        snap.load_data(0, 'EnergyDissipation')
         variable = snap['0_Machnumber']*snap['0_EnergyDissipation']
         return variable
 
     def MagneticFieldSquared(snap):
-        snap.load_data(0, 'MagneticField')
         return np.sum(snap['0_MagneticField']**2, axis=1)
 
     def MagneticFieldSquaredTimesVolumes(snap):
-        snap['0_Volumes']
-        snap.load_data(0, 'MagneticField')
         variable = snap["0_Volumes"]*np.sum(snap['0_MagneticField']**2, axis=1)
         return variable
 
     def PressureTimesVolumes(snap):
-        snap.load_data(0, 'InternalEnergy')
-        snap.load_data(0, 'Density')
         gamma = 5/3
+        # TODO: Get rid of hardcoded gamma
         # thermal pressure times volume
         # variable = snap["0_Volumes"] * snap["0_InternalEnergy"] * snap["0_Density"] * (gamma - 1.)
         # Same as above but faster
@@ -79,14 +68,10 @@ def get_variable_function(variable_str, info=False):
     def Temperatures(snap):
         from astropy import constants as c
         mhydrogen = c.m_e + c.m_p
-        u_v = snap.converter.arepo_units['unit_velocity']
-
-        snap.load_data(0, "InternalEnergy")
 
         fhydrogen = 0.76
 
         if "ElectronAbundance" in snap.info(0, False):
-            snap.load_data(0, "ElectronAbundance")
             mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
                            fhydrogen*snap["0_ElectronAbundance"])
         else:
@@ -110,6 +95,7 @@ def get_variable_function(variable_str, info=False):
             variable = (gm1 * snap["0_InternalEnergy"] *
                         mmean * mhydrogen).to('K')
         else:
+            u_v = snap.converter.arepo_units['unit_velocity']
             variable = (gm1 * snap["0_InternalEnergy"] *
                         u_v**2 * mmean * mhydrogen
                         ).to('K').value
@@ -133,7 +119,6 @@ def get_variable_function(variable_str, info=False):
 
     def Enstrophy(snap):
         # absolute vorticity squared times one half ("enstrophy")
-        snap.load_data(0, 'VelocityGradient')
 
         def get_index(ii, jj):
             return ii*3 + jj
@@ -147,14 +132,13 @@ def get_variable_function(variable_str, info=False):
 
     def EnstrophyTimesMasses(snap):
         # absolute vorticity squared times one half ("enstrophy")
-        snap.load_data(0, 'VelocityGradient')
 
         # Reshaping is slow
         if False:
             n_cells = snap['0_VelocityGradient'].shape[0]
 
             # Reshape to tensor form
-            gradV = snap['0_VelocityGradient'][()].reshape(n_cells, 3, 3)
+            gradV = snap['0_VelocityGradient'].reshape(n_cells, 3, 3)
             # Get vorticity components
             vor_x = gradV[:, 2, 1] - gradV[:, 1, 2]
             vor_y = gradV[:, 0, 2] - gradV[:, 2, 0]
@@ -162,7 +146,7 @@ def get_variable_function(variable_str, info=False):
         else:
             def get_index(ii, jj):
                 return ii*3 + jj
-            gradV = snap['0_VelocityGradient'][()]
+            gradV = snap['0_VelocityGradient']
             vor_x = gradV[:, get_index(2, 1)] - gradV[:, get_index(1, 2)]
             vor_y = gradV[:, get_index(0, 2)] - gradV[:, get_index(2, 0)]
             vor_z = gradV[:, get_index(1, 0)] - gradV[:, get_index(0, 1)]
