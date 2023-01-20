@@ -49,7 +49,8 @@ class Snapshot(dict):
     """
 
     def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False,
-                 no_snapdir=False, load_catalog=None, selection_index=None):
+                 no_snapdir=False, load_catalog=None,
+                 dic_selection_index={}):
         """
         Initialize the Snapshot class.
 
@@ -81,7 +82,7 @@ class Snapshot(dict):
         self.no_snapdir = no_snapdir
         self.load_catalog = load_catalog
 
-        self.selection_index = selection_index
+        self.dic_selection_index = dic_selection_index
 
         # in case single file
         self.snapname = self.basedir + "/" + \
@@ -296,12 +297,13 @@ class Snapshot(dict):
             skip_part += np_file
 
         # Only keep the cells with True in the selection index array
-        if self.selection_index is not None:
+        if particle_type in self.dic_selection_index.keys():
+            selection_index = self.dic_selection_index[particle_type]
             shape = self[P_key].shape
             if len(shape) == 1:
-                self[P_key] = self[P_key][self.selection_index]
+                self[P_key] = self[P_key][selection_index]
             elif len(shape) == 2:
-                self[P_key] = self[P_key][self.selection_index, :]
+                self[P_key] = self[P_key][selection_index, :]
             else:
                 raise RuntimeError('Data has unexpected shape!')
 
@@ -454,26 +456,43 @@ class Snapshot(dict):
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
 
-    def select(self, selection_index):
+    def select(self, selection_index, parttype=0):
+        """
+        Create a new snapshot object which will only contain
+        voronoi (gas) cells with a selection_index
+        """
 
-        if self.selection_index is not None:
+        # assert parttype == 0, '\n\nOnly gas cells are implemented for now.'
+
+        if parttype in self.dic_selection_index.keys():
+            raise RuntimeError('nested selection is not (yet) implemented.')
             # This snap object is already a selection, combine the criteria!
-            pass
+            previous_selection = self.selection_index
+            n = previous_selection.shape[0]
+            selection_index = np.arange(n)[previous_selection][selection_index]
+            # selection_index needs to be turned into a boolean array with
+            # the same length as the full data set.
+
+        dic_selection_index = dict(self.dic_selection_index)
+        dic_selection_index[parttype] = selection_index
 
         select_snap = Snapshot(self.basedir, self.snapnum,
                                snap_basename=self.snap_basename,
                                verbose=self.verbose,
                                no_snapdir=self.no_snapdir,
                                load_catalog=self.load_catalog,
-                               selection_index=selection_index)
+                               dic_selection_index=dic_selection_index)
 
         for key in self.keys():
-            shape = self[key].shape
-            if len(shape) == 1:
-                select_snap[key] = self[key][selection_index]
-            elif len(shape) == 2:
-                select_snap[key] = self[key][selection_index, :]
+            if key[0] == str(parttype):
+                shape = self[key].shape
+                if len(shape) == 1:
+                    select_snap[key] = self[key][selection_index]
+                elif len(shape) == 2:
+                    select_snap[key] = self[key][selection_index, :]
+                else:
+                    raise RuntimeError('Data has unexpected shape!')
             else:
-                raise RuntimeError('Data has unexpected shape!')
+                select_snap[key] = self[key]
 
         return select_snap
