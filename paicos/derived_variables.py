@@ -48,6 +48,34 @@ def get_variable_function(variable_str, info=False):
         variable = snap["0_Masses"] * snap["0_InternalEnergy"] * (gamma - 1.)
         return variable
 
+    def Temperatures2(snap):
+        from astropy import constants as c
+        mhydrogen = c.m_e + c.m_p
+
+        if 'GAMMA' in snap.Config:
+            gamma = snap.Config['GAMMA']
+        elif 'ISOTHERMAL' in snap.Config:
+            msg = 'temperature is constant when ISOTHERMAL in Config'
+            raise RuntimeError(msg)
+        else:
+            gamma = 5/3
+
+        gm1 = gamma - 1
+
+        mmean = snap['0_MeanMolecularWeight']
+
+        # temperature in Kelvin
+        from . import units
+        if units.enabled:
+            variable = (gm1 * snap["0_InternalEnergy"] *
+                        mmean * mhydrogen).to('K')
+        else:
+            u_v = snap.converter.arepo_units['unit_velocity']
+            variable = (gm1 * snap["0_InternalEnergy"] *
+                        u_v**2 * mmean * mhydrogen
+                        ).to('K').value
+        return variable
+
     def Temperatures(snap):
         from astropy import constants as c
         mhydrogen = c.m_e + c.m_p
@@ -88,7 +116,6 @@ def get_variable_function(variable_str, info=False):
         return variable
 
     def TemperatureTimesMasses(snap):
-        snap.get_temperatures()
         return snap["0_Temperatures"]*snap['0_Masses']
 
     def Current(snap):
@@ -147,10 +174,39 @@ def get_variable_function(variable_str, info=False):
 
         return variable
 
+    def MeanMolecularWeight(snap):
+        if 'GFM_Metals' in snap.info(0, False):
+            hydrogen_abundance = snap['0_GFM_Metals'][:, 0]
+        else:
+            hydrogen_abundance = 0.76
+
+        if 'ElectronAbundance' in snap.info(0, False):
+            electron_abundance = snap['0_ElectronAbundance']
+            # partially ionized
+            mean_molecular_weight = 4. / (1. + 3. * hydrogen_abundance +
+                                          4. * hydrogen_abundance *
+                                          electron_abundance)
+        else:
+            # fully ionized
+            mean_molecular_weight = 4. / (5. * hydrogen_abundance + 3.)
+        return mean_molecular_weight
+
+    def NumberDensity(snap):
+        """
+        The gas number density in cm⁻³.
+        """
+        from astropy import constants as c
+        density = snap['0_Density'].cgs
+        mean_molecular_weight = snap['0_MeanMolecularWeight']
+        proton_mass = c.m_p.to('g')
+        number_density_gas = density / (mean_molecular_weight * proton_mass)
+        return number_density_gas
+
     functions = {
         "GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
         "Volumes": Volumes,
         "Temperatures": Temperatures,
+        "Temperatures2": Temperatures2,
         "EnergyDissipation": EnergyDissipation,
         "MachnumberTimesEnergyDissipation": MachnumberTimesEnergyDissipation,
         "MagneticFieldSquared": MagneticFieldSquared,
@@ -159,7 +215,9 @@ def get_variable_function(variable_str, info=False):
         "TemperatureTimesMasses": TemperatureTimesMasses,
         "Current": Current,
         "Enstrophy": Enstrophy,
-        "EnstrophyTimesMasses": EnstrophyTimesMasses
+        "EnstrophyTimesMasses": EnstrophyTimesMasses,
+        "MeanMolecularWeight": MeanMolecularWeight,
+        "NumberDensity": NumberDensity
     }
 
     if info:
