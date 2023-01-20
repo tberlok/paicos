@@ -13,6 +13,14 @@ def use_units(use_units):
     units.enabled = use_units
 
 
+def add_user_function(variable_string, function):
+    util.user_functions.update({variable_string: function})
+
+
+def use_only_user_functions(use_only_user_functions):
+    util.use_only_user_functions = use_only_user_functions
+
+
 from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog

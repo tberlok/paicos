@@ -1,4 +1,8 @@
 
+user_functions = {}
+use_only_user_functions = False
+
+
 def get_project_root_dir():
     import os
     path = os.path.dirname(os.path.abspath(__file__))

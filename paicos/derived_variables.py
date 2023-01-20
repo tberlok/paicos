@@ -1,4 +1,5 @@
 
+
 def get_variable_function(variable_str, info=False):
     """
     Convenience function for getting (derived) variables.
@@ -7,6 +8,16 @@ def get_variable_function(variable_str, info=False):
     """
 
     assert type(variable_str) is str
+
+    # User functions are always preferred
+    from .util import user_functions, use_only_user_functions
+    if variable_str in user_functions:
+        return user_functions[variable_str]
+    else:
+        if use_only_user_functions:
+            msg = ('The derived variable {} is not found in the user ' +
+                   'defined functions and use_only_user_functions is True')
+            raise RuntimeError(msg.format(variable_str))
 
     if not variable_str[0].isnumeric() or variable_str[1] != '_':
         msg = ('\n\nKeys are expected to consist of an integer ' +
