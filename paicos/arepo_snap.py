@@ -459,7 +459,7 @@ class Snapshot(dict):
 
         if self.selection is not None:
             # This snap object is already a selection, combine the criteria!
-
+            pass
 
         select_snap = Snapshot(self.basedir, self.snapnum,
                                snap_basename=self.snap_basename,
