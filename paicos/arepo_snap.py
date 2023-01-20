@@ -125,7 +125,6 @@ class Snapshot(dict):
         self.nfiles = self.Header["NumFilesPerSnapshot"]
         self.npart = self.Header["NumPart_Total"]
         self.nspecies = self.npart.size
-        self.masstable = self.Header["MassTable"]
 
         if self.verbose:
             print("has", self.nspecies, "particle types")
@@ -147,10 +146,13 @@ class Snapshot(dict):
 
         from . import units
         if units.enabled:
-            self.box_size = self.converter.get_paicos_quantity(box_size,
-                                                               'Coordinates')
+            get_paicos_quantity = self.converter.get_paicos_quantity
+            self.box_size = get_paicos_quantity(box_size, 'Coordinates')
+            self.masstable = get_paicos_quantity(self.Header["MassTable"],
+                                                 'Masses')
         else:
             self.box_size = np.array(box_size)
+            self.masstable = self.Header["MassTable"]
 
         # get subfind catalog?
         if load_catalog is None:
@@ -255,13 +257,6 @@ class Snapshot(dict):
             print("loading block", blockname,
                   "for species", particle_type, "...")
             start_time = time.time()
-
-        if blockname == "Masses" and self.masstable[particle_type] > 0:
-            self[P_key] = self.masstable[particle_type] * \
-                np.ones(self.npart[particle_type], dtype=np.float32)
-            if self.verbose:
-                print("... got value from MassTable in header!")
-            return
 
         skip_part = 0
 

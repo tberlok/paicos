@@ -9,16 +9,6 @@ def get_variable_function(variable_str, info=False):
 
     assert type(variable_str) is str
 
-    # User functions are always preferred
-    from .util import user_functions, use_only_user_functions
-    if variable_str in user_functions:
-        return user_functions[variable_str]
-    else:
-        if use_only_user_functions:
-            msg = ('The derived variable {} is not found in the user ' +
-                   'defined functions and use_only_user_functions is True')
-            raise RuntimeError(msg.format(variable_str))
-
     if not variable_str[0].isnumeric() or variable_str[1] != '_':
         msg = ('\n\nKeys are expected to consist of an integer ' +
                '(the particle type) and a blockname, separated by a ' +
@@ -29,17 +19,41 @@ def get_variable_function(variable_str, info=False):
     parttype = int(variable_str[0])
     # name = variable_str[2:]
 
+    # User functions are always preferred
+    from .util import user_functions, use_only_user_functions
+
+    if info:
+        res = []
+        for key in user_functions.keys():
+            if key[:1] == variable_str[:1]:
+                res.append(key)
+        if use_only_user_functions:
+            return res
+    else:
+        if variable_str in user_functions:
+            return user_functions[variable_str]
+        else:
+            if use_only_user_functions:
+                msg = ('The derived variable {} is not found in the user ' +
+                       'defined functions and use_only_user_functions is True')
+                raise RuntimeError(msg.format(variable_str))
+
     if parttype == 0:
         from .derived_variables_gas import get_variable_function_gas
-        return get_variable_function_gas(variable_str, info)
+        func_or_list = get_variable_function_gas(variable_str, info)
     else:
         if info:
-            return list({}.keys())
+            func_or_list = list({}.keys())
         else:
             msg = ('\n\nA function to calculate the variable {} is not ' +
                    'implemented!\n\nIn fact, no derived variables are ' +
                    'available for this parttype.')
             raise RuntimeError(msg.format(variable_str))
+
+    if info:
+        return list(set(func_or_list).union(set(res)))
+    else:
+        return func_or_list
 
 
 def get_variable(snap, variable_str):
