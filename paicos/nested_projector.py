@@ -227,15 +227,15 @@ if __name__ == '__main__':
         widths = width_vec[ii]
         p_nested = NestedProjector(snap, center, widths, direction, npix=512)
 
-        Masses = p_nested.project_variable('Masses')
-        Volume = p_nested.project_variable('Volumes')
+        Masses = p_nested.project_variable('0_Masses')
+        Volume = p_nested.project_variable('0_Volumes')
 
         nested_image = Masses/Volume
 
         p = Projector(snap, center, widths, direction, npix=512)
 
-        Masses = p.project_variable('Masses')
-        Volume = p.project_variable('Volumes')
+        Masses = p.project_variable('0_Masses')
+        Volume = p.project_variable('0_Volumes')
 
         normal_image = Masses/Volume
 

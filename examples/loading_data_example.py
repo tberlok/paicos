@@ -7,10 +7,10 @@ snap.load_data(0, 'Density')
 snap.load_data(0, 'Masses')
 
 snap['0_MagneticField']
-# snap['0_Volumes']
+snap['0_Volumes']
 snap['0_Temperatures']
-snap.load_data(0, 'Volumes')
+# snap.load_data(0, 'Volumes')
 
-snap['0_Densitt']
+# snap['0_Densitt']
 
-snap['dfadsfdsf']
+# snap['dfadsfdsf']

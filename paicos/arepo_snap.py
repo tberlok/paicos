@@ -209,11 +209,11 @@ class Snapshot(dict):
                 if verbose:
                     print('\nKeys for ' + PartType_str + ' are')
                     print(keys)
-                    if PartType == 0:
-                        from .derived_variables import get_variable_function
-                        print('\n\nPossible derived variables are:')
-                        keys = get_variable_function('', True)
-                        print(keys)
+                    # if PartType == 0:
+                    from .derived_variables import get_variable_function
+                    print('\n\nPossible derived variables are:')
+                    keys = get_variable_function(str(PartType) + '_', True)
+                    print(keys)
                     return None
                 else:
                     return keys
@@ -329,22 +329,21 @@ class Snapshot(dict):
         """
         from .derived_variables import get_variable_function
 
-        P_key = str(particle_type)+"_"+blockname
+        P_key = str(particle_type) + "_" + blockname
 
         msg = ('\n\n{} is in the hdf5 file(s), please use load_data instead ' +
                'of get_derived_data').format(blockname)
         assert blockname not in self.info(particle_type, False), msg
 
-        if particle_type == 0:
-            if verbose:
-                print('Attempting to get derived variable: {}...'.format(P_key),
-                      end='')
-            func = get_variable_function(blockname)
-            self[P_key] = func(self)
-            if verbose:
-                print('\t[Done]')
-        else:
-            raise RuntimeError('Derived variables only implemented for gas!')
+        if verbose:
+            msg = 'Attempting to get derived variable: {}...'.format(P_key)
+            print(msg, end='')
+
+        func = get_variable_function(P_key)
+        self[P_key] = func(self)
+
+        if verbose:
+            print('\t[Done]')
 
     def __getitem__(self, key):
         """
@@ -457,7 +456,7 @@ class Snapshot(dict):
 
     def select(self, selection_index):
 
-        if self.selection is not None:
+        if self.selection_index is not None:
             # This snap object is already a selection, combine the criteria!
             pass
 

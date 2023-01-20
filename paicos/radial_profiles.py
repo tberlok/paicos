@@ -40,16 +40,19 @@ class RadialProfiles:
 
         self.copy_over_snapshot_information()
 
-        variable_strings = ['Masses', 'Volumes', 'TemperatureTimesMasses',
-                            'MagneticFieldSquaredTimesVolumes',
-                            'PressureTimesVolumes']
+        variable_strings = ['0_Masses',
+                            '0_Volumes',
+                            '0_TemperaturesTimesMasses',
+                            '0_MagneticFieldSquaredTimesVolumes',
+                            '0_PressureTimesVolumes']
+
         for variable_str in variable_strings:
             self.add_profile(variable_str)
 
         if 'VelocityGradient' in self.snap.info(0, False):
-            self.add_profile('EnstrophyTimesMasses')
+            self.add_profile('0_EnstrophyTimesMasses')
         if 'GFM_Metallicity' in self.snap.info(0, False):
-            self.add_profile('GFM_MetallicityTimesMasses')
+            self.add_profile('0_GFM_MetallicityTimesMasses')
 
         # Delete all gas variables for memory efficiency
         keys = list(self.snap.keys())
@@ -58,7 +61,6 @@ class RadialProfiles:
                 del self.snap[key]
 
         # Now do the dark matter
-
         for part in [1, 2, 3]:
 
             if self.verbose:

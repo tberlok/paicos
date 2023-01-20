@@ -1,5 +1,4 @@
 import numpy as np
-from astropy import units as u
 from paicos import units as pu
 
 
@@ -78,8 +77,7 @@ if __name__ == '__main__':
         snap = Snapshot(root_dir + '/data', 247)
         center = snap.Cat.Group['GroupPos'][0]
 
-        snap.load_data(0, 'Coordinates')
-        pos = snap.P['0_Coordinates']
+        pos = snap['0_Coordinates']
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
@@ -93,21 +91,15 @@ if __name__ == '__main__':
         bins = np.linspace(0, r_max, 150)
         # bins = np.logspace(-2, np.log10(r_max), 1000)
 
-        for key in ['Masses', 'MagneticField', 'MagneticFieldDivergence']:
-            snap.load_data(0, key)
-
-        snap.get_volumes()
-        snap.get_temperatures()
-
-        B2 = np.sum((snap.P['0_MagneticField'])**2, axis=1)
-        Volumes = snap.P['0_Volumes']
-        Masses = snap.P['0_Masses']
+        B2 = np.sum((snap['0_MagneticField'])**2, axis=1)
+        Volumes = snap['0_Volumes']
+        Masses = snap['0_Masses']
 
         if ii == 0:
             h_r = Histogram(r[index], bins, verbose=True)
             B2TimesVolumes = h_r.hist((B2*Volumes)[index])
             Volumes = h_r.hist(Volumes[index])
-            TTimesMasses = h_r.hist((Masses*snap.P['0_Temperatures'])[index])
+            TTimesMasses = h_r.hist((Masses*snap['0_Temperatures'])[index])
             Masses = h_r.hist(Masses[index])
 
             axes[0].loglog(h_r.bin_centers, Masses/Volumes)
@@ -122,7 +114,7 @@ if __name__ == '__main__':
         else:
             B2TimesVolumes, edges = np.histogram(r[index], weights=(B2*Volumes)[index], bins=bins)
             Volumes, edges = np.histogram(r[index], weights=Volumes[index], bins=bins)
-            TTimesMasses, edges = np.histogram(r[index], weights=(Masses*snap.P['0_Temperatures'])[index], bins=bins)
+            TTimesMasses, edges = np.histogram(r[index], weights=(Masses*snap['0_Temperatures'])[index], bins=bins)
             Masses, edges = np.histogram(r[index], weights=Masses[index], bins=bins)
             bin_centers = 0.5*(edges[1:] + edges[:-1])
 

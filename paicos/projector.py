@@ -271,12 +271,12 @@ if __name__ == '__main__':
             filename = root_dir + '/data/projection_{}_247.hdf5'.format(direction)
             image_file = pa.ArepoImage(filename, projector)
 
-            Masses = projector.project_variable('Masses')
+            Masses = projector.project_variable('0_Masses')
             print(Masses[0, 0])
-            Volumes = projector.project_variable('Volumes')
+            Volumes = projector.project_variable('0_Volumes')
 
-            image_file.save_image('Masses', Masses)
-            image_file.save_image('Volumes', Volumes)
+            image_file.save_image('0_Masses', Masses)
+            image_file.save_image('0_Volumes', Volumes)
 
             # snap.get_temperatures()
             TemperaturesTimesMasses = projector.project_variable(
