@@ -454,22 +454,29 @@ class Snapshot(dict):
     def select(self, selection_index, parttype=0):
         """
         Create a new snapshot object which will only contain
-        voronoi (gas) cells with a selection_index
+        cells with a selection_index.
+
+        Example use:
+        index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
+        selected_snap = snap.select(index)
+
         """
 
-        # assert parttype == 0, '\n\nOnly gas cells are implemented for now.'
+        s_index = selection_index
 
         if parttype in self.dic_selection_index.keys():
-            raise RuntimeError('nested selection is not (yet) implemented.')
             # This snap object is already a selection, combine the criteria!
-            previous_selection = self.selection_index
-            n = previous_selection.shape[0]
-            selection_index = np.arange(n)[previous_selection][selection_index]
-            # selection_index needs to be turned into a boolean array with
-            # the same length as the full data set.
+            previous_selection = self.dic_selection_index[parttype]
+            new_index = previous_selection[s_index]
+            dic_selection_index = dict(self.dic_selection_index)
+            dic_selection_index[parttype] = new_index
+        else:
+            # Convert to integer array
+            if s_index.dtype == 'bool':
+                s_index = np.arange(s_index.shape[0])[s_index]
 
-        dic_selection_index = dict(self.dic_selection_index)
-        dic_selection_index[parttype] = selection_index
+            dic_selection_index = dict(self.dic_selection_index)
+            dic_selection_index[parttype] = s_index
 
         select_snap = Snapshot(self.basedir, self.snapnum,
                                snap_basename=self.snap_basename,
@@ -481,13 +488,21 @@ class Snapshot(dict):
         for key in self.keys():
             if key[0] == str(parttype):
                 shape = self[key].shape
+                # print(key, shape, s_index.shape)
                 if len(shape) == 1:
-                    select_snap[key] = self[key][selection_index]
+                    select_snap[key] = self[key][s_index]
                 elif len(shape) == 2:
-                    select_snap[key] = self[key][selection_index, :]
+                    select_snap[key] = self[key][s_index, :]
                 else:
                     raise RuntimeError('Data has unexpected shape!')
             else:
                 select_snap[key] = self[key]
 
         return select_snap
+
+    def save_new_snapshot(self, basename):
+        """
+        Save a new snapshot containing the currently loaded (derived)
+        variables. Useful for reducing datasets to smaller sizes.
+        """
+        raise RuntimeError('To be implemented')
