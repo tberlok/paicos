@@ -100,6 +100,36 @@ def get_index_of_region_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc,
     tmp[:] = index[:]
     return tmp
 
+
+def get_index_of_radial_range(real_t [:, :] pos, real_t xc, real_t yc,
+                              real_t zc, real_t r_min, real_t r_max):
+
+    cdef int Np = pos.shape[0]
+    cdef int ip
+    cdef real_t x, y, z, r2
+
+    cdef real_t r2_min = r_min*r_min
+    cdef real_t r2_max = r_max*r_max
+
+    cdef int[:] index = np.zeros(Np, dtype=np.intc)
+
+    for ip in prange(Np, nogil=True, schedule='static'):
+        x = pos[ip, 0] - xc
+        y = pos[ip, 1] - yc
+        z = pos[ip, 2] - zc
+
+        r2 = x*x + y*y + z*z
+
+        # Index calculation
+        index[ip] = 0
+        if (r2 < r2_max) and (r2 > r2_min):
+            index[ip] = 1
+
+    # Return a numpy boolean array
+    tmp = np.zeros(Np, dtype=np.bool_)
+    tmp[:] = index[:]
+    return tmp
+
 def get_index_of_x_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                         real_t sidelength_y, real_t sidelength_z,
                         real_t [:] thickness, real_t boxsize):

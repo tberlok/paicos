@@ -64,3 +64,11 @@ def remove_astro_units(func):
 
         return func(*new_args, **new_kwargs)
     return inner
+
+
+@remove_astro_units
+def get_index_of_radial_range(pos, center, r_min, r_max):
+    from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
+    xc, yc, zc = center[0], center[1], center[2]
+    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max)
+    return index
