@@ -162,7 +162,7 @@ if __name__ == '__main__':
     snap = Snapshot(root_dir + '/data', 247)
     center = snap.Cat.Group['GroupPos'][0]
 
-    if pa.units.enabled:
+    if pa.settings.use_units:
         R200c = snap.Cat.Group['Group_R_Crit200'][0].value
     else:
         R200c = snap.Cat.Group['Group_R_Crit200'][0]
@@ -196,7 +196,7 @@ if __name__ == '__main__':
 
         normal_image = Masses/Volume
 
-        if pa.units.enabled:
+        if pa.settings.use_units:
             if ii == 0:
                 vmin = normal_image.min().value
                 vmax = normal_image.max().value

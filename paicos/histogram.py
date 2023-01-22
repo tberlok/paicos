@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
         r = np.sqrt(np.sum((pos-center[None, :])**2., axis=1))
 
-        if pa.units.enabled:
+        if pa.settings.use_units:
             r_max = 10000 * r.unit_quantity
         else:
             r_max = 10000
@@ -106,7 +106,7 @@ if __name__ == '__main__':
             axes[1].loglog(h_r.bin_centers, B2TimesVolumes/Volumes)
             axes[2].loglog(h_r.bin_centers, TTimesMasses/Masses)
 
-            if pa.units.enabled:
+            if pa.settings.use_units:
                 axes[0].set_xlabel(h_r.bin_centers.label(r'\mathrm{radius}\;'))
                 axes[0].set_ylabel((Masses/Volumes).label('\\rho'))
                 axes[1].set_ylabel((B2TimesVolumes/Volumes).label('B^2'))

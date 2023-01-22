@@ -17,4 +17,7 @@ snap['0_TM2']
 pa.use_only_user_functions(True)
 
 # Should then fail
-snap['0_Volumes']
+try:
+    snap['0_Volumes']
+except RuntimeError:
+    print('Expected failure achieved...')

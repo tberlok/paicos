@@ -20,7 +20,8 @@ def get_variable_function(variable_str, info=False):
     # name = variable_str[2:]
 
     # User functions are always preferred
-    from .util import user_functions, use_only_user_functions
+    from .util import user_functions
+    from .settings import use_only_user_functions
 
     if info:
         res = []

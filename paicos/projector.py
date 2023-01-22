@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
         snap = pa.Snapshot(root_dir + '/data', 247)
         center = snap.Cat.Group['GroupPos'][0]
-        if pa.units.enabled:
+        if pa.settings.use_units:
             R200c = snap.Cat.Group['Group_R_Crit200'][0].value
         else:
             R200c = snap.Cat.Group['Group_R_Crit200'][0]

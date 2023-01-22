@@ -45,7 +45,7 @@ class Histogram2D:
         snap.get_volumes()
 
         T = snap.P['0_Temperatures']
-        if pa.units.enabled:
+        if pa.settings.use_units:
             rho = snap.P['0_Density'].to_physical.astro
             M = snap.P['0_Masses'].to_physical.astro
             V = snap.P['0_Volumes'].to_physical.astro
@@ -67,7 +67,7 @@ class Histogram2D:
         plt.figure(1)
         plt.clf()
 
-        if pa.units.enabled:
+        if pa.settings.use_units:
             plt.pcolormesh(rhoT.centers_x.value, rhoT.centers_y.value,
                            rhoT.hist, norm=LogNorm())
             plt.xlabel(rhoT.centers_x.label('\\rho'))
@@ -112,8 +112,8 @@ class Histogram2D:
 
         lower, upper, nbins = bins
         edges, centers = self.__make_bins(lower, upper, nbins)
-        from . import units
-        if units.enabled:
+        from . import settings
+        if settings.use_units:
             assert lower.unit == upper.unit
             edges = np.array(edges)*lower.unit_quantity
             centers = np.array(centers)*lower.unit_quantity
@@ -172,9 +172,9 @@ class Histogram2D:
             colorlabel (string): The color label for the histogram with
                                  units
         """
-        from paicos import units
+        from paicos import settings
 
-        assert units.enabled
+        assert settings.use_units
 
         unit_label = self.hist_units.to_string(format='latex')[1:-1]
         unit_label = r'[' + unit_label + r']'
@@ -219,13 +219,13 @@ class Histogram2D:
             norm (float): Normalizing constant for the histogram
         """
         from paicos import get_hist2d_from_weights
-        from paicos import units
+        from paicos import settings
         from astropy import units as u
 
         self.normalized = normalize
 
         # Figure out units for the histogram
-        if units.enabled:
+        if settings.use_units:
             if not normalize and (weights is not None):
                 hist_units = weights.unit
             else:
@@ -237,14 +237,14 @@ class Histogram2D:
 
             self.hist_units = hist_units
 
-        if units.enabled:
+        if settings.use_units:
             assert x.unit == self.edges_x.unit
             assert y.unit == self.edges_y.unit
 
         if weights is None:
             weights = np.ones_like(x, dtype=np.float64)
         else:
-            if units.enabled:
+            if settings.use_units:
                 weights = np.array(weights.value, dtype=np.float64)
             else:
                 weights = np.array(weights, dtype=np.float64)
@@ -252,7 +252,7 @@ class Histogram2D:
         nbins_x = self.edges_x.shape[0] - 1
         nbins_y = self.edges_y.shape[0] - 1
 
-        if units.enabled:
+        if settings.use_units:
             lower_x = self.edges_x[0].value
             upper_x = self.edges_x[-1].value
             lower_y = self.edges_y[0].value

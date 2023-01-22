@@ -1,6 +1,7 @@
 import numpy as np
 from paicos import ImageCreator
 from paicos import util
+from paicos import settings
 
 
 class Slicer(ImageCreator):
@@ -67,7 +68,7 @@ class Slicer(ImageCreator):
         self.pos = pos[self.slice]
         tree = KDTree(self.pos)
 
-        d, i = tree.query(image_points, workers=util.numthreads)
+        d, i = tree.query(image_points, workers=settings.numthreads)
 
         self.index = unflatten(np.arange(pos.shape[0])[self.slice][i])
         self.distance_to_nearest_cell = unflatten(d)
@@ -127,7 +128,7 @@ if __name__ == '__main__':
         image_file.finalize()
 
         # Make a plot
-        if pa.units.enabled:
+        if pa.settings.use_units:
             axes[ii].imshow(Density.value, origin='lower',
                             extent=slicer.extent.value, norm=LogNorm())
         else:

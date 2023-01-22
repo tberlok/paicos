@@ -4,7 +4,7 @@ pa.use_units(True)
 
 snap = pa.Snapshot(pa.root_dir + '/data', 247)
 center = snap.Cat.Group['GroupPos'][0]
-r_max = 3000*snap.converter.length
+r_max = 3000*center.unit_quantity
 
 # Calculate index in the "slow" but simple way
 r = np.sqrt(np.sum((snap['0_Coordinates']-center[None, :])**2., axis=1))

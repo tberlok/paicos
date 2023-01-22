@@ -142,8 +142,8 @@ class Catalog:
 
             f.close()
 
-            from . import units
-            give_units = units.enabled or give_units
+            from . import settings
+            give_units = settings.use_units or give_units
 
             if give_units and converter is not None:
 

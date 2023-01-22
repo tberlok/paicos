@@ -4,6 +4,7 @@ import numpy as np
 import os
 import time
 import h5py
+from . import settings
 
 
 class Snapshot(dict):
@@ -144,8 +145,7 @@ class Snapshot(dict):
             if 'LONG_' + dim in self.Config:
                 box_size[ii] *= self.Config['LONG_' + dim]
 
-        from . import units
-        if units.enabled:
+        if settings.use_units:
             get_paicos_quantity = self.converter.get_paicos_quantity
             self.box_size = get_paicos_quantity(box_size, 'Coordinates')
             self.masstable = get_paicos_quantity(self.Header["MassTable"],
@@ -302,9 +302,7 @@ class Snapshot(dict):
             else:
                 raise RuntimeError('Data has unexpected shape!')
 
-        from . import units
-
-        if units.enabled or give_units:
+        if settings.use_units or give_units:
             try:
                 self[P_key] = self.converter.get_paicos_quantity(self[P_key],
                                                                  blockname)
@@ -340,7 +338,7 @@ class Snapshot(dict):
         self[P_key] = func(self)
 
         if verbose:
-            print('\t[Done]')
+            print('\t[DONE]')
 
     def __getitem__(self, key):
         """
@@ -385,7 +383,8 @@ class Snapshot(dict):
             if name in self.info(parttype, False):
                 self.load_data(parttype, name)
             else:
-                self.get_derived_data(parttype, name, verbose=True)
+                verbose = settings.print_info_when_deriving_variables
+                self.get_derived_data(parttype, name, verbose=verbose)
 
         return super().__getitem__(key)
 

@@ -49,8 +49,8 @@ def get_variable_function_gas(variable_str, info=False):
         mmean = snap['0_MeanMolecularWeight']
 
         # temperature in Kelvin
-        from . import units
-        if units.enabled:
+        from . import settings
+        if settings.use_units:
             variable = (gm1 * snap["0_InternalEnergy"] *
                         mmean * mhydrogen).to('K')
         else:
@@ -85,8 +85,8 @@ def get_variable_function_gas(variable_str, info=False):
         gm1 = gamma - 1
 
         # temperature in Kelvin
-        from . import units
-        if units.enabled:
+        from . import settings
+        if settings.use_units:
             variable = (gm1 * snap["0_InternalEnergy"] *
                         mmean * mhydrogen).to('K')
         else:

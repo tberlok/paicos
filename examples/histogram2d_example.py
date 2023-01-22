@@ -8,7 +8,7 @@ snap = pa.Snapshot(pa.root_dir + '/data', 247)
 center = snap.Cat.Group['GroupPos'][0]
 
 T = snap['0_Temperatures']
-if pa.units.enabled:
+if pa.settings.use_units:
     rho = snap['0_Density'].to_physical.astro
     M = snap['0_Masses'].to_physical.astro
     V = snap['0_Volumes'].to_physical.astro
@@ -30,7 +30,7 @@ hist = rhoT.make_histogram(rho, T, weights=M, normalize=True)
 plt.figure(1)
 plt.clf()
 
-if pa.units.enabled:
+if pa.settings.use_units:
     plt.pcolormesh(rhoT.centers_x.value, rhoT.centers_y.value,
                    rhoT.hist, norm=LogNorm())
     plt.xlabel(rhoT.centers_x.label('\\rho'))

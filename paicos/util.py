@@ -1,6 +1,5 @@
+from . import settings
 
-use_only_user_functions = False
-numthreads = 16
 user_functions = {}
 
 openMP_has_issues = None
@@ -123,22 +122,20 @@ def check_if_omp_has_issues(verbose=True):
     """
     from .cython.openmp_info import simple_reduction, get_openmp_settings
 
-    global numthreads
-
     if openMP_has_issues is not None:
         return openMP_has_issues
 
     max_threads = get_openmp_settings(0, False)
-    if numthreads > max_threads:
+    if settings.numthreads > max_threads:
         msg = ('\n\nThe user specified number of OpenMP threads, {}, ' +
                'exceeds the {} available on your system. Setting ' +
                'numthreads to use half the available threads, i.e. {}.\n' +
                'You can set numthreads with e.g. the command\n ' +
                'paicos.set_numthreads(16)\n\n')
-        print(msg.format(numthreads, max_threads, max_threads//2))
-        numthreads = max_threads//2
+        print(msg.format(settings.numthreads, max_threads, max_threads//2))
+        settings.numthreads = max_threads//2
 
-    n = simple_reduction(1000, numthreads)
+    n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
         return True
     else:

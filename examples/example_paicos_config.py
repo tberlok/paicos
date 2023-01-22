@@ -2,6 +2,8 @@ import paicos as pa
 
 pa.use_units(True)
 pa.use_only_user_functions(False)
+pa.print_info_when_deriving_variables(True)
+pa.numthreads(8)
 
 
 def TemperaturesTimesMassesSquared(snap):
