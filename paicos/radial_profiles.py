@@ -106,14 +106,13 @@ class RadialProfiles:
             print('Radial profile took {:1.2f} seconds'.format(time.time()-t))
 
     def add_profile(self, variable_str):
-        from paicos import get_variable
 
         if self.verbose:
             import time
             print('Working on profile for', variable_str)
             t = time.time()
 
-        variable = get_variable(self.snap, variable_str)[self.index]
+        variable = self.snap[variable_str][self.index]
 
         with h5py.File(self.tmp_radial_filename, 'r+') as f:
             save_dataset(f, variable_str, self.h_r.hist(variable))
@@ -124,7 +123,6 @@ class RadialProfiles:
 
     def finalize(self):
         """
-        # TODO: Overload an out-of-scope operator instead?
         """
         import os
         os.rename(self.tmp_radial_filename, self.radial_filename)
