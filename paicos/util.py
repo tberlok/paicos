@@ -57,7 +57,7 @@ def remove_astro_units(func):
                 new_args[ii] = new_args[ii].value
 
         # Create new kwargs
-        new_kwargs = dict(kwargs)
+        new_kwargs = kwargs  # dict(kwargs)
         for key in kwargs.keys():
             if hasattr(kwargs[key], 'unit'):
                 new_kwargs[key] = kwargs[key].value
@@ -71,4 +71,14 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
     from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
     xc, yc, zc = center[0], center[1], center[2]
     index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max)
+    return index
+
+
+@remove_astro_units
+def get_index_of_region(pos, center, widths, boxsize):
+    from .cython.get_index_of_region_functions import get_index_of_region as get_index_of_region_cython
+    xc, yc, zc = center[0], center[1], center[2]
+    width_x, width_y, width_z = widths
+    index = get_index_of_region_cython(pos, xc, yc, zc,
+                                       width_x, width_y, width_z, boxsize)
     return index

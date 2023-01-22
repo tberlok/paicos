@@ -1,5 +1,6 @@
 import numpy as np
 from paicos import ImageCreator
+from paicos import util
 
 
 class Projector(ImageCreator):
@@ -54,9 +55,6 @@ class Projector(ImageCreator):
             Number of threads used in parallelization, by default 16
         """
 
-        from paicos import get_index_of_region
-        from paicos import units
-
         # call the superclass constructor to initialize the ImageCreator class
         super().__init__(snap, center, widths, direction, npix=npix,
                          numthreads=numthreads)
@@ -69,32 +67,13 @@ class Projector(ImageCreator):
 
         snap = self.snap
 
-        # check if units are enabled and assign the center and widths accordingly
-        if units.enabled:
-            xc = self.xc.value
-            yc = self.yc.value
-            zc = self.zc.value
-            width_x = self.width_x.value
-            width_y = self.width_y.value
-            width_z = self.width_z.value
-        else:
-            xc = self.xc
-            yc = self.yc
-            zc = self.zc
-            width_x = self.width_x
-            width_y = self.width_y
-            width_z = self.width_z
-
-        # get the volumes and load the cell positions from the snapshot
-        # snap.get_derived_data(0, 
-        # snap.load_data(0, "Coordinates")
+        # get the cell positions from the snapshot
         self.pos = pos = np.array(snap["0_Coordinates"], dtype=np.float64)
 
         # get the index of the region of projection
-        self.index = get_index_of_region(pos, xc, yc, zc,
-                                         width_x, width_y, width_z,
-                                         snap.box)
+        self.index = util.get_index_of_region(pos, center, widths, snap.box)
 
+        # Calculate the smoothing length
         self.hsml = np.cbrt(nvol*(snap["0_Volumes"][self.index]) /
                             (4.0*np.pi/3.0))
 
@@ -148,61 +127,15 @@ class Projector(ImageCreator):
 
         return get_variable(self.snap, variable_str)
 
-    def project_variable(self, variable):
-        """
-        projects a given variable onto a 2D plane.
-
-        Parameters
-        ----------
-        variable : str, function, numpy array
-            variable, it can be passed as string, function or an array
-
-        Returns
-        -------
-        numpy array
-            The image of the projected variable
-        """
-
-        from paicos import units
-
+    @util.remove_astro_units
+    def _cython_project(self, center, widths, variable):
         if self.use_omp:
             from paicos import project_image_omp as project_image
         else:
             from paicos import project_image
 
-        import types
-        if isinstance(variable, str):
-            variable = self._get_variable(variable)
-        elif isinstance(variable, types.FunctionType):
-            variable = variable(self.snap)
-        elif isinstance(variable, np.ndarray):
-            pass
-        else:
-            raise RuntimeError('Unexpected type for variable')
-
-        if isinstance(variable, units.PaicosQuantity):
-            variable_unit = variable.unit
-            variable = units.PaicosQuantity(variable[self.index],
-                                            variable.unit,
-                                            dtype=np.float64,
-                                            a=self.snap.a, h=self.snap.h)
-        else:
-            variable = np.array(variable[self.index], dtype=np.float64)
-
-        if units.enabled:
-            xc = self.xc.value
-            yc = self.yc.value
-            zc = self.zc.value
-            width_x = self.width_x.value
-            width_y = self.width_y.value
-            width_z = self.width_z.value
-        else:
-            xc = self.xc
-            yc = self.yc
-            zc = self.zc
-            width_x = self.width_x
-            width_y = self.width_y
-            width_z = self.width_z
+        xc, yc, zc = center[0], center[1], center[2]
+        width_x, width_y, width_z = widths
 
         boxsize = self.snap.box
         if self.direction == 'x':
@@ -226,6 +159,48 @@ class Projector(ImageCreator):
                                        self.hsml, self.npix,
                                        xc, yc, width_x, width_y,
                                        boxsize, self.numthreads)
+
+        return projection
+
+    def project_variable(self, variable):
+        """
+        projects a given variable onto a 2D plane.
+
+        Parameters
+        ----------
+        variable : str, function, numpy array
+            variable, it can be passed as string, function or an array
+
+        Returns
+        -------
+        numpy array
+            The image of the projected variable
+        """
+
+        from paicos import units
+
+        import types
+        if isinstance(variable, str):
+            variable = self._get_variable(variable)
+        elif isinstance(variable, types.FunctionType):
+            variable = variable(self.snap)
+        elif isinstance(variable, np.ndarray):
+            pass
+        else:
+            raise RuntimeError('Unexpected type for variable')
+
+        if isinstance(variable, units.PaicosQuantity):
+            variable_unit = variable.unit
+            variable = units.PaicosQuantity(variable[self.index],
+                                            variable.unit,
+                                            dtype=np.float64,
+                                            a=self.snap.a, h=self.snap.h)
+        else:
+            variable = np.array(variable[self.index], dtype=np.float64)
+
+        # Do the projection
+        projection = self._cython_project(self.center, self.widths, variable)
+
         # Transpose
         projection = projection.T
         area_per_pixel = self.area/np.product(projection.shape)
