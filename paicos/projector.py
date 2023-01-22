@@ -78,9 +78,7 @@ class Projector(ImageCreator):
         # Calculate the smoothing length
         self.hsml = np.cbrt(nvol*(self.snap["0_Volumes"]) / (4.0*np.pi/3.0))
 
-        self.hsml = np.array(self.hsml, dtype=np.float64)
-
-        self.pos = self.snap['0_Coordinates'].astype(np.float64)
+        self.pos = self.snap['0_Coordinates']
 
         if not make_snap_with_selection:
             self.hsml = self.hsml[self.index]
@@ -147,15 +145,6 @@ class Projector(ImageCreator):
         if variable.shape == self.index.shape:
             variable = variable[self.index]
 
-        if isinstance(variable, units.PaicosQuantity):
-            variable_unit = variable.unit
-            variable = units.PaicosQuantity(variable,
-                                            variable.unit,
-                                            dtype=np.float64,
-                                            a=self.snap.a, h=self.snap.h)
-        else:
-            variable = np.array(variable, dtype=np.float64)
-
         # Do the projection
         projection = self._cython_project(self.center, self.widths, variable)
 
@@ -164,8 +153,7 @@ class Projector(ImageCreator):
         area_per_pixel = self.area/np.product(projection.shape)
 
         if isinstance(variable, units.PaicosQuantity):
-            projection = units.PaicosQuantity(projection, variable_unit,
-                                              a=self.snap.a, h=self.snap.h)
+            projection = projection*variable.unit_quantity
 
         return projection/area_per_pixel
 

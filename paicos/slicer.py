@@ -25,10 +25,9 @@ class Slicer(ImageCreator):
                 assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
-        pos = np.array(snap["0_Coordinates"], dtype=np.float64)
+        pos = snap["0_Coordinates"]
 
-        thickness = np.array(4.0*np.cbrt((snap["0_Volumes"]) /
-                             (4.0*np.pi/3.0)), dtype=np.float64)
+        thickness = 4.0*np.cbrt((snap["0_Volumes"]) / (4.0*np.pi/3.0))
 
         self.slice = util.get_index_of_slice_region(pos, center, widths,
                                                     thickness, snap.box)

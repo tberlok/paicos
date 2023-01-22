@@ -291,6 +291,15 @@ class Snapshot(dict):
 
             skip_part += np_file
 
+        if settings.double_precision:
+            # Load all variables with double precision
+            self[P_key] = self[P_key].astype(np.float64)
+        else:
+            import warnings
+            warnings.warn('\n\nThe cython routines expect double precision ' +
+                          'and will fail unless settings.double_precision ' +
+                          'is True.\n\n')
+
         # Only keep the cells with True in the selection index array
         if particle_type in self.dic_selection_index.keys():
             selection_index = self.dic_selection_index[particle_type]
