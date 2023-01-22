@@ -9,14 +9,15 @@ class Slicer(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, numthreads=16, make_snap_with_selection=False):
+                 npix=512, make_snap_with_selection=False):
         from scipy.spatial import KDTree
 
         if make_snap_with_selection:
             raise ('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix,
-                         numthreads=numthreads)
+        super().__init__(snap, center, widths, direction, npix=npix)
+
+        util.check_if_omp_has_issues(verbose=False)
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
@@ -66,7 +67,7 @@ class Slicer(ImageCreator):
         self.pos = pos[self.slice]
         tree = KDTree(self.pos)
 
-        d, i = tree.query(image_points, workers=numthreads)
+        d, i = tree.query(image_points, workers=util.numthreads)
 
         self.index = unflatten(np.arange(pos.shape[0])[self.slice][i])
         self.distance_to_nearest_cell = unflatten(d)

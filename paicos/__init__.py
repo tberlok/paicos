@@ -21,6 +21,10 @@ def use_only_user_functions(use_only_user_functions):
     util.use_only_user_functions = use_only_user_functions
 
 
+def set_numthreads(numthreads):
+    util.numthreads = numthreads
+
+
 from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog
@@ -33,10 +37,8 @@ from .radial_profiles import RadialProfiles
 from .histogram import Histogram
 from .histogram2D import Histogram2D
 from .image_reader import ImageReader
-# Some useful functions
-from .derived_variables import get_variable
 # Cython functions
-from .cython.openmp_info import simple_reduction, print_openmp_settings
+from .cython.openmp_info import simple_reduction, get_openmp_settings
 from .cython.get_index_of_region_functions import get_index_of_region
 from .cython.get_index_of_region_functions import get_index_of_region_plus_thin_layer
 from .cython.get_index_of_region_functions import get_index_of_x_slice_region

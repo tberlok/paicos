@@ -1,6 +1,9 @@
 
-user_functions = {}
 use_only_user_functions = False
+numthreads = 16
+user_functions = {}
+
+openMP_has_issues = None
 
 
 def get_project_root_dir():
@@ -109,3 +112,43 @@ def get_index_of_slice_region(pos, center, widths, thickness, box):
     return index
 
 
+def check_if_omp_has_issues(verbose=True):
+    """
+    Check if the parallelization via OpenMP works.
+
+    Parameters
+    ----------
+    numthreads : int
+        Number of threads used in parallelization
+    """
+    from .cython.openmp_info import simple_reduction, get_openmp_settings
+
+    global numthreads
+
+    if openMP_has_issues is not None:
+        return openMP_has_issues
+
+    max_threads = get_openmp_settings(0, False)
+    if numthreads > max_threads:
+        msg = ('\n\nThe user specified number of OpenMP threads, {}, ' +
+               'exceeds the {} available on your system. Setting ' +
+               'numthreads to use half the available threads, i.e. {}.\n' +
+               'You can set numthreads with e.g. the command\n ' +
+               'paicos.set_numthreads(16)\n\n')
+        print(msg.format(numthreads, max_threads, max_threads//2))
+        numthreads = max_threads//2
+
+    n = simple_reduction(1000, numthreads)
+    if n == 1000:
+        return True
+    else:
+        import warnings
+        msg = ("OpenMP seems to have issues with reduction operators " +
+               "on your system, so we'll turn it off for those use cases. " +
+               "If you're on Mac then the issue is likely a " +
+               "compiler problem, discussed here:\n" +
+               "https://stackoverflow.com/questions/54776301/" +
+               "cython-prange-is-repeating-not-parallelizing.\n\n")
+        if verbose:
+            warnings.warn(msg)
+        return False

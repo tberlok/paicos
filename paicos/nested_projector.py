@@ -9,12 +9,12 @@ class NestedProjector(Projector):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, nvol=8, numthreads=16, factor=3, npix_min=128,
+                 npix=512, nvol=8, factor=3, npix_min=128,
                  verbose=False, make_snap_with_selection=True,
                  store_subimages=False):
 
         super().__init__(snap, center, widths, direction,
-                         npix=npix, nvol=nvol, numthreads=numthreads,
+                         npix=npix, nvol=nvol,
                          make_snap_with_selection=make_snap_with_selection)
 
         self.verbose = verbose

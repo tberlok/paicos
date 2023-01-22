@@ -6,8 +6,7 @@ class ImageCreator:
     """
     This is a base class for creating images from a snapshot.
     """
-    def __init__(self, snap, center, widths, direction, npix=512,
-                 numthreads=1):
+    def __init__(self, snap, center, widths, direction, npix=512):
         """
         Initialize the ImageCreator class. This method will be called
         by subclasses such as Projector or Slicer.
@@ -56,8 +55,6 @@ class ImageCreator:
         self.direction = direction
 
         self.npix = npix
-
-        self.numthreads = numthreads
 
         if direction == 'x':
             self.extent = [self.yc - self.width_y/2, self.yc + self.width_y/2,

@@ -17,12 +17,15 @@ STUFF = "Hi" # https://stackoverflow.com/questions/8024805/cython-compiled-c-ext
 
 # https://stackoverflow.com/questions/54776301/cython-prange-is-repeating-not-parallelizing
 
-def print_openmp_settings(mpirank):
+def get_openmp_settings(mpirank, verbose=True):
     """
     """
 
     cdef int maxthreads = openmp.omp_get_max_threads()
-    print('mpirank {} has maximum of {} threads'.format(mpirank, maxthreads))
+    if verbose:
+        print('mpirank {} has maximum of {} threads'.format(mpirank, maxthreads))
+
+    return maxthreads
 
 
 cpdef double simple_reduction(int n, int num_threads):

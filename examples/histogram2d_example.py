@@ -1,11 +1,10 @@
 import paicos as pa
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-from paicos import root_dir
 
 pa.use_units(True)
 
-snap = pa.Snapshot(root_dir + '/data', 247)
+snap = pa.Snapshot(pa.root_dir + '/data', 247)
 center = snap.Cat.Group['GroupPos'][0]
 
 T = snap['0_Temperatures']

@@ -23,8 +23,7 @@ class Projector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, nvol=8, numthreads=16,
-                 make_snap_with_selection=True):
+                 npix=512, nvol=8, make_snap_with_selection=True):
 
         """
         Initialize the Projector class.
@@ -52,19 +51,21 @@ class Projector(ImageCreator):
         nvol : int, optional
             Integer used to determine the smoothing length, by default 8
 
-        numthreads : int, optional
-            Number of threads used in parallelization, by default 16
         """
 
         # call the superclass constructor to initialize the ImageCreator class
-        super().__init__(snap, center, widths, direction, npix=npix,
-                         numthreads=numthreads)
+        super().__init__(snap, center, widths, direction, npix=npix)
 
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
         # check if OpenMP has any issues with the number of threads
-        self._check_if_omp_has_issues(numthreads)
+        if util.check_if_omp_has_issues():
+            self.use_omp = True
+            self.numthreads = util.numthreads
+        else:
+            self.use_omp = False
+            self.numthreads = 1
 
         # get the index of the region of projection
         self.index = util.get_index_of_region(self.snap["0_Coordinates"],
@@ -84,33 +85,6 @@ class Projector(ImageCreator):
         if not make_snap_with_selection:
             self.hsml = self.hsml[self.index]
             self.pos = self.pos[self.index]
-
-    def _check_if_omp_has_issues(self, numthreads):
-        """
-        Check if the parallelization via OpenMP works.
-
-        Parameters
-        ----------
-        numthreads : int
-            Number of threads used in parallelization
-        """
-
-        from paicos import simple_reduction
-        n = simple_reduction(1000, numthreads)
-        if n == 1000:
-            self.use_omp = True
-            self.numthreads = numthreads
-        else:
-            self.use_omp = False
-            self.numthreads = 1
-            import warnings
-            msg = ("OpenMP is seems to have issues with reduction operators" +
-                   "on your system, so we'll turn it off." +
-                   "If you're on Mac then the issue is likely a" +
-                   "compiler problem, discussed here:\n" +
-                   "https://stackoverflow.com/questions/54776301/" +
-                   "cython-prange-is-repeating-not-parallelizing")
-            warnings.warn(msg)
 
     @util.remove_astro_units
     def _cython_project(self, center, widths, variable):
