@@ -23,7 +23,8 @@ class Projector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, nvol=8, numthreads=16):
+                 npix=512, nvol=8, numthreads=16,
+                 make_snap_with_selection=True):
 
         """
         Initialize the Projector class.
@@ -65,21 +66,24 @@ class Projector(ImageCreator):
         # check if OpenMP has any issues with the number of threads
         self._check_if_omp_has_issues(numthreads)
 
-        snap = self.snap
-
-        # get the cell positions from the snapshot
-        self.pos = pos = np.array(snap["0_Coordinates"], dtype=np.float64)
-
         # get the index of the region of projection
-        self.index = util.get_index_of_region(pos, center, widths, snap.box)
+        self.index = util.get_index_of_region(self.snap["0_Coordinates"],
+                                              center, widths, snap.box)
+
+        # Reduce the snapshot to only contain region of interest
+        if make_snap_with_selection:
+            self.snap = self.snap.select(self.index)
 
         # Calculate the smoothing length
-        self.hsml = np.cbrt(nvol*(snap["0_Volumes"][self.index]) /
-                            (4.0*np.pi/3.0))
+        self.hsml = np.cbrt(nvol*(self.snap["0_Volumes"]) / (4.0*np.pi/3.0))
 
         self.hsml = np.array(self.hsml, dtype=np.float64)
 
-        self.pos = self.pos[self.index]
+        self.pos = self.snap['0_Coordinates'].astype(np.float64)
+
+        if not make_snap_with_selection:
+            self.hsml = self.hsml[self.index]
+            self.pos = self.pos[self.index]
 
     def _check_if_omp_has_issues(self, numthreads):
         """
@@ -162,19 +166,21 @@ class Projector(ImageCreator):
 
         if isinstance(variable, str):
             variable = self.snap[variable]
-        elif isinstance(variable, np.ndarray):
-            pass
         else:
-            raise RuntimeError('Unexpected type for variable')
+            if not isinstance(variable, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if variable.shape == self.index.shape:
+            variable = variable[self.index]
 
         if isinstance(variable, units.PaicosQuantity):
             variable_unit = variable.unit
-            variable = units.PaicosQuantity(variable[self.index],
+            variable = units.PaicosQuantity(variable,
                                             variable.unit,
                                             dtype=np.float64,
                                             a=self.snap.a, h=self.snap.h)
         else:
-            variable = np.array(variable[self.index], dtype=np.float64)
+            variable = np.array(variable, dtype=np.float64)
 
         # Do the projection
         projection = self._cython_project(self.center, self.widths, variable)

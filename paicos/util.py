@@ -75,10 +75,37 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
 
 
 @remove_astro_units
-def get_index_of_region(pos, center, widths, boxsize):
+def get_index_of_region(pos, center, widths, box):
     from .cython.get_index_of_region_functions import get_index_of_region as get_index_of_region_cython
     xc, yc, zc = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
     index = get_index_of_region_cython(pos, xc, yc, zc,
-                                       width_x, width_y, width_z, boxsize)
+                                       width_x, width_y, width_z, box)
     return index
+
+
+@remove_astro_units
+def get_index_of_slice_region(pos, center, widths, thickness, box):
+    xc, yc, zc = center[0], center[1], center[2]
+    width_x, width_y, width_z = widths
+    if widths[0] == 0.:
+        from .cython.get_index_of_region_functions import get_index_of_x_slice_region
+        index = get_index_of_x_slice_region(pos, xc, yc, zc,
+                                            width_y, width_z,
+                                            thickness, box)
+    elif widths[1] == 0.:
+        from .cython.get_index_of_region_functions import get_index_of_y_slice_region
+        index = get_index_of_y_slice_region(pos, xc, yc, zc,
+                                            width_x, width_z,
+                                            thickness, box)
+    elif widths[2] == 0.:
+        from .cython.get_index_of_region_functions import get_index_of_z_slice_region
+        index = get_index_of_z_slice_region(pos, xc, yc, zc,
+                                            width_x, width_y,
+                                            thickness, box)
+    else:
+        raise RuntimeError('width={} should have length 3 and contain a zero!')
+
+    return index
+
+

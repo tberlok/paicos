@@ -1,5 +1,6 @@
 import numpy as np
 from paicos import ImageCreator
+from paicos import util
 
 
 class Slicer(ImageCreator):
@@ -8,68 +9,34 @@ class Slicer(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, numthreads=16):
-
+                 npix=512, numthreads=16, make_snap_with_selection=False):
         from scipy.spatial import KDTree
-        from paicos import units
+
+        if make_snap_with_selection:
+            raise ('make_snap_with_selection not yet implemented!')
 
         super().__init__(snap, center, widths, direction, npix=npix,
                          numthreads=numthreads)
-
-        snap = self.snap
-        if units.enabled:
-            xc = self.xc.value
-            yc = self.yc.value
-            zc = self.zc.value
-            width_x = self.width_x.value
-            width_y = self.width_y.value
-            width_z = self.width_z.value
-            extent = self.extent.value
-            center = self.center.value
-        else:
-            xc = self.xc
-            yc = self.yc
-            zc = self.zc
-            width_x = self.width_x
-            width_y = self.width_y
-            width_z = self.width_z
-            extent = self.extent
-            center = self.center
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
                 assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
-        # snap.get_volumes()
-        # snap.load_data(0, "Coordinates")
         pos = np.array(snap["0_Coordinates"], dtype=np.float64)
 
         thickness = np.array(4.0*np.cbrt((snap["0_Volumes"]) /
                              (4.0*np.pi/3.0)), dtype=np.float64)
 
-        if direction == 'x':
-            from paicos import get_index_of_x_slice_region
-            self.slice = get_index_of_x_slice_region(pos, xc, yc, zc,
-                                                     width_y, width_z,
-                                                     thickness, snap.box)
-
-        elif direction == 'y':
-            from paicos import get_index_of_y_slice_region
-            self.slice = get_index_of_y_slice_region(pos, xc, yc, zc,
-                                                     width_x, width_z,
-                                                     thickness, snap.box)
-
-        elif direction == 'z':
-            from paicos import get_index_of_z_slice_region
-            self.slice = get_index_of_z_slice_region(pos, xc, yc, zc,
-                                                     width_x, width_y,
-                                                     thickness, snap.box)
+        self.slice = util.get_index_of_slice_region(pos, center, widths,
+                                                    thickness, snap.box)
 
         # Now construct the image grid
-
         def unflatten(arr):
             return arr.flatten().reshape((npix_height, npix_width))
+
+        extent = self.extent
+        center = self.center
 
         npix_width = npix
         width = extent[1] - extent[0]
@@ -87,12 +54,13 @@ class Slicer(ImageCreator):
 
         np.testing.assert_array_equal(ww, unflatten(ww.flatten()))
 
+        ones = np.ones(w.shape[0])
         if direction == 'x':
-            image_points = np.vstack([np.ones_like(w)*center[0], w, h]).T
+            image_points = np.vstack([ones*center[0], w, h]).T
         elif direction == 'y':
-            image_points = np.vstack([w, np.ones_like(w)*center[1], h]).T
+            image_points = np.vstack([w, ones*center[1], h]).T
         elif direction == 'z':
-            image_points = np.vstack([w, h, np.ones_like(w)*center[2]]).T
+            image_points = np.vstack([w, h, ones*center[2]]).T
 
         # Construct a tree and find the Voronoi cells closest to the image grid
         self.pos = pos[self.slice]
@@ -105,13 +73,19 @@ class Slicer(ImageCreator):
 
     def get_image(self, variable):
         from warnings import warn
-        warn('This method will be soon deprecated. in favour of the ' +
+        warn('This method will be soon deprecated. in favor of the ' +
              ' method with name: slice_variable',
              DeprecationWarning, stacklevel=2)
 
-        return variable[self.index]
+        return self.slice_variable(variable)
 
     def slice_variable(self, variable):
+
+        if isinstance(variable, str):
+            variable = self.snap[variable]
+        else:
+            if not isinstance(variable, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
 
         return variable[self.index]
 
@@ -143,11 +117,8 @@ if __name__ == '__main__':
         image_filename = root_dir + '/data/slice_{}.hdf5'.format(direction)
         image_file = pa.ArepoImage(image_filename, slicer)
 
-        # snap.load_data(0, 'Density')
-        # snap.load_data(0, 'Velocities')
-        # snap.load_data(0, 'MagneticField')
-
         Density = slicer.slice_variable(snap['0_Density'])
+        Temperatures = slicer.slice_variable('0_Temperatures')
 
         image_file.save_image('Density', Density)
 
@@ -161,16 +132,5 @@ if __name__ == '__main__':
         else:
             axes[ii].imshow(Density, origin='lower',
                             extent=slicer.extent, norm=LogNorm())
-
-    if not pa.units.enabled:
-        # Also an example where we slice a Paicos Quantity with units
-        rho = snap.converter.get_paicos_quantity(snap['0_Density'],
-                                                 'Density')
-        density_slice = slicer.slice_variable(rho)
-        from astropy import constants as c
-        plt.figure(2)
-        density_slice = (density_slice.cgs/c.m_p.cgs).to_physical
-        plt.imshow(density_slice.value, norm=LogNorm())
-        plt.title(density_slice.label('n'))
 
     plt.show()
