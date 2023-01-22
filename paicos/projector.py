@@ -108,25 +108,6 @@ class Projector(ImageCreator):
                    "cython-prange-is-repeating-not-parallelizing")
             warnings.warn(msg)
 
-    def _get_variable(self, variable_str):
-        """
-        Retrieves the variable, it can be either passed as string, a function
-        or an array.
-
-        Parameters
-        ----------
-        variable_str : str
-
-        Returns
-        -------
-        numpy array
-            The variable in form of numpy array
-        """
-
-        from paicos import get_variable
-
-        return get_variable(self.snap, variable_str)
-
     @util.remove_astro_units
     def _cython_project(self, center, widths, variable):
         if self.use_omp:
@@ -169,7 +150,7 @@ class Projector(ImageCreator):
         Parameters
         ----------
         variable : str, function, numpy array
-            variable, it can be passed as string, function or an array
+            variable, it can be passed as string or an array
 
         Returns
         -------
@@ -179,11 +160,8 @@ class Projector(ImageCreator):
 
         from paicos import units
 
-        import types
         if isinstance(variable, str):
-            variable = self._get_variable(variable)
-        elif isinstance(variable, types.FunctionType):
-            variable = variable(self.snap)
+            variable = self.snap[variable]
         elif isinstance(variable, np.ndarray):
             pass
         else:
