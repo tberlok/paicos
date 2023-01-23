@@ -1,5 +1,6 @@
 import numpy as np
-from .util import remove_astro_units
+from . import util
+from . import settings
 
 
 class Histogram2D:
@@ -12,21 +13,47 @@ class Histogram2D:
     a method to generate a color label for the histogram with units.
     """
 
-    def __init__(self, bins_x, bins_y, logscale=True):
+    def __init__(self, x, y, weights=None, bins_x=200, bins_y=200,
+                 normalize=True, logscale=True):
         """
         Initialize the Histogram2D class with the bin edges for the x
         and y axes, and an optional argument to indicate if the
         histogram should be in log scale.
 
         Parameters:
+            x (array): The x data for the histogram
+
+            y (array): The y data for the histogram
+
+            weights (array): The weight data for the histogram, default
+                             is None
+
             bins_x (tuple): Tuple of lower edge, upper edge and number
-                            of bins for x axis
+                            of bins for x axis. Alternatively an integer
+                            denoting the number of bins spanning
+                            x.min() to x.max().
+
             bins_y (tuple): Tuple of lower edge, upper edge and number
-                            of bins for y axis
+                            of bins for y axis. Alternatively an integer.
+
+            normalize (bool): Indicates whether the histogram should be
+                               normalized, default is True
+
             logscale (bool): Indicates whether to use logscale for the
                              histogram, default is True.
 
+
         """
+        self.x = x
+        self.y = y
+        self.weights = weights
+        self.normalize = normalize
+
+        if isinstance(bins_x, int):
+            bins_x = [x.min(), x.max(), bins_x]
+
+        if isinstance(bins_y, int):
+            bins_y = [y.min(), y.max(), bins_y]
 
         self.logscale = logscale
 
@@ -38,6 +65,17 @@ class Histogram2D:
         self.upper_y = self.edges_y[-1]
 
         self.extent = [self.lower_x, self.upper_x, self.lower_y, self.upper_y]
+
+        # check if OpenMP has any issues with the number of threads
+        if util.check_if_omp_has_issues():
+            self.use_omp = False
+            self.numthreads = 1
+        else:
+            self.use_omp = True
+            self.numthreads = settings.numthreads
+
+        # Make the histogram
+        self.hist2d = self._make_histogram()
 
     def _make_bins(self, bins):
         """
@@ -61,7 +99,7 @@ class Histogram2D:
             centers = np.array(centers)*lower.unit_quantity
         return edges, centers
 
-    @remove_astro_units
+    @util.remove_astro_units
     def __make_bins(self, lower, upper, nbins):
         """
         Private method to calculate the edges and centers of the bins
@@ -132,39 +170,60 @@ class Histogram2D:
                           + r'\;' + unit_label)
 
         if weight_symbol is not None:
-            if self.normalized:
+            if self.normalize:
                 colorlabel = weight_symbol + \
                     r'_\mathrm{tot}^{-1}\,\mathrm{d}' + \
                     weight_symbol + colorlabel
             else:
                 colorlabel = r'\mathrm{d}' + weight_symbol + colorlabel
         else:
-            if self.normalized:
+            if self.normalize:
                 colorlabel = r'\mathrm{pixel count}/\mathrm{total count}' + colorlabel
             else:
                 colorlabel = r'\mathrm{pixel count}' + colorlabel
 
         return (r'$' + colorlabel + r'$')
 
-    def make_histogram(self, x, y, weights=None, normalize=True):
+    @util.remove_astro_units
+    def _cython_make_histogram(self, x, y, edges_x, edges_y, weights):
+
+        if self.use_omp:
+            from .cython.histogram import get_hist2d_from_weights_omp
+            get_hist2d_from_weights = get_hist2d_from_weights_omp
+        else:
+            from .cython.histogram import get_hist2d_from_weights
+
+        nbins_x = edges_x.shape[0] - 1
+        nbins_y = edges_y.shape[0] - 1
+
+        lower_x = edges_x[0]
+        upper_x = edges_x[-1]
+        lower_y = edges_y[0]
+        upper_y = edges_y[-1]
+
+        hist2d = get_hist2d_from_weights(
+            x, y, weights,
+            lower_x, upper_x, nbins_x,
+            lower_y, upper_y, nbins_y,
+            self.logscale,
+            numthreads=1)
+
+        return hist2d
+
+    def _make_histogram(self):
         """
-        Method to create the 2D histogram given the x, y and weight data.
-        Parameters:
-            x (array): The x data for the histogram
-            y (array): The y data for the histogram
-            weights (array): The weight data for the histogram, default
-                             is None
-            normalized (bool): Indicates whether the histogram should be
-                               normalized, default is True
+        Private method to create the 2D histogram.
+
         Returns:
             hist2d (2D array): The 2D histogram
-            norm (float): Normalizing constant for the histogram
         """
-        from .cython.histogram import get_hist2d_from_weights
         from . import settings
         from astropy import units as u
 
-        self.normalized = normalize
+        x = self.x
+        y = self.y
+        weights = self.weights
+        normalize = self.normalize
 
         # Figure out units for the histogram
         if settings.use_units:
@@ -185,36 +244,9 @@ class Histogram2D:
 
         if weights is None:
             weights = np.ones_like(x, dtype=np.float64)
-        else:
-            if settings.use_units:
-                weights = np.array(weights.value, dtype=np.float64)
-            else:
-                weights = np.array(weights, dtype=np.float64)
 
-        nbins_x = self.edges_x.shape[0] - 1
-        nbins_y = self.edges_y.shape[0] - 1
-
-        if settings.use_units:
-            lower_x = self.edges_x[0].value
-            upper_x = self.edges_x[-1].value
-            lower_y = self.edges_y[0].value
-            upper_y = self.edges_y[-1].value
-            x = np.array(x.value, dtype=np.float64)
-            y = np.array(y.value, dtype=np.float64)
-        else:
-            lower_x = self.edges_x[0]
-            upper_x = self.edges_x[-1]
-            lower_y = self.edges_y[0]
-            upper_y = self.edges_y[-1]
-            x = np.array(x, dtype=np.float64)
-            y = np.array(y, dtype=np.float64)
-
-        hist2d = get_hist2d_from_weights(
-            x, y, weights,
-            lower_x, upper_x, nbins_x,
-            lower_y, upper_y, nbins_y,
-            self.logscale,
-            numthreads=1)
+        hist2d = self._cython_make_histogram(x, y, self.edges_x,
+                                             self.edges_y, weights)
 
         if normalize:
             hist2d /= self._find_norm(hist2d)

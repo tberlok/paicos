@@ -3,6 +3,11 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport log10
 
+from cython.parallel import prange, parallel
+from libc.stdlib cimport abort, malloc, free
+cimport openmp
+
+
 ctypedef fused real_t:
     float
     double
@@ -69,6 +74,72 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
 
         if (ix > 0) and (ix <= nbins_x) and (iy > 0) and (iy <= nbins_y):
             hist2d[ix, iy] += weights[ip]
+
+    # Fix to avoid returning a memory-view
+    tmp = np.zeros((nbins_x-1, nbins_y-1), dtype=np.float64)
+    # tmp[:, :] = hist2d[:, :]
+    tmp[:, :] = hist2d[1:nbins_x, 1:nbins_y]
+
+    return tmp
+
+def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
+                            real_t [:] weights,
+                            real_t lower_x, real_t upper_x, int nbins_x,
+                            real_t lower_y, real_t upper_y, int nbins_y,
+                            bint logspace,
+                            int numthreads=1):
+
+    # Number of particles
+    cdef int Np = xvec.shape[0]
+
+    cdef int threadnum, maxthreads
+
+    maxthreads = openmp.omp_get_max_threads()
+
+    cdef int nx = nbins_x + 1
+    cdef int ny = nbins_y + 1
+
+    # Create hist2d array
+    cdef real_t[:,:] hist2d = np.zeros((nx, ny),
+                                       dtype=np.float64)
+    cdef real_t[:,:, :] tmp_variable = np.zeros((nx, ny, numthreads),
+                                                dtype=np.float64)
+
+    # Loop integers and other variables
+    cdef int ip, ix=0, iy=0
+    cdef real_t x, y, dx, dy
+    cdef real_t log10lower_x = log10(lower_x)
+    cdef real_t log10lower_y = log10(lower_y)
+
+    if logspace:
+        dx = nbins_x/(log10(upper_x)-log10(lower_x))
+        dy = nbins_y/(log10(upper_y)-log10(lower_y))
+    else:
+        dx = nbins_x/(upper_x-lower_x)
+        dy = nbins_y/(upper_y-lower_y)
+
+    with nogil, parallel(num_threads=numthreads):
+        for ip in prange(Np, schedule='static'):
+            threadnum = openmp.omp_get_thread_num()
+
+            x = xvec[ip]
+            y = yvec[ip]
+            if (x > lower_x) and (x < upper_x) and (y > lower_y) and (y < upper_y):
+                if logspace:
+                    ix = <int> ((log10(x) - log10lower_x)*dx)
+                    iy = <int> ((log10(y) - log10lower_y)*dy)
+                else:
+                    ix = <int> ((x - lower_x)*dx)
+                    iy = <int> ((y - lower_y)*dy)
+
+            if (ix > 0) and (ix <= nbins_x) and (iy > 0) and (iy <= nbins_y):
+                tmp_variable[ix, iy, threadnum] = tmp_variable[ix, iy, threadnum] + weights[ip]
+
+    # Add up contributions from each thread
+    for threadnum in range(numthreads):
+        for ix in range(nx):
+            for iy in range(ny):
+                hist2d[ix, iy] = hist2d[ix, iy] + tmp_variable[ix, iy, threadnum]
 
     # Fix to avoid returning a memory-view
     tmp = np.zeros((nbins_x-1, nbins_y-1), dtype=np.float64)

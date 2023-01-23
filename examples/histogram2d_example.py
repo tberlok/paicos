@@ -22,10 +22,11 @@ bins_T = [T.min(), T.max()/10, 200]
 bins_rho = [rho.min(), rho.max()*1e-4, 300]
 
 # Create histogram object
-rhoT = pa.Histogram2D(bins_rho, bins_T, logscale=True)
+rhoT = pa.Histogram2D(rho, T, weights=M, bins_x=bins_rho,
+                      bins_y=bins_T, logscale=True)
 
 # Make 2D histogram
-hist = rhoT.make_histogram(rho, T, weights=M, normalize=True)
+# hist = rhoT.make_histogram(rho, T, weights=M, normalize=True)
 
 plt.figure(1)
 plt.clf()
