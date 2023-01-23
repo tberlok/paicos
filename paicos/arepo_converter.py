@@ -228,7 +228,7 @@ class ArepoConverter:
         elif isinstance(name, str):
 
             unitless_vars = ['ElectronAbundance', 'MachNumber',
-                             'GFM_Metallicity']
+                             'GFM_Metallicity', 'GFM_Metals']
             if name == 'Coordinates':
                 units = aunits['unit_length']*a/h
             elif name == 'Density':
