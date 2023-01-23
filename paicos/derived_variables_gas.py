@@ -67,7 +67,6 @@ def get_variable_function_gas(variable_str, info=False):
                         ).to('K').value
         return variable
 
-
     def TemperaturesTimesMasses(snap):
         return snap["0_Temperatures"]*snap['0_Masses']
 
