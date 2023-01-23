@@ -59,13 +59,3 @@ class ImageReader(dict):
                     self[name] = get_func(data, attrs)
                 else:
                     self[name] = get_func(data, name)
-
-
-if __name__ == '__main__':
-    from paicos import root_dir
-
-    im = ImageReader(root_dir + '/data/', 247,
-                     basename='test_arepo_image_format')
-
-    print(im['Density'][:, :])
-    # print(im['Density'][:, :])

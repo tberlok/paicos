@@ -1,6 +1,6 @@
 import numpy as np
-from paicos import ImageCreator
-from paicos import util
+from . import ImageCreator
+from . import util
 
 
 class Projector(ImageCreator):
@@ -87,9 +87,10 @@ class Projector(ImageCreator):
     @util.remove_astro_units
     def _cython_project(self, center, widths, variable):
         if self.use_omp:
-            from paicos import project_image_omp as project_image
+            from .cython.sph_projectors import project_image_omp
+            project_image = project_image_omp
         else:
-            from paicos import project_image
+            from .cython.sph_projectors import project_image
 
         xc, yc, zc = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -134,7 +135,7 @@ class Projector(ImageCreator):
             The image of the projected variable
         """
 
-        from paicos import units
+        from . import units
 
         if isinstance(variable, str):
             variable = self.snap[variable]
@@ -156,63 +157,3 @@ class Projector(ImageCreator):
             projection = projection*variable.unit_quantity
 
         return projection/area_per_pixel
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm
-    from paicos import root_dir
-    import paicos as pa
-
-    for use_units in [False, True]:
-
-        pa.use_units(use_units)
-
-        snap = pa.Snapshot(root_dir + '/data', 247)
-        center = snap.Cat.Group['GroupPos'][0]
-        if pa.settings.use_units:
-            R200c = snap.Cat.Group['Group_R_Crit200'][0].value
-        else:
-            R200c = snap.Cat.Group['Group_R_Crit200'][0]
-        # widths = [10000, 10000, 2*R200c]
-        widths = [10000, 10000, 10000]
-        width_vec = (
-            [2*R200c, 10000, 20000],
-            [10000, 2*R200c, 20000],
-            [10000, 20000, 2*R200c],
-            )
-
-        plt.figure(1)
-        plt.clf()
-        fig, axes = plt.subplots(num=1, ncols=3)
-        for ii, direction in enumerate(['x', 'y', 'z']):
-            widths = width_vec[ii]
-            projector = Projector(snap, center, widths, direction, npix=512)
-
-            filename = root_dir + '/data/projection_{}_247.hdf5'.format(direction)
-            image_file = pa.ArepoImage(filename, projector)
-
-            Masses = projector.project_variable('0_Masses')
-            print(Masses[0, 0])
-            Volumes = projector.project_variable('0_Volumes')
-
-            image_file.save_image('0_Masses', Masses)
-            image_file.save_image('0_Volumes', Volumes)
-
-            # snap.get_temperatures()
-            TemperaturesTimesMasses = projector.project_variable(
-                                    snap['0_Temperatures'] * snap['0_Masses'])
-            image_file.save_image('TemperaturesTimesMasses', TemperaturesTimesMasses)
-
-            # Move from temporary filename to final filename
-            image_file.finalize()
-
-            # Make a plot
-            axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
-                            extent=np.array(projector.extent), norm=LogNorm())
-        plt.show()
-
-        if not use_units:
-            M = snap.converter.get_paicos_quantity(snap['0_Masses'], 'Masses')
-            # Projection now has units
-            projected_mass = projector.project_variable(M)

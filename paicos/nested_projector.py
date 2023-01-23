@@ -1,6 +1,6 @@
 import numpy as np
-from paicos import Projector
-from paicos import util
+from .projector import Projector
+from .util import remove_astro_units
 
 
 class NestedProjector(Projector):
@@ -28,7 +28,8 @@ class NestedProjector(Projector):
         bins, n_grids = self._get_bins(self.extent[1] - self.extent[0])
 
         # Digitize particles (make OpenMP cython version of this?)
-        i_digit = np.digitize(self.hsml, bins=bins)
+        digitize = remove_astro_units(np.digitize)
+        i_digit = digitize(self.hsml, bins=bins)
         n_particles = self.hsml.shape[0]
         count = 0
         for ii, n_grid in enumerate(n_grids):
@@ -43,9 +44,10 @@ class NestedProjector(Projector):
         self.n_grids = n_grids
         self.i_digit = i_digit
 
-    @util.remove_astro_units
+    @remove_astro_units
     def _get_bins(self, width):
 
+        @remove_astro_units
         def nearest_power_of_two(x):
             return int(2**np.ceil(np.log2(x)))
 
@@ -101,12 +103,13 @@ class NestedProjector(Projector):
 
         return full_image
 
-    @util.remove_astro_units
+    @remove_astro_units
     def _cython_project(self, center, widths, variable):
         if self.use_omp:
-            from paicos import project_image_omp as project_image
+            from .cython.sph_projectors import project_image_omp
+            project_image = project_image_omp
         else:
-            from paicos import project_image
+            from .cython.sph_projectors import project_image
 
         xc, yc, zc = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -148,82 +151,3 @@ class NestedProjector(Projector):
             self.images = images
 
         return projection
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm
-    from paicos import Snapshot
-    from paicos import root_dir
-    import paicos as pa
-
-    pa.use_units(True)
-
-    snap = Snapshot(root_dir + '/data', 247)
-    center = snap.Cat.Group['GroupPos'][0]
-
-    if pa.settings.use_units:
-        R200c = snap.Cat.Group['Group_R_Crit200'][0].value
-    else:
-        R200c = snap.Cat.Group['Group_R_Crit200'][0]
-
-    width_vec = (
-        [2*R200c, 10000, 10000],
-        [10000, 2*R200c, 10000],
-        [10000, 10000, 2*R200c],
-    )
-
-    plt.rc('image', origin='lower', cmap='RdBu_r', interpolation='None')
-    from paicos import Projector
-    plt.figure(1)
-    plt.clf()
-    fig, axes = plt.subplots(num=1, ncols=3, nrows=3,
-                             sharex='col', sharey='col')
-
-    for ii, direction in enumerate(['x', 'y', 'z']):
-        widths = width_vec[ii]
-        p_nested = NestedProjector(snap, center, widths, direction, npix=512)
-
-        Masses = p_nested.project_variable('0_Masses')
-        Volume = p_nested.project_variable('0_Volumes')
-
-        nested_image = Masses/Volume
-
-        p = Projector(snap, center, widths, direction, npix=512)
-
-        Masses = p.project_variable('0_Masses')
-        Volume = p.project_variable('0_Volumes')
-
-        normal_image = Masses/Volume
-
-        if pa.settings.use_units:
-            if ii == 0:
-                vmin = normal_image.min().value
-                vmax = normal_image.max().value
-
-            # Make a plot
-            axes[0, ii].imshow(normal_image.value, origin='lower',
-                               extent=p.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[1, ii].imshow(nested_image.value, origin='lower',
-                               extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[2, ii].imshow(np.abs(normal_image-nested_image).value, origin='lower',
-                               extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-        else:
-            if ii == 0:
-                vmin = normal_image.min()
-                vmax = normal_image.max()
-
-            # Make a plot
-            axes[0, ii].imshow(normal_image, origin='lower',
-                               extent=p.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[1, ii].imshow(nested_image, origin='lower',
-                               extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
-                               extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-
-        axes[0, ii].set_title('Normal projection ({})'.format(direction))
-        axes[1, ii].set_title('nested projection')
-        axes[2, ii].set_title('difference')
-        # print(np.max(np.abs(normal_image-nested_image)/normal_image))
-        print(np.sum(normal_image.flatten()), np.sum(nested_image.flatten()))
-    plt.show()

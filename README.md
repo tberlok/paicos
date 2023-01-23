@@ -35,13 +35,17 @@ make
 
 The examples require an Arepo snapshot. You can download one [here](https://www.dropbox.com/sh/xdmqpc72jprtfs7/AADTmM12Zqc4K5--R5OTb4oCa?dl=0) (1 GB Dropbox link).
 
-The main functionality is contained inside 6 classes. These are:
+The main functionality is contained inside 8 classes. These are:
+
+- Snapshot (arepo_snap.py)
+
+- Catalog (arepo_catalog.py)
+
+- Slicer (slicer.py)
 
 - Projector (projector.py)
 
 - NestedProjector (nested_projector.py)
-
-- Slicer (slicer.py)
 
 - RadialProfiles (radial_profiles.py)
 
@@ -52,11 +56,40 @@ The main functionality is contained inside 6 classes. These are:
 Each of these can by run in python, displaying their functionality, e.g.,
 
 ```
-python paicos/slicer.py
+# Simple example of loading a snapshot
+python examples/loading_data_example.py
+
+# Slicing
+python examples/slicer_example.py
+
+# Projections
+python examples/projector_example.py
+python examples/nested_projector_example.py
+
+
+# Histograms
+python examples/histogram1D_example.py
+python examples/histogram2d_example.py
+
+# Loading images
+python examples/image_reader_example.py
+
+# Creating radial profiles
+python examples/radial_profiles_example.py
+
+# Setting up user-defined functions for obtaining derived variables
+python examples/user_defined_functions_example.py
+
+# Using a configuration script
+python examples/using_a_paicos_config.py
+python examples/example_paicos_config.py
+
+# Select an index of a snapshot
+python examples/select_subset_of_snap.py
 ```
 
-## Example Jupyter notebooks
+## Tutorial Jupyter notebooks
 
-I have uploaded the notebook `examples/paicos_examples.ipynb` which
+I have uploaded a tutorial notebook `tutorials/paicos_examples.ipynb` which
 displays the functionality on one of the bigger simulations on the cluster.
 

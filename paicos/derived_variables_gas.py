@@ -23,28 +23,35 @@ def get_variable_function_gas(variable_str, info=False):
         variable = snap["0_Volumes"]*np.sum(snap['0_MagneticField']**2, axis=1)
         return variable
 
+    def Pressure(snap):
+        if snap.gamma == 1:
+            msg = 'Temperature field not supported for isothermal EOS!'
+            raise RuntimeError(msg)
+        gm1 = snap.gamma - 1
+        variable = snap["0_InternalEnergy"] * snap["0_Density"] * gm1
+        return variable
+
     def PressureTimesVolumes(snap):
-        gamma = 5/3
-        # TODO: Get rid of hardcoded gamma
-        # thermal pressure times volume
-        # variable = snap["0_Volumes"] * snap["0_InternalEnergy"] * snap["0_Density"] * (gamma - 1.)
-        # Same as above but faster
-        variable = snap["0_Masses"] * snap["0_InternalEnergy"] * (gamma - 1.)
+        if '0_Pressure' in snap.keys():
+            return snap['0_Pressure'] * snap['0_Volumes']
+        else:
+            if snap.gamma != 1:
+                gm1 = snap.gamma - 1
+                variable = snap["0_Masses"] * snap["0_InternalEnergy"] * gm1
+            else:
+                variable = snap['0_Volumes'] * snap['0_Pressure']
+
         return variable
 
     def Temperatures2(snap):
         from astropy import constants as c
         mhydrogen = c.m_e + c.m_p
 
-        if 'GAMMA' in snap.Config:
-            gamma = snap.Config['GAMMA']
-        elif 'ISOTHERMAL' in snap.Config:
-            msg = 'temperature is constant when ISOTHERMAL in Config'
-            raise RuntimeError(msg)
-        else:
-            gamma = 5/3
+        gm1 = snap.gamma - 1
 
-        gm1 = gamma - 1
+        if snap.gamma == 1:
+            msg = 'Temperature field not supported for isothermal EOS!'
+            raise RuntimeError(msg)
 
         mmean = snap['0_MeanMolecularWeight']
 
@@ -66,6 +73,12 @@ def get_variable_function_gas(variable_str, info=False):
 
         fhydrogen = 0.76
 
+        gm1 = snap.gamma - 1
+
+        if snap.gamma == 1:
+            msg = 'Temperature field not supported for isothermal EOS!'
+            raise RuntimeError(msg)
+
         if "ElectronAbundance" in snap.info(0, False):
             mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
                            fhydrogen*snap["0_ElectronAbundance"])
@@ -73,16 +86,6 @@ def get_variable_function_gas(variable_str, info=False):
             mmean_ionized = (1.0+(1.0-fhydrogen)/fhydrogen) / \
                 (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
             mmean = mmean_ionized
-
-        if 'GAMMA' in snap.Config:
-            gamma = snap.Config['GAMMA']
-        elif 'ISOTHERMAL' in snap.Config:
-            msg = 'temperature is constant when ISOTHERMAL in Config'
-            raise RuntimeError(msg)
-        else:
-            gamma = 5/3
-
-        gm1 = gamma - 1
 
         # temperature in Kelvin
         from . import settings
@@ -100,11 +103,10 @@ def get_variable_function_gas(variable_str, info=False):
         return snap["0_Temperatures"]*snap['0_Masses']
 
     def Current(snap):
-        snap.load_data(0, 'BfieldGradient')
 
         def get_index(ii, jj):
             return ii*3 + jj
-        gradB = snap['0_BfieldGradient'][()]
+        gradB = snap['0_BfieldGradient']
         J_x = gradB[:, get_index(2, 1)] - gradB[:, get_index(1, 2)]
         J_y = gradB[:, get_index(0, 2)] - gradB[:, get_index(2, 0)]
         J_z = gradB[:, get_index(1, 0)] - gradB[:, get_index(0, 1)]
@@ -181,6 +183,32 @@ def get_variable_function_gas(variable_str, info=False):
         number_density_gas = density / (mean_molecular_weight * proton_mass)
         return number_density_gas
 
+    def MagneticCurvature(snap):
+        from paicos import util
+
+        @util.remove_astro_units
+        def get_func(B, gradB):
+            from paicos import get_curvature
+            return get_curvature(B, gradB)
+
+        curva = get_func(snap['0_MagneticField'], snap['0_BfieldGradient'])
+        unit_quantity = snap['0_BfieldGradient'].uq / snap['0_MagneticField'].uq
+        curva = curva * unit_quantity
+        return curva
+
+    def VelocityCurvature(snap):
+        from paicos import util
+
+        @util.remove_astro_units
+        def get_func(V, gradV):
+            from paicos import get_curvature
+            return get_curvature(V, gradV)
+
+        curva = get_func(snap['0_Velocities'], snap['0_VelocityGradient'])
+        unit_quantity = snap['0_VelocityGradient'].uq/snap['0_Velocities'].uq
+        curva = curva * unit_quantity
+        return curva
+
     functions = {
         "0_GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
         "0_Volumes": Volumes,
@@ -190,13 +218,16 @@ def get_variable_function_gas(variable_str, info=False):
         "0_MachnumberTimesEnergyDissipation": MachnumberTimesEnergyDissipation,
         "0_MagneticFieldSquared": MagneticFieldSquared,
         "0_MagneticFieldSquaredTimesVolumes": MagneticFieldSquaredTimesVolumes,
+        "0_Pressure": Pressure,
         "0_PressureTimesVolumes": PressureTimesVolumes,
         "0_TemperaturesTimesMasses": TemperaturesTimesMasses,
         "0_Current": Current,
         "0_Enstrophy": Enstrophy,
         "0_EnstrophyTimesMasses": EnstrophyTimesMasses,
         "0_MeanMolecularWeight": MeanMolecularWeight,
-        "0_NumberDensity": NumberDensity
+        "0_NumberDensity": NumberDensity,
+        "0_MagneticCurvature": MagneticCurvature,
+        "0_VelocityCurvature": VelocityCurvature
     }
 
     if info:

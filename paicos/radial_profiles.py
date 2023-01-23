@@ -129,8 +129,6 @@ class RadialProfiles:
 
     def create_tmp_radial_file(self):
 
-        self.arepo_snap_filename = snap.first_snapfile_name
-
         with h5py.File(self.tmp_radial_filename, 'w') as f:
             save_dataset(f, 'bin_centers', self.h_r.bin_centers)
             save_dataset(f, 'bins', data=self.h_r.bins)
@@ -148,25 +146,3 @@ class RadialProfiles:
                 for key in g[group].attrs.keys():
                     f[group].attrs[key] = g[group].attrs[key]
         g.close()
-
-
-if __name__ == '__main__':
-    from paicos import Snapshot
-    from paicos import root_dir
-
-    pa.use_units(True)
-
-    snap = Snapshot(root_dir + '/data', 247)
-    center = snap.Cat.Group['GroupPos'][0]
-
-    if pa.settings.use_units:
-        r_max = 10000*center.unit_quantity
-    else:
-        r_max = 10000
-
-    bins = np.linspace(0, r_max, 150)
-
-    radial_filename = root_dir + '/data/radial_filename_247.hdf5'
-    radial_profile = RadialProfiles(radial_filename,
-                                    snap, center, r_max, bins)
-    radial_profile.finalize()

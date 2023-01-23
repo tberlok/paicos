@@ -1,7 +1,7 @@
 import numpy as np
-from paicos import ImageCreator
-from paicos import util
-from paicos import settings
+from .arepo_image import ImageCreator
+from . import util
+from . import settings
 
 
 class Slicer(ImageCreator):
@@ -89,49 +89,3 @@ class Slicer(ImageCreator):
                 raise RuntimeError('Unexpected type for variable')
 
         return variable[self.index]
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    import paicos as pa
-    from paicos import root_dir
-    from matplotlib.colors import LogNorm
-
-    pa.use_units(True)
-
-    snap = pa.Snapshot(root_dir + '/data', 247)
-    center = snap.Cat.Group['GroupPos'][0]
-
-    width_vec = (
-        [0.0, 10000, 10000],
-        [10000, 0.0, 10000],
-        [10000, 10000, 0.0],
-        )
-
-    plt.figure(1)
-    plt.clf()
-    fig, axes = plt.subplots(num=1, ncols=3)
-    for ii, direction in enumerate(['x', 'y', 'z']):
-        widths = width_vec[ii]
-        slicer = Slicer(snap, center, widths, direction, npix=512)
-
-        image_filename = root_dir + '/data/slice_{}.hdf5'.format(direction)
-        image_file = pa.ArepoImage(image_filename, slicer)
-
-        Density = slicer.slice_variable(snap['0_Density'])
-        Temperatures = slicer.slice_variable('0_Temperatures')
-
-        image_file.save_image('Density', Density)
-
-        # Move from temporary filename to final filename
-        image_file.finalize()
-
-        # Make a plot
-        if pa.settings.use_units:
-            axes[ii].imshow(Density.value, origin='lower',
-                            extent=slicer.extent.value, norm=LogNorm())
-        else:
-            axes[ii].imshow(Density, origin='lower',
-                            extent=slicer.extent, norm=LogNorm())
-
-    plt.show()

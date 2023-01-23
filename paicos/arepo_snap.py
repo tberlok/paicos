@@ -179,8 +179,16 @@ class Snapshot(dict):
                     import warnings
                     warnings.warn('no catalog found', FileNotFoundError)
 
-        # self.P = dict()   # particle data
         self.P_attrs = dict()  # attributes
+
+        if 'GAMMA' in self.Config:
+            self.gamma = self.Config['GAMMA']
+        elif 'ISOTHERMAL' in self.Config:
+            self.gamma = 1
+        else:
+            self.gamma = 5/3
+
+        self.derived_data_counter = 0
 
     def info(self, PartType, verbose=True):
         """
@@ -210,13 +218,15 @@ class Snapshot(dict):
             if PartType_str in list(file.keys()):
                 keys = list(file[PartType_str].keys())
                 if verbose:
-                    print('\nKeys for ' + PartType_str + ' are')
-                    print(keys)
+                    print('\nKeys for ' + PartType_str + ' in the hdf5 file:')
+                    for key in (sorted(keys)):
+                        print(key)
                     # if PartType == 0:
                     from .derived_variables import get_variable_function
-                    print('\n\nPossible derived variables are:')
+                    print('\nPossible derived variables are:')
                     keys = get_variable_function(str(PartType) + '_', True)
-                    print(keys)
+                    for key in (sorted(keys)):
+                        print(key)
                     return None
                 else:
                     return keys
@@ -340,14 +350,21 @@ class Snapshot(dict):
         assert blockname not in self.info(particle_type, False), msg
 
         if verbose:
-            msg = 'Attempting to get derived variable: {}...'.format(P_key)
-            print(msg, end='')
+            msg1 = 'Attempting to get derived variable: {}...'.format(P_key)
+            msg2 = 'So we need the variable: {}...'.format(P_key)
+            if self.derived_data_counter == 0:
+                print(msg1, end='')
+            else:
+                print('\n\t' + msg2, end='')
+            self.derived_data_counter += 1
 
         func = get_variable_function(P_key)
         self[P_key] = func(self)
 
         if verbose:
-            print('\t[DONE]')
+            self.derived_data_counter -= 1
+            if self.derived_data_counter == 0:
+                print('\t[DONE]\n')
 
     def __getitem__(self, key):
         """

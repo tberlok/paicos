@@ -7,7 +7,7 @@ pa.numthreads(8)
 
 
 def TemperaturesTimesMassesSquared(snap):
-    return snap['0_Temperatures']*snap['0_Masses']**2
+    return snap['0_TemperaturesTimesMasses']*snap['0_Masses']
 
 
 def MassesPartType1(snap):
