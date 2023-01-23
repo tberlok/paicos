@@ -142,27 +142,27 @@ class Catalog:
 
             f.close()
 
-            from . import settings
-            give_units = settings.use_units or give_units
+        from . import settings
+        give_units = settings.use_units or give_units
 
-            if give_units and converter is not None:
+        if give_units and converter is not None:
 
-                mass_keys = ['GroupMass',
-                             'Group_M_Crit200',
-                             'Group_M_Crit500',
-                             'Group_M_Mean200',
-                             'Group_M_TopHat200']
+            mass_keys = ['GroupMass',
+                         'Group_M_Crit200',
+                         'Group_M_Crit500',
+                         'Group_M_Mean200',
+                         'Group_M_TopHat200']
 
-                pos_keys = ['GroupPos',
-                            'Group_R_Crit200',
-                            'Group_R_Crit500',
-                            'Group_R_Mean200',
-                            'Group_R_TopHat200']
+            pos_keys = ['GroupPos',
+                        'Group_R_Crit200',
+                        'Group_R_Crit500',
+                        'Group_R_Mean200',
+                        'Group_R_TopHat200']
 
-                for key in pos_keys:
-                    self.Group[key] = converter.get_paicos_quantity(
-                                        self.Group[key], 'Coordinates')
+            for key in pos_keys:
+                self.Group[key] = converter.get_paicos_quantity(
+                                    self.Group[key], 'Coordinates')
 
-                for key in mass_keys:
-                    self.Group[key] = converter.get_paicos_quantity(
-                                         self.Group[key], 'Masses')
+            for key in mass_keys:
+                self.Group[key] = converter.get_paicos_quantity(
+                                     self.Group[key], 'Masses')
