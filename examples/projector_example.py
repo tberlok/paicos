@@ -29,8 +29,8 @@ for use_units in [False, True]:
         widths = width_vec[ii]
         projector = pa.Projector(snap, center, widths, direction, npix=512)
 
-        filename = root_dir + '/data/projection_{}_247.hdf5'.format(direction)
-        image_file = pa.ArepoImage(filename, projector)
+        image_file = pa.ArepoImage(projector, basedir=root_dir+'/data/',
+                                   basename='projection_{}'.format(direction))
 
         Masses = projector.project_variable('0_Masses')
         print(Masses[0, 0])
