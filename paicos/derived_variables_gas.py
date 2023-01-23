@@ -184,11 +184,11 @@ def get_variable_function_gas(variable_str, info=False):
         return number_density_gas
 
     def MagneticCurvature(snap):
-        from paicos import util
+        from . import util
 
         @util.remove_astro_units
         def get_func(B, gradB):
-            from paicos import get_curvature
+            from .cython.get_derived_variables import get_curvature
             return get_curvature(B, gradB)
 
         curva = get_func(snap['0_MagneticField'], snap['0_BfieldGradient'])
@@ -197,11 +197,11 @@ def get_variable_function_gas(variable_str, info=False):
         return curva
 
     def VelocityCurvature(snap):
-        from paicos import util
+        from . import util
 
         @util.remove_astro_units
         def get_func(V, gradV):
-            from paicos import get_curvature
+            from .cython.get_derived_variables import get_curvature
             return get_curvature(V, gradV)
 
         curva = get_func(snap['0_Velocities'], snap['0_VelocityGradient'])
