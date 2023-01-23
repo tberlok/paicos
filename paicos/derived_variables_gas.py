@@ -43,7 +43,7 @@ def get_variable_function_gas(variable_str, info=False):
 
         return variable
 
-    def Temperatures2(snap):
+    def Temperatures(snap):
         from astropy import constants as c
         mhydrogen = c.m_e + c.m_p
 
@@ -54,38 +54,6 @@ def get_variable_function_gas(variable_str, info=False):
             raise RuntimeError(msg)
 
         mmean = snap['0_MeanMolecularWeight']
-
-        # temperature in Kelvin
-        from . import settings
-        if settings.use_units:
-            variable = (gm1 * snap["0_InternalEnergy"] *
-                        mmean * mhydrogen).to('K')
-        else:
-            u_v = snap.converter.arepo_units['unit_velocity']
-            variable = (gm1 * snap["0_InternalEnergy"] *
-                        u_v**2 * mmean * mhydrogen
-                        ).to('K').value
-        return variable
-
-    def Temperatures(snap):
-        from astropy import constants as c
-        mhydrogen = c.m_e + c.m_p
-
-        fhydrogen = 0.76
-
-        gm1 = snap.gamma - 1
-
-        if snap.gamma == 1:
-            msg = 'Temperature field not supported for isothermal EOS!'
-            raise RuntimeError(msg)
-
-        if "ElectronAbundance" in snap.info(0, False):
-            mmean = 4.0 / (1.0 + 3.0*fhydrogen + 4.0 *
-                           fhydrogen*snap["0_ElectronAbundance"])
-        else:
-            mmean_ionized = (1.0+(1.0-fhydrogen)/fhydrogen) / \
-                (2.0+3.0*(1.0-fhydrogen)/(4.0*fhydrogen))
-            mmean = mmean_ionized
 
         # temperature in Kelvin
         from . import settings
@@ -213,7 +181,6 @@ def get_variable_function_gas(variable_str, info=False):
         "0_GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
         "0_Volumes": Volumes,
         "0_Temperatures": Temperatures,
-        "0_Temperatures2": Temperatures2,
         "0_EnergyDissipation": EnergyDissipation,
         "0_MachnumberTimesEnergyDissipation": MachnumberTimesEnergyDissipation,
         "0_MagneticFieldSquared": MagneticFieldSquared,
