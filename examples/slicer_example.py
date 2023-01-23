@@ -18,8 +18,8 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     widths = width_vec[ii]
     slicer = pa.Slicer(snap, center, widths, direction, npix=512)
 
-    image_filename = pa.root_dir + '/data/slice_{}.hdf5'.format(direction)
-    image_file = pa.ArepoImage(image_filename, slicer)
+    image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + '/data/',
+                               basename='slice_{}'.format(direction))
 
     Density = slicer.slice_variable(snap['0_Density'])
     Temperatures = slicer.slice_variable('0_Temperatures')
