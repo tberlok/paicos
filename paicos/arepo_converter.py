@@ -259,6 +259,8 @@ class ArepoConverter:
                 units = (find('VelocityGradient'))**2
             elif name == 'Temperature':
                 units = u.K
+            elif name == 'Pressure':
+                units = aunits['unit_pressure'] * h**2 / a**3
             else:
                 err_msg = 'invalid option name={}, cannot find units'
                 raise RuntimeError(err_msg.format(name))
