@@ -21,7 +21,8 @@ image_creator = pa.ImageCreator(snap, center, widths, direction)
 # Create arepo image file.
 # The file will have 'tmp_' prepended to the filename until .finalize()
 # is called.
-image_file = pa.ArepoImage(image_filename, image_creator)
+image_file = pa.ArepoImage(image_creator, pa.root_dir + '/data/',
+                           basename='test_arepo_image_format')
 
 # Save some images to the file (in a real example one would first import\\
 # and use a projection function)
@@ -34,7 +35,8 @@ image_file.finalize()
 
 snap.load_data(0, 'Coordinates')
 # Now amend the file with another set of data
-image_file = pa.ArepoImage(image_filename, image_creator, mode='a')
+image_file = pa.ArepoImage(image_creator, pa.root_dir + '/data/',
+                           basename='test_arepo_image_format', mode='a')
 data = np.random.random((500, 500))
 
 # Notice that we here also save attributes for coordinates,

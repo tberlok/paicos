@@ -89,26 +89,20 @@ class ArepoImage:
     which can be used to store images for later plotting with matplotlib.
 
     """
-    def __init__(self, image_filename, image_creator, mode='w'):
+    def __init__(self, image_creator, basedir, basename="projection",
+                 mode='w'):
 
         """
-        The filenames should include the full path:
+        If your image was created using a Paicos Projector or Slicer object,
+        then you can pass such an object using the image_creator input
+        argument.
 
-        image_filename: e.g. "./projections/thin_projection_247_x.hdf5"
+        basedir (file path): folder where you would like to save the image
+                             file.
 
-        snap: an instance of the Snapshot class
-
-        If your image was created using a Paicos Projector or Slicer object. You can
-        pass such an object using the image_creator input. Alternatively,
-        you can simply
-
-        center: A length-3 array giving the center of the image.
-
-        widths: This is a length-3 array giving the widths of
-                the image. For slices, the value indicating the thickness
-                can be set to zero.
-
-        direction: the viewing direction. Set this to e.g. 'x', 'y' or 'z'.
+        basename (string): the file will have a name like "projection_{:03d}"
+                           where {:03d} is automatically replaced with the
+                           snapnum.
 
         """
 
@@ -119,6 +113,11 @@ class ArepoImage:
 
         self.mode = mode
 
+        snapnum = image_creator.snap.snapnum
+        if basedir[-1] != '/':
+            basedir += '/'
+
+        image_filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
         self.image_filename = image_filename
         tmp_list = image_filename.split('/')
         tmp_list[-1] = 'tmp_' + tmp_list[-1]
