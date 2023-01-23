@@ -1,6 +1,7 @@
 import numpy as np
 from . import ImageCreator
 from . import util
+from . import settings
 
 
 class Projector(ImageCreator):
@@ -61,11 +62,11 @@ class Projector(ImageCreator):
 
         # check if OpenMP has any issues with the number of threads
         if util.check_if_omp_has_issues():
-            self.use_omp = True
-            self.numthreads = util.numthreads
-        else:
             self.use_omp = False
             self.numthreads = 1
+        else:
+            self.use_omp = True
+            self.numthreads = settings.numthreads
 
         # get the index of the region of projection
         self.index = util.get_index_of_region(self.snap["0_Coordinates"],

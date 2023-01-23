@@ -137,7 +137,7 @@ def check_if_omp_has_issues(verbose=True):
 
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
-        return True
+        return False
     else:
         import warnings
         msg = ("OpenMP seems to have issues with reduction operators " +
@@ -148,4 +148,4 @@ def check_if_omp_has_issues(verbose=True):
                "cython-prange-is-repeating-not-parallelizing.\n\n")
         if verbose:
             warnings.warn(msg)
-        return False
+        return True
