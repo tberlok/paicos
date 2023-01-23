@@ -2,9 +2,6 @@ import astropy.units as u
 from astropy.units import Quantity
 import numpy as np
 
-# Boolean determining whether we use Paicos quantities as a default
-enabled = False
-
 _ns = globals()
 
 small_a = u.def_unit(
@@ -131,10 +128,16 @@ class PaicosQuantity(Quantity):
 
     @property
     def a(self):
+        """
+        The scale factor.
+        """
         return self._a
 
     @property
     def h(self):
+        """
+        The reduced Hubble parameter
+        """
         return self._h
 
     def __get_unit_dictionaries(self):
@@ -153,7 +156,18 @@ class PaicosQuantity(Quantity):
 
     @property
     def unit_quantity(self):
+        """
+        Returns a new PaicosQuantity with the same units as the current
+        PaicosQuantity and a numeric value of 1.
+        """
         return PaicosQuantity(1., self.unit, a=self.a, h=self.h)
+
+    @property
+    def uq(self):
+        """
+        A short hand for the 'unit_quantity' method.
+        """
+        return self.unit_quantity
 
     def _construct_unit_from_dic(self, dic):
         """

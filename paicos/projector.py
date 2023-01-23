@@ -1,5 +1,7 @@
 import numpy as np
-from paicos import ImageCreator
+from . import ImageCreator
+from . import util
+from . import settings
 
 
 class Projector(ImageCreator):
@@ -22,7 +24,7 @@ class Projector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, nvol=8, numthreads=16):
+                 npix=512, nvol=8, make_snap_with_selection=True):
 
         """
         Initialize the Projector class.
@@ -50,159 +52,49 @@ class Projector(ImageCreator):
         nvol : int, optional
             Integer used to determine the smoothing length, by default 8
 
-        numthreads : int, optional
-            Number of threads used in parallelization, by default 16
         """
 
-        from paicos import get_index_of_region
-        from paicos import units
-
         # call the superclass constructor to initialize the ImageCreator class
-        super().__init__(snap, center, widths, direction, npix=npix,
-                         numthreads=numthreads)
+        super().__init__(snap, center, widths, direction, npix=npix)
 
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
         # check if OpenMP has any issues with the number of threads
-        self._check_if_omp_has_issues(numthreads)
-
-        snap = self.snap
-
-        # check if units are enabled and assign the center and widths accordingly
-        if units.enabled:
-            xc = self.xc.value
-            yc = self.yc.value
-            zc = self.zc.value
-            width_x = self.width_x.value
-            width_y = self.width_y.value
-            width_z = self.width_z.value
-        else:
-            xc = self.xc
-            yc = self.yc
-            zc = self.zc
-            width_x = self.width_x
-            width_y = self.width_y
-            width_z = self.width_z
-
-        # get the volumes and load the cell positions from the snapshot
-        snap.get_volumes()
-        snap.load_data(0, "Coordinates")
-        self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
-
-        # get the index of the region of projection
-        self.index = get_index_of_region(pos, xc, yc, zc,
-                                         width_x, width_y, width_z,
-                                         snap.box)
-
-        self.hsml = np.cbrt(nvol*(snap.P["0_Volumes"][self.index]) /
-                            (4.0*np.pi/3.0))
-
-        self.hsml = np.array(self.hsml, dtype=np.float64)
-
-        self.pos = self.pos[self.index]
-
-    def _check_if_omp_has_issues(self, numthreads):
-        """
-        Check if the parallelization via OpenMP works.
-
-        Parameters
-        ----------
-        numthreads : int
-            Number of threads used in parallelization
-        """
-
-        from paicos import simple_reduction
-        n = simple_reduction(1000, numthreads)
-        if n == 1000:
-            self.use_omp = True
-            self.numthreads = numthreads
-        else:
+        if util.check_if_omp_has_issues():
             self.use_omp = False
             self.numthreads = 1
-            import warnings
-            msg = ("OpenMP is seems to have issues with reduction operators" +
-                   "on your system, so we'll turn it off." +
-                   "If you're on Mac then the issue is likely a" +
-                   "compiler problem, discussed here:\n" +
-                   "https://stackoverflow.com/questions/54776301/" +
-                   "cython-prange-is-repeating-not-parallelizing")
-            warnings.warn(msg)
+        else:
+            self.use_omp = True
+            self.numthreads = settings.numthreads
 
-    def _get_variable(self, variable_str):
-        """
-        Retrieves the variable, it can be either passed as string, a function
-        or an array.
+        # get the index of the region of projection
+        self.index = util.get_index_of_region(self.snap["0_Coordinates"],
+                                              center, widths, snap.box)
 
-        Parameters
-        ----------
-        variable_str : str
+        # Reduce the snapshot to only contain region of interest
+        if make_snap_with_selection:
+            self.snap = self.snap.select(self.index)
 
-        Returns
-        -------
-        numpy array
-            The variable in form of numpy array
-        """
+        # Calculate the smoothing length
+        self.hsml = np.cbrt(nvol*(self.snap["0_Volumes"]) / (4.0*np.pi/3.0))
 
-        from paicos import get_variable
+        self.pos = self.snap['0_Coordinates']
 
-        return get_variable(self.snap, variable_str)
+        if not make_snap_with_selection:
+            self.hsml = self.hsml[self.index]
+            self.pos = self.pos[self.index]
 
-    def project_variable(self, variable):
-        """
-        projects a given variable onto a 2D plane.
-
-        Parameters
-        ----------
-        variable : str, function, numpy array
-            variable, it can be passed as string, function or an array
-
-        Returns
-        -------
-        numpy array
-            The image of the projected variable
-        """
-
-        from paicos import units
-
+    @util.remove_astro_units
+    def _cython_project(self, center, widths, variable):
         if self.use_omp:
-            from paicos import project_image_omp as project_image
+            from .cython.sph_projectors import project_image_omp
+            project_image = project_image_omp
         else:
-            from paicos import project_image
+            from .cython.sph_projectors import project_image
 
-        import types
-        if isinstance(variable, str):
-            variable = self._get_variable(variable)
-        elif isinstance(variable, types.FunctionType):
-            variable = variable(self.snap)
-        elif isinstance(variable, np.ndarray):
-            pass
-        else:
-            raise RuntimeError('Unexpected type for variable')
-
-        if isinstance(variable, units.PaicosQuantity):
-            variable_unit = variable.unit
-            variable = units.PaicosQuantity(variable[self.index],
-                                            variable.unit,
-                                            dtype=np.float64,
-                                            a=self.snap.a, h=self.snap.h)
-        else:
-            variable = np.array(variable[self.index], dtype=np.float64)
-
-        if units.enabled:
-            xc = self.xc.value
-            yc = self.yc.value
-            zc = self.zc.value
-            width_x = self.width_x.value
-            width_y = self.width_y.value
-            width_z = self.width_z.value
-        else:
-            xc = self.xc
-            yc = self.yc
-            zc = self.zc
-            width_x = self.width_x
-            width_y = self.width_y
-            width_z = self.width_z
+        xc, yc, zc = center[0], center[1], center[2]
+        width_x, width_y, width_z = widths
 
         boxsize = self.snap.box
         if self.direction == 'x':
@@ -226,72 +118,43 @@ class Projector(ImageCreator):
                                        self.hsml, self.npix,
                                        xc, yc, width_x, width_y,
                                        boxsize, self.numthreads)
+
+        return projection
+
+    def project_variable(self, variable):
+        """
+        projects a given variable onto a 2D plane.
+
+        Parameters
+        ----------
+        variable : str, function, numpy array
+            variable, it can be passed as string or an array
+
+        Returns
+        -------
+        numpy array
+            The image of the projected variable
+        """
+
+        from . import units
+
+        if isinstance(variable, str):
+            variable = self.snap[variable]
+        else:
+            if not isinstance(variable, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if variable.shape == self.index.shape:
+            variable = variable[self.index]
+
+        # Do the projection
+        projection = self._cython_project(self.center, self.widths, variable)
+
         # Transpose
         projection = projection.T
         area_per_pixel = self.area/np.product(projection.shape)
 
         if isinstance(variable, units.PaicosQuantity):
-            projection = units.PaicosQuantity(projection, variable_unit,
-                                              a=self.snap.a, h=self.snap.h)
+            projection = projection*variable.unit_quantity
 
         return projection/area_per_pixel
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm
-    from paicos import root_dir
-    import paicos as pa
-
-    for use_units in [False, True]:
-
-        pa.use_units(use_units)
-
-        snap = pa.Snapshot(root_dir + '/data', 247)
-        center = snap.Cat.Group['GroupPos'][0]
-        if pa.units.enabled:
-            R200c = snap.Cat.Group['Group_R_Crit200'][0].value
-        else:
-            R200c = snap.Cat.Group['Group_R_Crit200'][0]
-        # widths = [10000, 10000, 2*R200c]
-        widths = [10000, 10000, 10000]
-        width_vec = (
-            [2*R200c, 10000, 20000],
-            [10000, 2*R200c, 20000],
-            [10000, 20000, 2*R200c],
-            )
-
-        plt.figure(1)
-        plt.clf()
-        fig, axes = plt.subplots(num=1, ncols=3)
-        for ii, direction in enumerate(['x', 'y', 'z']):
-            widths = width_vec[ii]
-            projector = Projector(snap, center, widths, direction, npix=512)
-
-            filename = root_dir + '/data/projection_{}_247.hdf5'.format(direction)
-            image_file = pa.ArepoImage(filename, projector)
-
-            Masses = projector.project_variable('Masses')
-            print(Masses[0, 0])
-            Volumes = projector.project_variable('Volumes')
-
-            image_file.save_image('Masses', Masses)
-            image_file.save_image('Volumes', Volumes)
-
-            snap.get_temperatures()
-            TemperaturesTimesMasses = projector.project_variable(
-                                    snap.P['0_Temperatures'] * snap.P['0_Masses'])
-            image_file.save_image('TemperaturesTimesMasses', TemperaturesTimesMasses)
-
-            # Move from temporary filename to final filename
-            image_file.finalize()
-
-            # Make a plot
-            axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
-                            extent=np.array(projector.extent), norm=LogNorm())
-        plt.show()
-
-        if not use_units:
-            M = snap.converter.get_paicos_quantity(snap.P['0_Masses'], 'Masses')
-            # Projection now has units
-            projected_mass = projector.project_variable(M)

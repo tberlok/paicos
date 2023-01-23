@@ -26,64 +26,6 @@ class Histogram2D:
             logscale (bool): Indicates whether to use logscale for the
                              histogram, default is True.
 
-
-        Example usage given below:
-
-        import paicos as pa
-        import matplotlib.pyplot as plt
-        from matplotlib.colors import LogNorm
-        from paicos import root_dir
-
-        pa.use_units(True)
-
-        snap = pa.Snapshot(root_dir + '/data', 247)
-        center = snap.Cat.Group['GroupPos'][0]
-
-        snap.load_data(0, 'Density')
-        snap.load_data(0, 'Masses')
-        snap.get_temperatures()
-        snap.get_volumes()
-
-        T = snap.P['0_Temperatures']
-        if pa.units.enabled:
-            rho = snap.P['0_Density'].to_physical.astro
-            M = snap.P['0_Masses'].to_physical.astro
-            V = snap.P['0_Volumes'].to_physical.astro
-        else:
-            rho = snap.P['0_Density']
-            M = snap.P['0_Masses']
-            V = snap.P['0_Volumes']
-
-        # Set up bins
-        bins_T = [T.min(), T.max()/10, 200]
-        bins_rho = [rho.min(), rho.max()*1e-4, 300]
-
-        # Create histogram object
-        rhoT = pa.Histogram2D(bins_rho, bins_T, logscale=True)
-
-        # Make 2D histogram
-        hist = rhoT.make_histogram(rho, T, weights=M, normalize=True)
-
-        plt.figure(1)
-        plt.clf()
-
-        if pa.units.enabled:
-            plt.pcolormesh(rhoT.centers_x.value, rhoT.centers_y.value,
-                           rhoT.hist, norm=LogNorm())
-            plt.xlabel(rhoT.centers_x.label('\\rho'))
-            plt.ylabel(rhoT.centers_y.label('T'))
-        else:
-            plt.pcolormesh(rhoT.centers_x, rhoT.centers_y, rhoT.hist,
-                           norm=LogNorm())
-        plt.title('paicos Histogram2D')
-        if rhoT.logscale:
-            plt.xscale('log')
-            plt.yscale('log')
-        cbar = plt.colorbar()
-        cbar.set_label(rhoT.get_colorlabel(r'\rho', 'T', 'M'))
-        plt.title('hist2d paicos, pcolormesh')
-        plt.show()
-
         """
 
         self.logscale = logscale
@@ -112,8 +54,8 @@ class Histogram2D:
 
         lower, upper, nbins = bins
         edges, centers = self.__make_bins(lower, upper, nbins)
-        from . import units
-        if units.enabled:
+        from . import settings
+        if settings.use_units:
             assert lower.unit == upper.unit
             edges = np.array(edges)*lower.unit_quantity
             centers = np.array(centers)*lower.unit_quantity
@@ -155,7 +97,7 @@ class Histogram2D:
         Returns:
             norm (float): The normalizing constant
         """
-        from paicos import find_normalizing_norm_of_2d_hist
+        from .cython.histogram import find_normalizing_norm_of_2d_hist
         norm = find_normalizing_norm_of_2d_hist(hist2d, self.edges_x,
                                                 self.edges_y)
         return norm
@@ -172,9 +114,9 @@ class Histogram2D:
             colorlabel (string): The color label for the histogram with
                                  units
         """
-        from paicos import units
+        from . import settings
 
-        assert units.enabled
+        assert settings.use_units
 
         unit_label = self.hist_units.to_string(format='latex')[1:-1]
         unit_label = r'[' + unit_label + r']'
@@ -218,14 +160,14 @@ class Histogram2D:
             hist2d (2D array): The 2D histogram
             norm (float): Normalizing constant for the histogram
         """
-        from paicos import get_hist2d_from_weights
-        from paicos import units
+        from .cython.histogram import get_hist2d_from_weights
+        from . import settings
         from astropy import units as u
 
         self.normalized = normalize
 
         # Figure out units for the histogram
-        if units.enabled:
+        if settings.use_units:
             if not normalize and (weights is not None):
                 hist_units = weights.unit
             else:
@@ -237,14 +179,14 @@ class Histogram2D:
 
             self.hist_units = hist_units
 
-        if units.enabled:
+        if settings.use_units:
             assert x.unit == self.edges_x.unit
             assert y.unit == self.edges_y.unit
 
         if weights is None:
             weights = np.ones_like(x, dtype=np.float64)
         else:
-            if units.enabled:
+            if settings.use_units:
                 weights = np.array(weights.value, dtype=np.float64)
             else:
                 weights = np.array(weights, dtype=np.float64)
@@ -252,7 +194,7 @@ class Histogram2D:
         nbins_x = self.edges_x.shape[0] - 1
         nbins_y = self.edges_y.shape[0] - 1
 
-        if units.enabled:
+        if settings.use_units:
             lower_x = self.edges_x[0].value
             upper_x = self.edges_x[-1].value
             lower_y = self.edges_y[0].value
@@ -282,83 +224,3 @@ class Histogram2D:
         # TODO: Add units to returned object? Probably yes
 
         return hist2d.T
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    logscale = True
-
-    # Generate some fake data...
-    Np = 10**6
-    np.random.seed(30)
-    x = 0.5 * np.random.randn(Np) + 11.5
-    y = 2 * np.random.randn(Np) + 10.5
-    weights = np.ones_like(x)
-
-    bins_x = (x.min(), x.max(), 50)
-    bins_y = (y.min(), y.max(), 150)
-
-    # # Make histogram with matplotlib
-    plt.figure(1)
-    plt.clf()
-    h, xedges, yedges, image_matplotlib = plt.hist2d(x, y, bins=[50, 150])
-    plt.title('matplotlib hist2d')
-    plt.colorbar()
-
-    plt.figure(2)
-    plt.clf()
-    hist2d = Histogram2D(bins_x, bins_y, logscale)
-
-    hist = hist2d.make_histogram(x, y, weights)
-    # plt.imshow(hist, extent=hist2d.extent, aspect='auto', origin='lower')
-    plt.pcolormesh(hist2d.centers_x, hist2d.centers_y, hist)
-    plt.title('paicos Histogram2D')
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.colorbar()
-
-    # # Make histogram with numpy
-    plt.figure(3)
-    plt.clf()
-    pdf, xedges, yedges = np.histogram2d(x, y, weights=weights,
-                                         bins=(hist2d.centers_x, hist2d.centers_y))
-    plt.imshow(pdf.T, extent=hist2d.extent, aspect='auto', origin='lower')
-    plt.title('hist2d numpy')
-    plt.colorbar()
-
-    # norm = ∑ᵢⱼ pdfᵢⱼ cell_areaᵢⱼ
-    pdf_vec = np.reshape(pdf.T, np.product(pdf.shape))
-    dxy_vec = np.reshape(np.outer(np.diff(yedges), np.diff(xedges)),
-                         np.product(pdf.shape))
-    norm = np.dot(pdf_vec, dxy_vec)
-    pdf /= norm
-
-    plt.figure(4)
-    plt.clf()
-    plt.pcolormesh(hist2d.centers_x, hist2d.centers_y, np.transpose(pdf))
-    # plt.imshow(pdf.T, extent=hist2d.extent, aspect='auto', origin='lower')
-    plt.title('hist2d numpy, normalized')
-    plt.colorbar()
-
-    plt.figure(5)
-    plt.clf()
-    plt.pcolormesh(hist2d.centers_x, hist2d.centers_y,
-                   (np.transpose(pdf) - hist))
-    # plt.imshow(pdf.T, extent=hist2d.extent, aspect='auto', origin='lower')
-    plt.title('difference, Christoph and mine')
-    plt.colorbar()
-
-    plt.figure(6)
-    plt.clf()
-    plt.pcolormesh(hist2d.centers_x, hist2d.centers_y, hist)
-    plt.title('paicos Histogram2D')
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.colorbar()
-    # plt.imshow(pdf.T, extent=hist2d.extent, aspect='auto', origin='lower')
-    plt.title('hist2d paicos, pcolormesh, log scale')
-
-    plt.show()

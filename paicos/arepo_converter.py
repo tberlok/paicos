@@ -1,7 +1,7 @@
 import h5py
 import numpy as np
 from astropy import units as u
-from paicos import units as pu
+from . import units as pu
 from astropy.cosmology import LambdaCDM
 
 
@@ -159,10 +159,8 @@ class ArepoConverter:
     def get_paicos_quantity(self, data, name, arepo_code_units=True):
 
         if hasattr(data, 'unit'):
-            msg = 'Data already had units, returning! {}'.format(name)
+            msg = 'Data already had units! {}'.format(name)
             raise RuntimeError(msg)
-            # print()
-            return data
 
         unit = self.find_unit(name, arepo_code_units)
 
@@ -228,6 +226,7 @@ class ArepoConverter:
                     h**comoving_dic['h_scaling']
 
         elif isinstance(name, str):
+
             unitless_vars = ['ElectronAbundance', 'MachNumber',
                              'GFM_Metallicity']
             if name == 'Coordinates':
@@ -298,28 +297,3 @@ class ArepoConverter:
         quantity = quantity.to_physical
         # Return an astropy quantity
         return quantity.value*quantity.unit
-
-
-if __name__ == '__main__':
-    from paicos import root_dir
-
-    converter = ArepoConverter(root_dir + '/data/slice_x.hdf5')
-
-    rho = np.array([2, 4])
-    rho = converter.get_paicos_quantity(rho, 'Density')
-
-    Mstars = 1
-    Mstars = converter.get_paicos_quantity(Mstars, 'Masses')
-
-    B = converter.get_paicos_quantity([1], 'MagneticField')
-
-    T = converter.get_paicos_quantity([1], 'Temperature')
-
-    B = converter.get_paicos_quantity([1], 'MagneticField')
-
-    v = converter.get_paicos_quantity([2], 'Velocities')
-
-    mv_stars = Mstars*v
-
-    print(T.to('keV'))
-    print(B.to('uG'))

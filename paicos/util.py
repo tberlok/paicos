@@ -1,3 +1,9 @@
+from . import settings
+
+user_functions = {}
+
+openMP_has_issues = None
+
 
 def get_project_root_dir():
     import os
@@ -53,10 +59,93 @@ def remove_astro_units(func):
                 new_args[ii] = new_args[ii].value
 
         # Create new kwargs
-        new_kwargs = dict(kwargs)
+        new_kwargs = kwargs  # dict(kwargs)
         for key in kwargs.keys():
             if hasattr(kwargs[key], 'unit'):
                 new_kwargs[key] = kwargs[key].value
 
         return func(*new_args, **new_kwargs)
     return inner
+
+
+@remove_astro_units
+def get_index_of_radial_range(pos, center, r_min, r_max):
+    from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
+    xc, yc, zc = center[0], center[1], center[2]
+    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max)
+    return index
+
+
+@remove_astro_units
+def get_index_of_region(pos, center, widths, box):
+    from .cython.get_index_of_region_functions import get_index_of_region as get_index_of_region_cython
+    xc, yc, zc = center[0], center[1], center[2]
+    width_x, width_y, width_z = widths
+    index = get_index_of_region_cython(pos, xc, yc, zc,
+                                       width_x, width_y, width_z, box)
+    return index
+
+
+@remove_astro_units
+def get_index_of_slice_region(pos, center, widths, thickness, box):
+    xc, yc, zc = center[0], center[1], center[2]
+    width_x, width_y, width_z = widths
+    if widths[0] == 0.:
+        from .cython.get_index_of_region_functions import get_index_of_x_slice_region
+        index = get_index_of_x_slice_region(pos, xc, yc, zc,
+                                            width_y, width_z,
+                                            thickness, box)
+    elif widths[1] == 0.:
+        from .cython.get_index_of_region_functions import get_index_of_y_slice_region
+        index = get_index_of_y_slice_region(pos, xc, yc, zc,
+                                            width_x, width_z,
+                                            thickness, box)
+    elif widths[2] == 0.:
+        from .cython.get_index_of_region_functions import get_index_of_z_slice_region
+        index = get_index_of_z_slice_region(pos, xc, yc, zc,
+                                            width_x, width_y,
+                                            thickness, box)
+    else:
+        raise RuntimeError('width={} should have length 3 and contain a zero!')
+
+    return index
+
+
+def check_if_omp_has_issues(verbose=True):
+    """
+    Check if the parallelization via OpenMP works.
+
+    Parameters
+    ----------
+    numthreads : int
+        Number of threads used in parallelization
+    """
+    from .cython.openmp_info import simple_reduction, get_openmp_settings
+
+    if openMP_has_issues is not None:
+        return openMP_has_issues
+
+    max_threads = get_openmp_settings(0, False)
+    if settings.numthreads > max_threads:
+        msg = ('\n\nThe user specified number of OpenMP threads, {}, ' +
+               'exceeds the {} available on your system. Setting ' +
+               'numthreads to use half the available threads, i.e. {}.\n' +
+               'You can set numthreads with e.g. the command\n ' +
+               'paicos.set_numthreads(16)\n\n')
+        print(msg.format(settings.numthreads, max_threads, max_threads//2))
+        settings.numthreads = max_threads//2
+
+    n = simple_reduction(1000, settings.numthreads)
+    if n == 1000:
+        return False
+    else:
+        import warnings
+        msg = ("OpenMP seems to have issues with reduction operators " +
+               "on your system, so we'll turn it off for those use cases. " +
+               "If you're on Mac then the issue is likely a " +
+               "compiler problem, discussed here:\n" +
+               "https://stackoverflow.com/questions/54776301/" +
+               "cython-prange-is-repeating-not-parallelizing.\n\n")
+        if verbose:
+            warnings.warn(msg)
+        return True

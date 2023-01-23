@@ -1,5 +1,6 @@
 import numpy as np
-from paicos import Projector
+from .projector import Projector
+from .util import remove_astro_units
 
 
 class NestedProjector(Projector):
@@ -8,22 +9,27 @@ class NestedProjector(Projector):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, nvol=8, numthreads=16, factor=3, npix_min=128,
-                 verbose=False):
+                 npix=512, nvol=8, factor=3, npix_min=128,
+                 verbose=False, make_snap_with_selection=True,
+                 store_subimages=False):
 
         super().__init__(snap, center, widths, direction,
-                         npix=npix, nvol=nvol, numthreads=numthreads)
+                         npix=npix, nvol=nvol,
+                         make_snap_with_selection=make_snap_with_selection)
 
         self.verbose = verbose
+        self.store_subimages = store_subimages
 
         # Code specific for nested functionality below
         self.factor = factor
         self.npix_min = npix_min
 
         # Find required grid resolutions and the binning in smoothing (hsml)
-        bins, n_grids = self._get_bins()
+        bins, n_grids = self._get_bins(self.extent[1] - self.extent[0])
 
-        i_digit = np.digitize(self.hsml, bins=bins)
+        # Digitize particles (make OpenMP cython version of this?)
+        digitize = remove_astro_units(np.digitize)
+        i_digit = digitize(self.hsml, bins=bins)
         n_particles = self.hsml.shape[0]
         count = 0
         for ii, n_grid in enumerate(n_grids):
@@ -38,23 +44,18 @@ class NestedProjector(Projector):
         self.n_grids = n_grids
         self.i_digit = i_digit
 
-    def _get_bins(self):
+    @remove_astro_units
+    def _get_bins(self, width):
+
+        @remove_astro_units
         def nearest_power_of_two(x):
             return int(2**np.ceil(np.log2(x)))
 
         def log2int(x):
             return int(np.log2(x))
 
-        hsml = self.hsml
-
-        from paicos import units
-        if units.enabled:
-            width = (self.extent[1] - self.extent[0]).value
-        else:
-            width = self.extent[1] - self.extent[0]
-
-        npix_low = nearest_power_of_two(width/np.max(hsml)*self.factor)
-        npix_high = nearest_power_of_two(width/np.min(hsml)*self.factor)
+        npix_low = nearest_power_of_two(width/np.max(self.hsml)*self.factor)
+        npix_high = nearest_power_of_two(width/np.min(self.hsml)*self.factor)
 
         if npix_high > self.npix:
             npix_high = self.npix
@@ -102,50 +103,17 @@ class NestedProjector(Projector):
 
         return full_image
 
-    def _get_variable(self, variable_str):
-
-        from paicos import get_variable
-
-        return get_variable(self.snap, variable_str)
-
-    def project_variable(self, variable, store_subimages=False):
-        from paicos import units
-
+    @remove_astro_units
+    def _cython_project(self, center, widths, variable):
         if self.use_omp:
-            from paicos import project_image_omp as project_image
+            from .cython.sph_projectors import project_image_omp
+            project_image = project_image_omp
         else:
-            from paicos import project_image
+            from .cython.sph_projectors import project_image
 
-        import types
-        if isinstance(variable, str):
-            variable = self._get_variable(variable)
-        elif isinstance(variable, types.FunctionType):
-            variable = variable(self.arepo_snap)
-        elif isinstance(variable, np.ndarray):
-            pass
-        else:
-            raise RuntimeError('Unexpected type for variable')
+        xc, yc, zc = center[0], center[1], center[2]
+        width_x, width_y, width_z = widths
 
-        if isinstance(variable, units.PaicosQuantity):
-            variable_unit = str(variable.unit)
-            variable = np.array(variable[self.index].value, dtype=np.float64)
-        else:
-            variable = np.array(variable[self.index], dtype=np.float64)
-
-        if units.enabled:
-            xc = self.xc.value
-            yc = self.yc.value
-            zc = self.zc.value
-            width_x = self.width_x.value
-            width_y = self.width_y.value
-            width_z = self.width_z.value
-        else:
-            xc = self.xc
-            yc = self.yc
-            zc = self.zc
-            width_x = self.width_x
-            width_y = self.width_y
-            width_z = self.width_z
         boxsize = self.snap.box
 
         images = []
@@ -179,94 +147,7 @@ class NestedProjector(Projector):
 
         projection = self.sum_contributions(images)
 
-        if store_subimages:
+        if self.store_subimages:
             self.images = images
 
-        # Transpose
-        projection = projection.T
-        area_per_pixel = self.area/np.product(projection.shape)
-
-        if units.enabled:
-            projection = units.PaicosQuantity(projection, variable_unit,
-                                              a=self.snap.a, h=self.snap.h)
-
-        return projection/area_per_pixel
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm
-    from paicos import Snapshot
-    from paicos import root_dir
-    import paicos as pa
-
-    pa.use_units(True)
-
-    snap = Snapshot(root_dir + '/data', 247)
-    center = snap.Cat.Group['GroupPos'][0]
-
-    if pa.units.enabled:
-        R200c = snap.Cat.Group['Group_R_Crit200'][0].value
-    else:
-        R200c = snap.Cat.Group['Group_R_Crit200'][0]
-
-    width_vec = (
-        [2*R200c, 10000, 10000],
-        [10000, 2*R200c, 10000],
-        [10000, 10000, 2*R200c],
-    )
-
-    plt.rc('image', origin='lower', cmap='RdBu_r', interpolation='None')
-    from paicos import Projector
-    plt.figure(1)
-    plt.clf()
-    fig, axes = plt.subplots(num=1, ncols=3, nrows=3,
-                             sharex='col', sharey='col')
-
-    for ii, direction in enumerate(['x', 'y', 'z']):
-        widths = width_vec[ii]
-        p_nested = NestedProjector(snap, center, widths, direction, npix=512)
-
-        Masses = p_nested.project_variable('Masses')
-        Volume = p_nested.project_variable('Volumes')
-
-        nested_image = Masses/Volume
-
-        p = Projector(snap, center, widths, direction, npix=512)
-
-        Masses = p.project_variable('Masses')
-        Volume = p.project_variable('Volumes')
-
-        normal_image = Masses/Volume
-
-        if pa.units.enabled:
-            if ii == 0:
-                vmin = normal_image.min().value
-                vmax = normal_image.max().value
-
-            # Make a plot
-            axes[0, ii].imshow(normal_image.value, origin='lower',
-                               extent=p.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[1, ii].imshow(nested_image.value, origin='lower',
-                               extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[2, ii].imshow(np.abs(normal_image-nested_image).value, origin='lower',
-                               extent=p_nested.extent.value, norm=LogNorm(vmin=vmin, vmax=vmax))
-        else:
-            if ii == 0:
-                vmin = normal_image.min()
-                vmax = normal_image.max()
-
-            # Make a plot
-            axes[0, ii].imshow(normal_image, origin='lower',
-                               extent=p.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[1, ii].imshow(nested_image, origin='lower',
-                               extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-            axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
-                               extent=p_nested.extent, norm=LogNorm(vmin=vmin, vmax=vmax))
-
-        axes[0, ii].set_title('Normal projection ({})'.format(direction))
-        axes[1, ii].set_title('nested projection')
-        axes[2, ii].set_title('difference')
-        # print(np.max(np.abs(normal_image-nested_image)/normal_image))
-        print(np.sum(normal_image.flatten()), np.sum(nested_image.flatten()))
-    plt.show()
+        return projection

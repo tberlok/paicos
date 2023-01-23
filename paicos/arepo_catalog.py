@@ -6,6 +6,17 @@ import h5py
 class Catalog:
     """
     Catalog reader, originally written by Ewald Puchwein.
+
+    The Catalog class is a class for reading subhalo or halo catalogs in Arepo
+    snapshots, which are simulations of the evolution of the universe. The
+    class takes in the path of the directory containing the catalog, the
+    snapshot number, and a variety of other optional parameters such as
+    whether to use the verbose mode, read subfind catalog or fof catalog, and
+    whether to give units. The class uses this information to locate and open
+    the catalog files, and loads the catalog's header, parameters, and
+    configuration. The class also includes methods to extract the redshift,
+    scale factor, and other properties of the catalog and the number of groups
+    and subgroups in the catalog.
     """
 
     def __init__(self, basedir, snapnum, verbose=False, subfind_catalog=True,
@@ -131,27 +142,27 @@ class Catalog:
 
             f.close()
 
-            from . import units
-            give_units = units.enabled or give_units
+        from . import settings
+        give_units = settings.use_units or give_units
 
-            if give_units and converter is not None:
+        if give_units and converter is not None:
 
-                mass_keys = ['GroupMass',
-                             'Group_M_Crit200',
-                             'Group_M_Crit500',
-                             'Group_M_Mean200',
-                             'Group_M_TopHat200']
+            mass_keys = ['GroupMass',
+                         'Group_M_Crit200',
+                         'Group_M_Crit500',
+                         'Group_M_Mean200',
+                         'Group_M_TopHat200']
 
-                pos_keys = ['GroupPos',
-                            'Group_R_Crit200',
-                            'Group_R_Crit500',
-                            'Group_R_Mean200',
-                            'Group_R_TopHat200']
+            pos_keys = ['GroupPos',
+                        'Group_R_Crit200',
+                        'Group_R_Crit500',
+                        'Group_R_Mean200',
+                        'Group_R_TopHat200']
 
-                for key in pos_keys:
-                    self.Group[key] = converter.get_paicos_quantity(
-                                        self.Group[key], 'Coordinates')
+            for key in pos_keys:
+                self.Group[key] = converter.get_paicos_quantity(
+                                    self.Group[key], 'Coordinates')
 
-                for key in mass_keys:
-                    self.Group[key] = converter.get_paicos_quantity(
-                                         self.Group[key], 'Masses')
+            for key in mass_keys:
+                self.Group[key] = converter.get_paicos_quantity(
+                                     self.Group[key], 'Masses')
