@@ -24,10 +24,18 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     Density = slicer.slice_variable(snap['0_Density'])
     Temperatures = slicer.slice_variable('0_Temperatures')
 
-    image_file.save_image('Density', Density)
+    image_file.save_image('0_Density', Density)
 
     # Move from temporary filename to final filename
     image_file.finalize()
+
+    # Create a new image object in amend mode
+    image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + '/data/',
+                               basename='slice_{}'.format(direction),
+                               mode='a')
+
+    # Now add the temperatures as well
+    image_file.save_image('0_Temperatures', Temperatures)
 
     # Make a plot
     if pa.settings.use_units:
@@ -36,5 +44,8 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     else:
         axes[ii].imshow(Density, origin='lower',
                         extent=slicer.extent, norm=LogNorm())
+
+# Example of how to read the image files
+im = pa.ImageReader('data', 247, 'slice_x')
 
 plt.show()

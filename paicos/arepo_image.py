@@ -1,6 +1,8 @@
 import h5py
 import numpy as np
 from .import util
+from .paicos_writer import PaicosWriter
+from . import settings
 
 
 class ImageCreator:
@@ -81,7 +83,7 @@ class ImageCreator:
         self.area = area
 
 
-class ArepoImage:
+class ArepoImage(PaicosWriter):
     """
     A derived data format for Arepo snapshots.
 
@@ -108,114 +110,44 @@ class ArepoImage:
                            snapnum.
 
         """
-
         self.center = image_creator.center
         self.widths = image_creator.widths
         self.extent = image_creator.extent
         self.direction = image_creator.direction
 
-        self.mode = mode
+        # This creates an image at self.tmp_filename (if mode='w')
+        super().__init__(image_creator, basedir, basename=basename, mode=mode)
 
-        snapnum = image_creator.snap.snapnum
-        if basedir[-1] != '/':
-            basedir += '/'
+        # Create image file and write information about image
+        if self.mode == 'w':
+            with h5py.File(self.tmp_filename, 'r+') as f:
+                util.save_dataset(f, 'center', self.center, group='image_info')
+                util.save_dataset(f, 'widths', self.widths, group='image_info')
+                util.save_dataset(f, 'extent', self.extent, group='image_info')
+                f['image_info'].attrs['direction'] = self.direction
+                f['image_info'].attrs['image_creator'] = str(image_creator)
 
-        image_filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
-        self.image_filename = image_filename
-        tmp_list = image_filename.split('/')
-        tmp_list[-1] = 'tmp_' + tmp_list[-1]
-        self.tmp_image_filename = ''
-        for ii in range(0, len(tmp_list)-1):
-            self.tmp_image_filename += tmp_list[ii] + '/'
-        self.tmp_image_filename += tmp_list[-1]
-        self.arepo_snap_filename = image_creator.snap.first_snapfile_name
-
-        # Create projection file and write information about image
-        with h5py.File(self.tmp_image_filename, 'w') as f:
-            util.save_dataset(f, 'center', self.center, group='image_info')
-            util.save_dataset(f, 'widths', self.widths, group='image_info')
-            util.save_dataset(f, 'extent', self.extent, group='image_info')
-            f['image_info'].attrs['direction'] = self.direction
-            f['image_info'].attrs['image_creator'] = str(image_creator)
-
-        self.copy_over_snapshot_information()
-
-    def copy_over_snapshot_information(self):
-        """
-        Copy over attributes from the original arepo snapshot.
-        In this way we will have access to units used, redshift etc
-        """
-        g = h5py.File(self.arepo_snap_filename, 'r')
-        with h5py.File(self.tmp_image_filename, 'r+') as f:
-            for group in ['Header', 'Parameters', 'Config']:
-                f.create_group(group)
-                for key in g[group].attrs.keys():
-                    f[group].attrs[key] = g[group].attrs[key]
-        g.close()
-
-    def save_image(self, name, data, attrs=None):
+    def save_image(self, name, data):
         """
         This function saves a 2D image to the hdf5 file.
         """
+        self.write_data(name, data)
 
-        with h5py.File(self.tmp_image_filename, 'r+') as f:
-            if hasattr(data, 'unit') and attrs is None:
-                f.create_dataset(name, data=data.value)
-                attrs = {'unit': data.unit.to_string()}
+    def perform_extra_consistency_checks(self):
+        con = self.snap.converter
+        with h5py.File(self.filename, 'r') as f:
+            center = util.load_dataset(f, 'center', con, group='image_info')
+            if settings.use_units:
+                assert center.unit == self.center.unit
+                np.testing.assert_array_equal(center.value, self.center.value)
             else:
-                f.create_dataset(name, data=data)
-            if isinstance(attrs, dict):
-                for key in attrs.keys():
-                    f[name].attrs[key] = attrs[key]
+                np.testing.assert_array_equal(center, self.center)
 
-    def add_group(self, name, attrs=None):
-        with h5py.File(self.tmp_image_filename, 'r+') as f:
-            f.create_group(name)
-            if isinstance(attrs, dict):
-                for key in attrs.keys():
-                    f[name].attrs[key] = attrs[key]
+            widths = util.load_dataset(f, 'widths', con, group='image_info')
+            if settings.use_units:
+                assert widths.unit == self.widths.unit
+                np.testing.assert_array_equal(widths.value, self.widths.value)
+            else:
+                np.testing.assert_array_equal(widths, self.widths)
 
-    def add_data_to_group(self, groupname, dataname, data, attrs=None):
-        data = np.array(data, dtype=np.float64)
-        with h5py.File(self.tmp_image_filename, 'r+') as f:
-            f[groupname].create_dataset(dataname, data=data)
-            if isinstance(attrs, dict):
-                for key in attrs.keys():
-                    f[groupname][dataname].attrs[key] = attrs[key]
-
-    def finalize(self):
-        """
-        """
-        import os
-        if self.mode == 'w':
-            os.rename(self.tmp_image_filename, self.image_filename)
-        elif self.mode == 'a' or self.mode == 'r+':
-            with h5py.File(self.tmp_image_filename, 'r') as tmp:
-                with h5py.File(self.image_filename, 'r+') as final:
-                    np.testing.assert_array_equal(tmp['image_info'].attrs['center'],
-                                                  final['image_info'].attrs['center'])
-                    np.testing.assert_array_equal(tmp['image_info'].attrs['widths'],
-                                                  final['image_info'].attrs['widths'])
-                    assert tmp['image_info'].attrs['direction'] == final['image_info'].attrs['direction']
-                    assert tmp['Header'].attrs['Time'] == final['Header'].attrs['Time']
-                    for key in tmp.keys():
-                        # Copy over group, its attributes, its datasets and their attributes
-                        if isinstance(tmp[key], h5py._hl.group.Group):
-                            if key not in final.keys():
-                                final.create_group(key)
-                                # Copy over group attributes
-                                for g_attrs_key in tmp[key].attrs.keys():
-                                    final[key].attrs[g_attrs_key] = tmp[key].attrs[g_attrs_key]
-                                # Create data sets
-                                for data_key in tmp[key].keys():
-                                    final[key].create_dataset(data_key, data=tmp[key][data_key])
-                                    # Copy over attributes for each data set
-                                    for attrs_key in tmp[key][data_key].attrs.keys():
-                                        final[key][data_key].attrs[attrs_key] = tmp[key][data_key].attrs[attrs_key]
-                        # Copy over data set and its attributes
-                        elif isinstance(tmp[key], h5py._hl.dataset.Dataset):
-                            if key not in final.keys():
-                                final.create_dataset(key, data=tmp[key])
-                                for attrs_key in tmp[key].attrs.keys():
-                                    final[key].attrs[attrs_key] = tmp[key].attrs[attrs_key]
-            os.remove(self.tmp_image_filename)
+            assert f['image_info'].attrs['direction'] == self.direction

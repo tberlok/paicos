@@ -19,9 +19,9 @@ def get_project_root_dir():
 root_dir = get_project_root_dir()
 
 
-def save_dataset(hdf5file, name, data=None, group=None):
+def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     """
-    Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'r') )
+    Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'w') )
     If the data has units then they are saved as an attribute.
     """
 
@@ -31,8 +31,12 @@ def save_dataset(hdf5file, name, data=None, group=None):
     else:
         if group not in hdf5file:
             hdf5file.create_group(group)
+            if isinstance(group_attrs, dict):
+                for key in group_attrs.keys():
+                    hdf5file[group].attrs[key] = group_attrs[key]
         path = hdf5file[group]
 
+    # Save data set
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
         attrs = {'unit': data.unit.to_string()}
