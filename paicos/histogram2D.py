@@ -323,22 +323,3 @@ class Histogram2D:
                 hdf5file[name].attrs[key] = attrs[key]
 
         self.copy_over_snapshot_information(filename)
-
-
-class Histogram2DReader:
-    def __init__(self, basedir, snapnum, basename='2d_histogram'):
-        import h5py
-        from .arepo_converter import ArepoConverter
-        if basedir[-1] != '/':
-            basedir += '/'
-
-        filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
-        con = ArepoConverter(filename)
-        with h5py.File(filename, 'r') as hdf5file:
-            self.hist2d = util.load_dataset(hdf5file, 'hist2d', con)
-            self.centers_x = util.load_dataset(hdf5file, 'centers_x', con)
-            self.centers_y = util.load_dataset(hdf5file, 'centers_y', con)
-            if 'colorlabel' in hdf5file['hist2d'].attrs.keys():
-                self.colorlabel = hdf5file['hist2d'].attrs['colorlabel']
-            self.normalize = hdf5file['hist_info'].attrs['normalize']
-            self.logscale = hdf5file['hist_info'].attrs['normalize']
