@@ -10,11 +10,10 @@ from .projector2 import Projector2
 from .nested_projector import NestedProjector
 from .slicer import Slicer
 from .arepo_converter import ArepoConverter
-from .paicos_io import PaicosReader
+from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
-from .histogram2D import Histogram2D, Histogram2DReader
-from .image_reader import ImageReader
+from .histogram2D import Histogram2D
 
 # Cython functions
 from . import cython
