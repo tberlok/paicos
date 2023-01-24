@@ -10,6 +10,7 @@ from .projector2 import Projector2
 from .nested_projector import NestedProjector
 from .slicer import Slicer
 from .arepo_converter import ArepoConverter
+from .paicos_io import PaicosReader
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
 from .histogram2D import Histogram2D, Histogram2DReader
