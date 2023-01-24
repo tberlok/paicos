@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+from .import util
 
 
 class ImageCreator:
@@ -29,19 +30,21 @@ class ImageCreator:
 
         from paicos import settings
 
+        code_length = self.snap.converter.length
+
         if hasattr(center, 'unit'):
             self.center = center
+            assert center.unit == code_length.unit
         elif settings.use_units:
-            self.center = snap.converter.get_paicos_quantity(center,
-                                                             'Coordinates')
+            self.center = np.array(center)*code_length
         else:
             self.center = np.array(center)
 
         if hasattr(widths, 'unit'):
             self.widths = widths
+            assert widths.unit == code_length.unit
         elif settings.use_units:
-            self.widths = snap.converter.get_paicos_quantity(widths,
-                                                             'Coordinates')
+            self.widths = np.array(widths)*code_length
         else:
             self.widths = np.array(widths)
 
@@ -106,9 +109,9 @@ class ArepoImage:
 
         """
 
-        self.center = np.array(image_creator.center)
-        self.widths = np.array(image_creator.widths)
-        self.extent = np.array(image_creator.extent)
+        self.center = image_creator.center
+        self.widths = image_creator.widths
+        self.extent = image_creator.extent
         self.direction = image_creator.direction
 
         self.mode = mode
@@ -129,11 +132,11 @@ class ArepoImage:
 
         # Create projection file and write information about image
         with h5py.File(self.tmp_image_filename, 'w') as f:
-            f.create_group('image_info')
-            f['image_info'].attrs['center'] = self.center
-            f['image_info'].attrs['widths'] = self.widths
+            util.save_dataset(f, 'center', self.center, group='image_info')
+            util.save_dataset(f, 'widths', self.widths, group='image_info')
+            util.save_dataset(f, 'extent', self.extent, group='image_info')
             f['image_info'].attrs['direction'] = self.direction
-            f['image_info'].attrs['extent'] = self.extent
+            f['image_info'].attrs['image_creator'] = str(image_creator)
 
         self.copy_over_snapshot_information()
 

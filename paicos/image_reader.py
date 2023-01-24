@@ -1,5 +1,6 @@
 import h5py
-from paicos import ArepoConverter
+from .arepo_converter import ArepoConverter
+from . import util
 
 
 class ImageReader(dict):
@@ -7,6 +8,8 @@ class ImageReader(dict):
     def __init__(self, basedir, snapnum, basename="projection", load_all=True,
                  verbose=False):
 
+        if basedir[-1] != '/':
+            basedir += '/'
         #
         self.filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
 
@@ -28,13 +31,11 @@ class ImageReader(dict):
             self.time = self.converter.time
 
         with h5py.File(self.filename, 'r') as f:
-            get_func = self.converter.get_paicos_quantity
-            self.extent = get_func(f['image_info'].attrs['extent'],
-                                   'Coordinates')
-            self.widths = get_func(f['image_info'].attrs['widths'],
-                                   'Coordinates')
-            self.center = get_func(f['image_info'].attrs['center'],
-                                   'Coordinates')
+            self.extent = util.load_dataset(f, 'extent', group='image_info')
+            self.widths = util.load_dataset(f, 'widths', group='image_info')
+            self.center = util.load_dataset(f, 'center', group='image_info')
+            self.direction = f['image_info'].attrs['direction']
+            self.image_creator = f['image_info'].attrs['image_creator']
 
         # Load all data sets
         if load_all:
@@ -47,7 +48,14 @@ class ImageReader(dict):
                 # Keys of the form 'MagneticFieldSquaredTimesVolumes'
                 # are split up
                 start, end = key.split('Times')
-                self[start] = self[key]/self[end]
+                if (end in keys):
+                    self[start] = self[key]/self[end]
+                elif (start[0:2] + end in keys):
+                    self[start] = self[key]/self[start[0:2] + end]
+
+        for p in ['', '0_']:
+            if (p + 'Masses' in keys) and (p + 'Volumes' in keys):
+                self[p + 'Density'] = self[p+'Masses']/self[p+'Volumes']
 
     def load_data(self, name):
         get_func = self.converter.get_paicos_quantity

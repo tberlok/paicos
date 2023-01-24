@@ -42,7 +42,7 @@ for use_units in [False, True]:
         # snap.get_temperatures()
         TemperaturesTimesMasses = projector.project_variable(
                                 snap['0_Temperatures'] * snap['0_Masses'])
-        image_file.save_image('TemperaturesTimesMasses', TemperaturesTimesMasses)
+        image_file.save_image('0_TemperaturesTimesMasses', TemperaturesTimesMasses)
 
         # Move from temporary filename to final filename
         image_file.finalize()

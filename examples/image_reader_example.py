@@ -1,6 +1,10 @@
 import paicos as pa
 
 im = pa.ImageReader(pa.root_dir + '/data/', 247,
-                    basename='test_arepo_image_format')
+                    basename='projection_x')
 
-print(im['Density'][:, :])
+print(im['0_Density'][:, :])
+print(im.extent)
+print(im.center)
+print(im.direction)
+print(im.image_creator)
