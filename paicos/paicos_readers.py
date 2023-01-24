@@ -20,11 +20,11 @@ class PaicosReader(dict):
 
         self.converter = ArepoConverter(self.filename)
 
-        self.redshift = self.z = self.converter.z
         self.h = self.converter.h
         self.scale_factor = self.a = self.converter.a
 
         if self.Parameters['ComovingIntegrationOn'] == 1:
+            self.redshift = self.z = self.converter.z
             self.age = self.converter.age
             self.lookback_time = self.converter.lookback_time
         else:

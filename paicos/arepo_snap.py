@@ -120,6 +120,9 @@ class Snapshot(dict):
         if self.Parameters['ComovingIntegrationOn'] == 1:
             self.age = self.converter.age
             self.lookback_time = self.converter.lookback_time
+            self.z = self.converter.z
+            if self.verbose:
+                print("at z =", self.z)
         else:
             self.time = self.converter.time
 
@@ -131,12 +134,8 @@ class Snapshot(dict):
             print("has", self.nspecies, "particle types")
             print("with npart =", self.npart)
 
-        self.z = self.converter.z
         self.a = self.converter.a
         self.h = self.converter.h
-
-        if self.verbose:
-            print("at z =", self.z)
 
         self.box = self.Header["BoxSize"]
         box_size = [self.box, self.box, self.box]
