@@ -22,18 +22,25 @@ bins_T = [T.min(), T.max()/10, 200]
 bins_rho = [rho.min(), rho.max()*1e-4, 300]
 
 # Create histogram object
-rhoT = pa.Histogram2D(rho, T, weights=M, bins_x=bins_rho,
+rhoT = pa.Histogram2D(snap, rho, T, weights=M, bins_x=bins_rho,
                       bins_y=bins_T, logscale=True)
 
-# Make 2D histogram
-# hist = rhoT.make_histogram(rho, T, weights=M, normalize=True)
+# Create colorlabel
+colorlabel = rhoT.get_colorlabel(r'\rho', 'T', 'M')
+
+# Save the 2D histogram
+rhoT.save(basedir=pa.root_dir + '/data', basename='rhoT_hist')
+
+del rhoT
+
+rhoT = pa.Histogram2DReader(pa.root_dir + '/data', 247, basename='rhoT_hist')
 
 plt.figure(1)
 plt.clf()
 
 if pa.settings.use_units:
     plt.pcolormesh(rhoT.centers_x.value, rhoT.centers_y.value,
-                   rhoT.hist, norm=LogNorm())
+                   rhoT.hist2d.value, norm=LogNorm())
     plt.xlabel(rhoT.centers_x.label('\\rho'))
     plt.ylabel(rhoT.centers_y.label('T'))
 else:
@@ -44,6 +51,6 @@ if rhoT.logscale:
     plt.xscale('log')
     plt.yscale('log')
 cbar = plt.colorbar()
-cbar.set_label(rhoT.get_colorlabel(r'\rho', 'T', 'M'))
+cbar.set_label(rhoT.colorlabel)
 plt.title('hist2d paicos, pcolormesh')
 plt.show()

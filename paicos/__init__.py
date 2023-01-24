@@ -12,7 +12,7 @@ from .slicer import Slicer
 from .arepo_converter import ArepoConverter
 from .radial_profiles import RadialProfiles
 from .histogram import Histogram
-from .histogram2D import Histogram2D
+from .histogram2D import Histogram2D, Histogram2DReader
 from .image_reader import ImageReader
 
 # Cython functions

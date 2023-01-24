@@ -19,27 +19,64 @@ def get_project_root_dir():
 root_dir = get_project_root_dir()
 
 
-def save_dataset(hdf5file, name, data=None):
+def save_dataset(hdf5file, name, data=None, group=None):
     """
     Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'r') )
     If the data has units then they are saved as an attribute.
     """
+
+    # Allow for storing data sets in groups or nested groups
+    if group is None:
+        path = hdf5file
+    else:
+        if group not in hdf5file:
+            hdf5file.create_group(group)
+        path = hdf5file[group]
+
     if hasattr(data, 'unit'):
-        hdf5file.create_dataset(name, data=data.value)
+        path.create_dataset(name, data=data.value)
         attrs = {'unit': data.unit.to_string()}
         for key in attrs.keys():
-            hdf5file[name].attrs[key] = attrs[key]
+            path[name].attrs[key] = attrs[key]
     else:
-        hdf5file.create_dataset(name, data=data)
+        path.create_dataset(name, data=data)
 
 
-def load_dataset(hdf5file, name):
+def load_dataset(hdf5file, name, converter=None, group=None):
     """
     Load dataset, returning a paicos quantity if the attributes
-    contain units
+    contain units and units are enabled.
     """
-    raise RuntimeError('Needs to be implemented!')
-    pass
+    import h5py
+
+    if not isinstance(hdf5file, h5py._hl.files.File):
+        if isinstance(hdf5file, str):
+            hdf5file = h5py.File(hdf5file, 'r')
+        else:
+            msg = "'util.load_dataset' needs a file name or an open hdf5 file"
+            raise RuntimeError(msg)
+
+    # Construct a convertor object if it was not passed
+    if converter is None:
+        from .arepo_converter import ArepoConverter
+        converter = ArepoConverter(hdf5file.filename)
+
+    # Allow for loading data sets in groups or nested groups
+    if group is None:
+        path = hdf5file
+    else:
+        if group not in hdf5file:
+            hdf5file.create_group(group)
+        path = hdf5file[group]
+
+    data = path[name][()]
+
+    if settings.use_units:
+        if 'unit' in path[name].attrs.keys():
+            from . import units as pu
+            unit = path[name].attrs['unit']
+            data = pu.PaicosQuantity(data, unit, a=converter.a, h=converter.h)
+    return data
 
 
 def remove_astro_units(func):
