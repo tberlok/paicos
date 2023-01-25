@@ -524,7 +524,7 @@ class Snapshot(dict):
 
         return select_snap
 
-    def save_new_snapshot(self, basename):
+    def save_new_snapshot(self, basename, single_precision=False):
         """
         Save a new snapshot containing the currently loaded (derived)
         variables. Useful for reducing datasets to smaller sizes.
@@ -540,7 +540,12 @@ class Snapshot(dict):
                 if key[:2] == '{}_'.format(parttype):
                     new_npart[parttype] = self[key].shape[0]
                     PartType_str = 'PartType{}'.format(parttype)
-                    writer.write_data(key[2:], self[key], group=PartType_str)
+
+                    if single_precision:
+                        data = self[key].astype(np.float32)
+                    else:
+                        data = self[key]
+                    writer.write_data(key[2:], data, group=PartType_str)
 
         with h5py.File(writer.tmp_filename, 'r+') as f:
             f['Header'].attrs["NumFilesPerSnapshot"] = 1
