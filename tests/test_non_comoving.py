@@ -6,7 +6,7 @@ def test_non_comoving():
 
     import paicos as pa
     snap = pa.Snapshot(pa.root_dir + '/data/', 7,
-                       snap_basename='small_non_comoving')
+                       basename='small_non_comoving')
 
     snap['0_Density']
     snap['0_Masses']

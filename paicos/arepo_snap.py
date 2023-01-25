@@ -15,7 +15,7 @@ class Snapshot(dict):
     then been modified and included in Paicos.
 
     The class takes in the path of the directory containing the snapshot, the
-    snapshot number, and an optional snap_basename parameter, and uses this
+    snapshot number, and an optional basename parameter, and uses this
     information to locate and open the snapshot files. The class also loads
     the snapshot's header, parameters, and configuration, and uses them to
     create a converter object that can be used to convert units in the
@@ -49,7 +49,7 @@ class Snapshot(dict):
 
     """
 
-    def __init__(self, basedir, snapnum, snap_basename="snap", verbose=False,
+    def __init__(self, basedir, snapnum, basename="snap", verbose=False,
                  no_snapdir=False, load_catalog=None,
                  dic_selection_index={}):
         """
@@ -62,7 +62,7 @@ class Snapshot(dict):
 
         snapnum (int): snapshot number
 
-        snap_basename (str): name of the snapshot file, default is "snap"
+        basename (str): name of the snapshot file, default is "snap"
 
         verbose (bool): whether to print information about the snapshot,
         default is False
@@ -78,7 +78,7 @@ class Snapshot(dict):
 
         self.basedir = basedir
         self.snapnum = snapnum
-        self.snap_basename = snap_basename
+        self.basename = basename
         self.verbose = verbose
         self.no_snapdir = no_snapdir
         self.load_catalog = load_catalog
@@ -87,7 +87,7 @@ class Snapshot(dict):
 
         # in case single file
         self.snapname = self.basedir + "/" + \
-            snap_basename + "_" + str(self.snapnum).zfill(3)
+            basename + "_" + str(self.snapnum).zfill(3)
         self.multi_file = False
         self.first_snapfile_name = self.snapname + ".hdf5"
 
@@ -96,10 +96,10 @@ class Snapshot(dict):
             if not self.no_snapdir:
                 self.snapname = self.basedir + "/" + "snapdir_" + \
                     str(self.snapnum).zfill(3) + "/" + \
-                    snap_basename + "_" + str(self.snapnum).zfill(3)
+                    basename + "_" + str(self.snapnum).zfill(3)
             else:
                 self.snapname = self.basedir + "/" + \
-                    snap_basename + "_" + str(self.snapnum).zfill(3)
+                    basename + "_" + str(self.snapnum).zfill(3)
             self.first_snapfile_name = self.snapname+".0.hdf5"
             assert os.path.exists(self.first_snapfile_name)
             self.multi_file = True
@@ -503,7 +503,7 @@ class Snapshot(dict):
             dic_selection_index[parttype] = s_index
 
         select_snap = Snapshot(self.basedir, self.snapnum,
-                               snap_basename=self.snap_basename,
+                               basename=self.basename,
                                verbose=self.verbose,
                                no_snapdir=self.no_snapdir,
                                load_catalog=self.load_catalog,

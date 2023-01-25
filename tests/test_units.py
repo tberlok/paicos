@@ -7,7 +7,7 @@
 #     pa.use_units(True)
 
 #     snap = pa.Snapshot(pa.root_dir + '/data', 247,
-#                        snap_basename='reduced_snap', load_catalog=False)
+#                        basename='reduced_snap', load_catalog=False)
 
 #     for key in snap.info(0, False):
 #         snap.load_data(0, key)

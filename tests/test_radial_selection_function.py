@@ -4,7 +4,7 @@ def test_radial_selection():
     import paicos as pa
     pa.use_units(True)
 
-    snap = pa.Snapshot(pa.root_dir + '/data', 247, snap_basename='reduced_snap',
+    snap = pa.Snapshot(pa.root_dir + '/data', 247, basename='reduced_snap',
                        load_catalog=False)
     center = [398968.4, 211682.6, 629969.9]*snap.converter.length
 

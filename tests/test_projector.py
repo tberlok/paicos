@@ -16,7 +16,7 @@ def test_projector(show=False):
         pa.use_units(use_units)
 
         basedir = pa.root_dir + '/data/'
-        snap = pa.Snapshot(basedir, 247, snap_basename='reduced_snap',
+        snap = pa.Snapshot(basedir, 247, basename='reduced_snap',
                            load_catalog=False)
         center = [398968.4, 211682.6, 629969.9]
         widths = [2000, 2000, 2000]

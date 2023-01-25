@@ -7,7 +7,7 @@ def test_arepo_image(load_catalog=False):
     image_filename = pa.root_dir + "/data/test_arepo_image_format_247.hdf5"
 
     snap = pa.Snapshot(pa.root_dir + '/data/', 247,
-                       snap_basename='reduced_snap', load_catalog=load_catalog)
+                       basename='reduced_snap', load_catalog=load_catalog)
 
     # A length-3 array giving the center of the image.
     center = [250000, 400000, 500000]

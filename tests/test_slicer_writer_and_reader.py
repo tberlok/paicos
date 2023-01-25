@@ -11,7 +11,7 @@ def test_slicer_writer_and_reader(show=False):
         from matplotlib.colors import LogNorm
 
     snap = pa.Snapshot(pa.root_dir + '/data', 247,
-                       snap_basename='reduced_snap', load_catalog=False)
+                       basename='reduced_snap', load_catalog=False)
     center = [398968.4, 211682.6, 629969.9]
 
     width_vec = (
