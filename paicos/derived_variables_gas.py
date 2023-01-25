@@ -133,7 +133,7 @@ def get_variable_function_gas(variable_str, info=False):
         if 'GFM_Metals' in snap.info(0, False):
             hydrogen_abundance = snap['0_GFM_Metals'][:, 0]
         else:
-            hydrogen_abundance = 0.76
+            hydrogen_abundance = np.array([0.76])
 
         if 'ElectronAbundance' in snap.info(0, False):
             electron_abundance = snap['0_ElectronAbundance']
