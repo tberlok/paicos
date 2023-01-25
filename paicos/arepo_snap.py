@@ -176,7 +176,7 @@ class Snapshot(dict):
                         subfind_catalog=False, converter=self.converter)
                 except FileNotFoundError:
                     import warnings
-                    warnings.warn('no catalog found', FileNotFoundError)
+                    warnings.warn('no catalog found')
 
         self.P_attrs = dict()  # attributes
 
