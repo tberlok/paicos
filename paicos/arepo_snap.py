@@ -529,4 +529,21 @@ class Snapshot(dict):
         Save a new snapshot containing the currently loaded (derived)
         variables. Useful for reducing datasets to smaller sizes.
         """
-        raise RuntimeError('To be implemented')
+        from .paicos_writer import PaicosWriter
+        import h5py
+
+        writer = PaicosWriter(self, self.basedir, basename, 'w')
+
+        new_npart = [0]*self.nspecies
+        for key in self.keys():
+            for parttype in range(self.nspecies):
+                if key[:2] == '{}_'.format(parttype):
+                    new_npart[parttype] = self[key].shape[0]
+                    PartType_str = 'PartType{}'.format(parttype)
+                    writer.write_data(key[2:], self[key], group=PartType_str)
+
+        with h5py.File(writer.tmp_filename, 'r+') as f:
+            f['Header'].attrs["NumFilesPerSnapshot"] = 1
+            f['Header'].attrs["NumPart_Total"] = np.array(new_npart)
+
+        writer.finalize()
