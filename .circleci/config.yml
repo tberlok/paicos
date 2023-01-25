@@ -55,7 +55,8 @@ jobs:
             mkdir test-reports
             export PYTHONPATH=/home/circleci/repo
             cd /home/circleci/repo
-            pytest --cov-report=xml --cov=/home/circleci/repo/psecas --junitxml=test-reports/junit.xml /home/circleci/repo/tests 
+            pytest --cov-report=xml --cov=/home/circleci/repo/paicos --junitxml=test-reports/junit.xml /home/circleci/repo/tests/comoving/
+            pytest --cov-report=xml --cov=/home/circleci/repo/paicos --junitxml=test-reports/junit.xml /home/circleci/repo/tests/non-comoving/
 
       - store_test_results:
           path: test-reports

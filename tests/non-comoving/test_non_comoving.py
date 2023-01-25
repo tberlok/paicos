@@ -1,9 +1,5 @@
-import pytest
 
-
-@pytest.fixture  # (helps run this test independently from the others)
 def test_non_comoving():
-
     import paicos as pa
     snap = pa.Snapshot(pa.root_dir + '/data/', 7,
                        basename='small_non_comoving')

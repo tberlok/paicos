@@ -55,7 +55,7 @@ class ArepoConverter:
 
         _ns = globals()
         arepo_mass = u.def_unit(
-            ["arepo_mass", "a_mass"],
+            ["arepo_mass"],
             unit_mass,
             prefixes=False,
             namespace=_ns,
