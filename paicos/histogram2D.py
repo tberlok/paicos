@@ -67,10 +67,10 @@ class Histogram2D:
         self.normalize = normalize
 
         if isinstance(bins_x, int):
-            bins_x = [x.min(), x.max(), bins_x]
+            bins_x = [self.x.min(), self.x.max(), bins_x]
 
         if isinstance(bins_y, int):
-            bins_y = [y.min(), y.max(), bins_y]
+            bins_y = [self.y.min(), self.y.max(), bins_y]
 
         self.logscale = logscale
 
