@@ -512,13 +512,17 @@ class Snapshot(dict):
         for key in self.keys():
             if key[0] == str(parttype):
                 shape = self[key].shape
-                # print(key, shape, s_index.shape)
-                if len(shape) == 1:
-                    select_snap[key] = self[key][s_index]
-                elif len(shape) == 2:
-                    select_snap[key] = self[key][s_index, :]
+                if shape[0] == 1 and s_index.shape[0] != 1:
+                    # Copy over single float numbers, e.g., constants,
+                    # such as the mean molecular weight
+                    select_snap[key] = self[key]
                 else:
-                    raise RuntimeError('Data has unexpected shape!')
+                    if len(shape) == 1:
+                        select_snap[key] = self[key][s_index]
+                    elif len(shape) == 2:
+                        select_snap[key] = self[key][s_index, :]
+                    else:
+                        raise RuntimeError('Data has unexpected shape!')
             else:
                 select_snap[key] = self[key]
 
