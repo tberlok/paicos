@@ -95,3 +95,11 @@ python examples/select_subset_of_snap.py
 I have uploaded a tutorial notebook `tutorials/paicos_examples.ipynb` which
 displays the functionality on one of the bigger simulations on the cluster.
 
+### Avoiding bloated git from jupyter notebooks
+
+Remember to do the following before committing notebooks:
+```
+python3 -m nbconvert --clear-output *.ipynb **/*.ipynb
+```
+
+
