@@ -1,4 +1,7 @@
+import pytest
 
+
+@pytest.mark.order(1)
 def test_slicer_writer_and_reader(show=False):
 
     import paicos as pa

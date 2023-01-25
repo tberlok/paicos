@@ -4,3 +4,7 @@ cython >= 0.29.21
 matplotlib
 h5py
 astropy >= 4.3
+
+# For testing
+pytest
+pytest-order
