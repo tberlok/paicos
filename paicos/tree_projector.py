@@ -30,7 +30,7 @@ class TreeProjector(ImageCreator):
         snap.load_data(0, "Coordinates")
         self.pos = pos = np.array(snap.P["0_Coordinates"], dtype=np.float64)
 
-        thickness = np.array(4.0*np.cbrt((snap.P["0_Volumes"]) /
+        thickness = np.array(4.0*np.cbrt((snap.P["0_Volume"]) /
                              (4.0*np.pi/3.0)), dtype=np.float64)
 
         if direction == 'x':
@@ -161,10 +161,10 @@ if __name__ == '__main__':
         image_file = ArepoImage(filename, projector)
 
         Masses = projector.project_variable('Masses')
-        Volume = projector.project_variable('Volumes')
+        Volume = projector.project_variable('Volume')
 
         image_file.save_image('Masses', Masses)
-        image_file.save_image('Volumes', Volume)
+        image_file.save_image('Volume', Volume)
 
         # Move from temporary filename to final filename
         image_file.finalize()

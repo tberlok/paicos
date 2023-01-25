@@ -63,7 +63,7 @@ class ImageReader(PaicosReader):
         keys = list(self.keys())
         for key in keys:
             if 'Times' in key:
-                # Keys of the form 'MagneticFieldSquaredTimesVolumes'
+                # Keys of the form 'MagneticFieldSquaredTimesVolume'
                 # are split up
                 start, end = key.split('Times')
                 if (end in keys):
@@ -73,8 +73,8 @@ class ImageReader(PaicosReader):
 
         # Calculate density if we have both masses and volumes
         for p in ['', '0_']:
-            if (p + 'Masses' in keys) and (p + 'Volumes' in keys):
-                self[p + 'Density'] = self[p+'Masses']/self[p+'Volumes']
+            if (p + 'Masses' in keys) and (p + 'Volume' in keys):
+                self[p + 'Density'] = self[p+'Masses']/self[p+'Volume']
 
 
 class Histogram2DReader(PaicosReader):

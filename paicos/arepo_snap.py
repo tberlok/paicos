@@ -424,12 +424,12 @@ class Snapshot(dict):
             del self.P_attrs[P_key]
 
     def get_volumes(self):
-        self["0_Volumes"]
+        self["0_Volume"]
         from warnings import warn
         warn(("This method will be soon deprecated in favor of automatic " +
               " loading using:\n\n" +
-              " snap['0_Volumes']\n\n or the explicit command\n\n" +
-              "snap.get_derived_data(0, 'Volumes')"),
+              " snap['0_Volume']\n\n or the explicit command\n\n" +
+              "snap.get_derived_data(0, 'Volume')"),
              DeprecationWarning, stacklevel=2)
 
     def get_temperatures(self):

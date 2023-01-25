@@ -6,7 +6,7 @@ def get_variable_function_gas(variable_str, info=False):
     def GFM_MetallicityTimesMasses(snap):
         return snap['0_Masses']*snap['0_GFM_Metallicity']
 
-    def Volumes(snap):
+    def Volume(snap):
         return snap["0_Masses"] / snap["0_Density"]
 
     def EnergyDissipation(snap):
@@ -25,8 +25,8 @@ def get_variable_function_gas(variable_str, info=False):
     def VelocityMagnitude(snap):
         return np.sqrt(np.sum(snap['0_Velocities']**2, axis=1))
 
-    def MagneticFieldSquaredTimesVolumes(snap):
-        variable = snap["0_Volumes"]*np.sum(snap['0_MagneticField']**2, axis=1)
+    def MagneticFieldSquaredTimesVolume(snap):
+        variable = snap["0_Volume"]*np.sum(snap['0_MagneticField']**2, axis=1)
         return variable
 
     def Pressure(snap):
@@ -37,15 +37,15 @@ def get_variable_function_gas(variable_str, info=False):
         variable = snap["0_InternalEnergy"] * snap["0_Density"] * gm1
         return variable
 
-    def PressureTimesVolumes(snap):
+    def PressureTimesVolume(snap):
         if '0_Pressure' in snap.keys():
-            return snap['0_Pressure'] * snap['0_Volumes']
+            return snap['0_Pressure'] * snap['0_Volume']
         else:
             if snap.gamma != 1:
                 gm1 = snap.gamma - 1
                 variable = snap["0_Masses"] * snap["0_InternalEnergy"] * gm1
             else:
-                variable = snap['0_Volumes'] * snap['0_Pressure']
+                variable = snap['0_Volume'] * snap['0_Pressure']
 
         return variable
 
@@ -185,15 +185,15 @@ def get_variable_function_gas(variable_str, info=False):
 
     functions = {
         "0_GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
-        "0_Volumes": Volumes,
+        "0_Volume": Volume,
         "0_Temperatures": Temperatures,
         "0_EnergyDissipation": EnergyDissipation,
         "0_MachnumberTimesEnergyDissipation": MachnumberTimesEnergyDissipation,
         "0_MagneticFieldSquared": MagneticFieldSquared,
         "0_MagneticFieldStrength": MagneticFieldStrength,
-        "0_MagneticFieldSquaredTimesVolumes": MagneticFieldSquaredTimesVolumes,
+        "0_MagneticFieldSquaredTimesVolume": MagneticFieldSquaredTimesVolume,
         "0_Pressure": Pressure,
-        "0_PressureTimesVolumes": PressureTimesVolumes,
+        "0_PressureTimesVolume": PressureTimesVolume,
         "0_TemperaturesTimesMasses": TemperaturesTimesMasses,
         "0_Current": Current,
         "0_Enstrophy": Enstrophy,

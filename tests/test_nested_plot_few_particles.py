@@ -11,18 +11,18 @@ def test_nested_particles(show=False):
                        load_catalog=False)
 
     snap['0_Coordinates'] = snap['0_Coordinates'][:9]
-    snap['0_Volumes'] = snap['0_Volumes'][:9]
+    snap['0_Volume'] = snap['0_Volume'][:9]
     snap['0_Masses'] = snap['0_Masses'][:9]
     snap['0_Density'] = snap['0_Density'][:9]
 
     for jj in range(3):
         for kk in range(3):
             ii = jj*3 + kk
-            snap['0_Volumes'][ii] = 4*np.pi/3*(snap.box/2/(10*(ii+1)))**3
+            snap['0_Volume'][ii] = 4*np.pi/3*(snap.box/2/(10*(ii+1)))**3
             snap['0_Coordinates'][ii][0] = snap.box*1/4
             snap['0_Coordinates'][ii][1] = snap.box*1/4
             snap['0_Coordinates'][ii][2] = snap.box*1/2
-            snap['0_Masses'][ii] = snap['0_Volumes'][ii]
+            snap['0_Masses'][ii] = snap['0_Volume'][ii]
             snap['0_Density'][ii] = 1.0
             snap['0_Coordinates'][ii][0] += jj*snap.box*1/4
             snap['0_Coordinates'][ii][1] += kk*snap.box*1/4
@@ -41,7 +41,7 @@ def test_nested_particles(show=False):
                                       npix_min=8)
 
         Masses_nested = p_nested.project_variable('0_Masses')
-        Volume_nested = p_nested.project_variable('0_Volumes')
+        Volume_nested = p_nested.project_variable('0_Volume')
 
         nested_image = np.zeros_like(Masses_nested)
         nested_image[Masses_nested > 0] = Masses_nested[Masses_nested > 0]/Volume_nested[Masses_nested > 0]
@@ -49,7 +49,7 @@ def test_nested_particles(show=False):
         p = pa.Projector(snap, center, widths, direction, npix=512)
 
         Masses = p.project_variable('0_Masses')
-        Volume = p.project_variable('0_Volumes')
+        Volume = p.project_variable('0_Volume')
 
         normal_image = np.zeros_like(Masses)
         normal_image[Masses > 0] = Masses[Masses > 0]/Volume[Masses > 0]

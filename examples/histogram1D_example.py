@@ -27,32 +27,32 @@ for ii in range(2):
     # bins = np.logspace(-2, np.log10(r_max), 1000)
 
     B2 = np.sum((snap["0_MagneticField"]) ** 2, axis=1)
-    Volumes = snap["0_Volumes"]
+    Volume = snap["0_Volume"]
     Masses = snap["0_Masses"]
     Temperatures = snap["0_Temperatures"]
 
     if ii == 0:
         h_r = pa.Histogram(r[index], bins, verbose=True)
-        B2TimesVolumes = h_r.hist((B2 * Volumes)[index])
-        Volumes = h_r.hist(Volumes[index])
+        B2TimesVolume = h_r.hist((B2 * Volume)[index])
+        Volume = h_r.hist(Volume[index])
         TTimesMasses = h_r.hist((Masses * Temperatures)[index])
         Masses = h_r.hist(Masses[index])
 
-        axes[0].loglog(h_r.bin_centers, Masses / Volumes)
-        axes[1].loglog(h_r.bin_centers, B2TimesVolumes / Volumes)
+        axes[0].loglog(h_r.bin_centers, Masses / Volume)
+        axes[1].loglog(h_r.bin_centers, B2TimesVolume / Volume)
         axes[2].loglog(h_r.bin_centers, TTimesMasses / Masses)
 
         if pa.settings.use_units:
             axes[0].set_xlabel(h_r.bin_centers.label(r"\mathrm{radius}\;"))
-            axes[0].set_ylabel((Masses / Volumes).label("\\rho"))
-            axes[1].set_ylabel((B2TimesVolumes / Volumes).label("B^2"))
+            axes[0].set_ylabel((Masses / Volume).label("\\rho"))
+            axes[1].set_ylabel((B2TimesVolume / Volume).label("B^2"))
             axes[2].set_ylabel((TTimesMasses / Masses).label("T"))
     else:
-        B2TimesVolumes, edges = np.histogram(
-            r[index], weights=(B2 * Volumes)[index], bins=bins
+        B2TimesVolume, edges = np.histogram(
+            r[index], weights=(B2 * Volume)[index], bins=bins
         )
 
-        Volumes, edges = np.histogram(r[index], weights=Volumes[index], bins=bins)
+        Volume, edges = np.histogram(r[index], weights=Volume[index], bins=bins)
 
         TTimesMasses, edges = np.histogram(
             r[index], weights=(Masses * Temperatures)[index], bins=bins
@@ -62,8 +62,8 @@ for ii in range(2):
 
         bin_centers = 0.5 * (edges[1:] + edges[:-1])
 
-        axes[0].loglog(bin_centers, Masses / Volumes, "--")
-        axes[1].loglog(bin_centers, B2TimesVolumes / Volumes, "--")
+        axes[0].loglog(bin_centers, Masses / Volume, "--")
+        axes[1].loglog(bin_centers, B2TimesVolume / Volume, "--")
         axes[2].loglog(bin_centers, TTimesMasses / Masses, "--")
 
 plt.show()

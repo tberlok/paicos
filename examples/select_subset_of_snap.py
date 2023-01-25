@@ -24,6 +24,6 @@ new_index = further_selected_snap2['0_Temperatures'] < 6.5e7 * K
 
 further_selected_snap3 = further_selected_snap2.select(new_index)
 
-further_selected_snap3['0_Volumes']
+further_selected_snap3['0_Volume']
 
 further_selected_snap3['0_Velocities']

@@ -77,7 +77,7 @@ class Projector(ImageCreator):
             self.snap = self.snap.select(self.index)
 
         # Calculate the smoothing length
-        self.hsml = np.cbrt(nvol*(self.snap["0_Volumes"]) / (4.0*np.pi/3.0))
+        self.hsml = np.cbrt(nvol*(self.snap["0_Volume"]) / (4.0*np.pi/3.0))
 
         self.pos = self.snap['0_Coordinates']
 

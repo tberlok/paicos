@@ -33,7 +33,7 @@ def test_slicer_writer_and_reader(show=False):
                                    basename='red_slice_{}'.format(direction))
 
         Density = slicer.slice_variable(snap['0_Density'])
-        Volumes = slicer.slice_variable('0_Volumes')
+        Volume = slicer.slice_variable('0_Volume')
 
         image_file.save_image('0_Density', Density)
 
@@ -46,7 +46,7 @@ def test_slicer_writer_and_reader(show=False):
                                    mode='a')
 
         # Now add the temperatures as well
-        image_file.save_image('0_Volumes', Volumes)
+        image_file.save_image('0_Volume', Volume)
 
         if show:
             # Make a plot

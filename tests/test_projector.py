@@ -31,17 +31,17 @@ def test_projector(show=False):
 
             Masses = projector.project_variable('0_Masses')
 
-            Volumes = projector.project_variable('0_Volumes')
+            Volume = projector.project_variable('0_Volume')
 
             image_file.save_image('0_Masses', Masses)
-            image_file.save_image('0_Volumes', Volumes)
+            image_file.save_image('0_Volume', Volume)
 
             # Move from temporary filename to final filename
             image_file.finalize()
 
             # Make a plot
             if show:
-                axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
+                axes[ii].imshow(np.array((Masses/Volume)), origin='lower',
                                 extent=np.array(projector.extent),
                                 norm=LogNorm())
 

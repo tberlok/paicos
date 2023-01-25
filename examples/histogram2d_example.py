@@ -11,11 +11,11 @@ T = snap['0_Temperatures']
 if pa.settings.use_units:
     rho = snap['0_Density'].to_physical.astro
     M = snap['0_Masses'].to_physical.astro
-    V = snap['0_Volumes'].to_physical.astro
+    V = snap['0_Volume'].to_physical.astro
 else:
     rho = snap['0_Density']
     M = snap['0_Masses']
-    V = snap['0_Volumes']
+    V = snap['0_Volume']
 
 # Set up bins
 bins_T = [T.min(), T.max()/10, 200]

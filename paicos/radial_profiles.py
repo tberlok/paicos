@@ -41,10 +41,10 @@ class RadialProfiles:
         self.copy_over_snapshot_information()
 
         variable_strings = ['0_Masses',
-                            '0_Volumes',
+                            '0_Volume',
                             '0_TemperaturesTimesMasses',
-                            '0_MagneticFieldSquaredTimesVolumes',
-                            '0_PressureTimesVolumes']
+                            '0_MagneticFieldSquaredTimesVolume',
+                            '0_PressureTimesVolume']
 
         for variable_str in variable_strings:
             self.add_profile(variable_str)

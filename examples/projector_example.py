@@ -34,10 +34,10 @@ for use_units in [False, True]:
 
         Masses = projector.project_variable('0_Masses')
         print(Masses[0, 0])
-        Volumes = projector.project_variable('0_Volumes')
+        Volume = projector.project_variable('0_Volume')
 
         image_file.save_image('0_Masses', Masses)
-        image_file.save_image('0_Volumes', Volumes)
+        image_file.save_image('0_Volume', Volume)
 
         # snap.get_temperatures()
         TemperaturesTimesMasses = projector.project_variable(
@@ -48,7 +48,7 @@ for use_units in [False, True]:
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.array((Masses/Volumes)), origin='lower',
+        axes[ii].imshow(np.array((Masses/Volume)), origin='lower',
                         extent=np.array(projector.extent), norm=LogNorm())
     plt.show()
 

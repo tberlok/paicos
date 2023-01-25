@@ -18,6 +18,6 @@ pa.use_only_user_functions(True)
 
 # Should then fail
 try:
-    snap['0_Volumes']
+    snap['0_Volume']
 except RuntimeError:
     print('Expected failure achieved...')

@@ -30,14 +30,14 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     p_nested = pa.NestedProjector(snap, center, widths, direction, npix=512)
 
     Masses = p_nested.project_variable('0_Masses')
-    Volume = p_nested.project_variable('0_Volumes')
+    Volume = p_nested.project_variable('0_Volume')
 
     nested_image = Masses/Volume
 
     p = pa.Projector(snap, center, widths, direction, npix=512)
 
     Masses = p.project_variable('0_Masses')
-    Volume = p.project_variable('0_Volumes')
+    Volume = p.project_variable('0_Volume')
 
     normal_image = Masses/Volume
 

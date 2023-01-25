@@ -27,7 +27,7 @@ class Slicer(ImageCreator):
         # Pre-select a narrow region around the region-of-interest
         pos = snap["0_Coordinates"]
 
-        thickness = 4.0*np.cbrt((snap["0_Volumes"]) / (4.0*np.pi/3.0))
+        thickness = 4.0*np.cbrt((snap["0_Volume"]) / (4.0*np.pi/3.0))
 
         self.slice = util.get_index_of_slice_region(pos, center, widths,
                                                     thickness, snap.box)

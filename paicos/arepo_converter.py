@@ -232,8 +232,8 @@ class ArepoConverter:
             if name == 'Coordinates':
                 units = aunits['unit_length']*a/h
             elif name == 'Density':
-                units = find('Masses')/find('Volumes')
-            elif name == 'Volumes':
+                units = find('Masses')/find('Volume')
+            elif name == 'Volume':
                 units = find('Coordinates')**3
             elif name in unitless_vars:
                 units = ''
