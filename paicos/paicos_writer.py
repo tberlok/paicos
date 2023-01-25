@@ -6,13 +6,15 @@ import h5py
 class PaicosWriter:
     """
     """
-    def __init__(self, snap_or_oject_containing_snap, basedir,
+    def __init__(self, snap_or_object_containing_snap, basedir,
                  basename="paicos_file", mode='w'):
 
-        if isinstance(snap_or_oject_containing_snap, Snapshot):
-            self.snap = snap_or_oject_containing_snap
+        if isinstance(snap_or_object_containing_snap, Snapshot):
+            self.snap = snap_or_object_containing_snap
         else:
-            self.snap = snap_or_oject_containing_snap.snap
+            self.snap = snap_or_object_containing_snap.snap
+
+        self.arepo_snap_filename = self.snap.first_snapfile_name
 
         self.mode = mode
 
@@ -27,7 +29,6 @@ class PaicosWriter:
         name = basename + '_{:03d}.hdf5'.format(snapnum)
         self.filename = basedir + name
         self.tmp_filename = basedir + 'tmp_' + name
-        self.arepo_snap_filename = self.snap.first_snapfile_name
 
         if mode == 'w':
             self.copy_over_snapshot_information()

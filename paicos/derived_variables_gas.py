@@ -19,6 +19,12 @@ def get_variable_function_gas(variable_str, info=False):
     def MagneticFieldSquared(snap):
         return np.sum(snap['0_MagneticField']**2, axis=1)
 
+    def MagneticFieldStrength(snap):
+        return np.sqrt(np.sum(snap['0_MagneticField']**2, axis=1))
+
+    def VelocityMagnitude(snap):
+        return np.sqrt(np.sum(snap['0_Velocities']**2, axis=1))
+
     def MagneticFieldSquaredTimesVolumes(snap):
         variable = snap["0_Volumes"]*np.sum(snap['0_MagneticField']**2, axis=1)
         return variable
@@ -184,6 +190,7 @@ def get_variable_function_gas(variable_str, info=False):
         "0_EnergyDissipation": EnergyDissipation,
         "0_MachnumberTimesEnergyDissipation": MachnumberTimesEnergyDissipation,
         "0_MagneticFieldSquared": MagneticFieldSquared,
+        "0_MagneticFieldStrength": MagneticFieldStrength,
         "0_MagneticFieldSquaredTimesVolumes": MagneticFieldSquaredTimesVolumes,
         "0_Pressure": Pressure,
         "0_PressureTimesVolumes": PressureTimesVolumes,
@@ -194,6 +201,7 @@ def get_variable_function_gas(variable_str, info=False):
         "0_MeanMolecularWeight": MeanMolecularWeight,
         "0_NumberDensity": NumberDensity,
         "0_MagneticCurvature": MagneticCurvature,
+        "0_VelocityMagnitude": VelocityMagnitude,
         "0_VelocityCurvature": VelocityCurvature
     }
 
