@@ -1,3 +1,5 @@
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/tberlok/paicos/tree/main.svg?style=svg&circle-token=dbdb37aa907d919a167a8ef5ccf197c0d358c300)](https://dl.circleci.com/status-badge/redirect/gh/tberlok/paicos/tree/main)
+
 # Paicos
 
 A somewhat bare-bones python package for making projections and slices of
