@@ -1,5 +1,5 @@
 
-def test_arepo_image():
+def test_arepo_image(load_catalog=False):
     import paicos as pa
     import numpy as np
     import h5py
@@ -7,7 +7,7 @@ def test_arepo_image():
     image_filename = pa.root_dir + "/data/test_arepo_image_format_247.hdf5"
 
     snap = pa.Snapshot(pa.root_dir + '/data/', 247,
-                       snap_basename='reduced_snap')
+                       snap_basename='reduced_snap', load_catalog=load_catalog)
 
     # A length-3 array giving the center of the image.
     center = [250000, 400000, 500000]
@@ -48,11 +48,12 @@ def test_arepo_image():
 
     # Let us also save information about the 10 most massive FOF groups
     # (sorted according to their M200_crit)
-    index = np.argsort(snap.Cat.Group['Group_M_Crit200'])[::-1]
-    for key in snap.Cat.Group.keys():
-        image_file.write_data(key, snap.Cat.Group[key][index[:10]],
-                              group='Catalog',
-                              group_attrs={'Description': 'Most massive FOFs'})
+    if load_catalog:
+        index = np.argsort(snap.Cat.Group['Group_M_Crit200'])[::-1]
+        for key in snap.Cat.Group.keys():
+            image_file.write_data(key, snap.Cat.Group[key][index[:10]],
+                                  group='Catalog',
+                                  group_attrs={'Description': 'Most massive FOFs'})
 
     image_file.finalize()
 
@@ -60,8 +61,9 @@ def test_arepo_image():
         print(list(f.keys()))
         print(list(f['image_info'].keys()))
         print(dict(f['Coordinates'].attrs))
-        print(list(f['Catalog'].keys()))
+        if load_catalog:
+            print(list(f['Catalog'].keys()))
 
 
 if __name__ == '__main__':
-    test_arepo_image()
+    test_arepo_image(load_catalog=True)
