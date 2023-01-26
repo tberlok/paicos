@@ -11,3 +11,6 @@ print_info_when_deriving_variables = True
 # Load all fields as double precision arrays (FALSE is currently not supported
 # by the Cython routines, so True is strongly recommended)
 double_precision = True
+
+# OpenMP info
+give_openMP_warnings = True

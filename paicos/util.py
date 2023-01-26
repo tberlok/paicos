@@ -13,7 +13,7 @@ def get_project_root_dir():
     for ii in range(1, len(path_split)-1):
         root_dir += '/' + path_split[ii]
 
-    return root_dir
+    return root_dir + '/'
 
 
 root_dir = get_project_root_dir()
@@ -165,6 +165,9 @@ def check_if_omp_has_issues(verbose=True):
 
     if openMP_has_issues is not None:
         return openMP_has_issues
+
+    if settings.give_openMP_warnings is False:
+        verbose = False
 
     max_threads = get_openmp_settings(0, False)
     if settings.numthreads > max_threads:

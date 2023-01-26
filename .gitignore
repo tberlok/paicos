@@ -4,5 +4,4 @@
 *.html
 *__pycache__*
 build/
-experimental
-old-scripts
+user_settings.py

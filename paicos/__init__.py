@@ -47,3 +47,19 @@ def print_info_when_deriving_variables(option):
     Input: a boolean controlling whether to provide info to terminal.
     """
     settings.print_info_when_deriving_variables = option
+
+
+def give_openMP_warnings(option):
+    settings.give_openMP_warnings = option
+
+
+def user_settings_exists():
+    import os
+    if os.path.exists(root_dir + 'user_settings.py'):
+        return True
+    else:
+        return False
+
+
+if user_settings_exists():
+    import user_settings
