@@ -215,20 +215,24 @@ class Snapshot(dict):
         PartType_str = 'PartType{}'.format(PartType)
         with h5py.File(self.first_snapfile_name, 'r') as file:
             if PartType_str in list(file.keys()):
-                keys = list(file[PartType_str].keys())
+                load_keys = list(file[PartType_str].keys())
                 if verbose:
                     print('\nKeys for ' + PartType_str + ' in the hdf5 file:')
-                    for key in (sorted(keys)):
+                    for key in (sorted(load_keys)):
                         print(key)
                     # if PartType == 0:
                     from .derived_variables import get_variable_function
                     print('\nPossible derived variables are:')
-                    keys = get_variable_function(str(PartType) + '_', True)
-                    for key in (sorted(keys)):
+                    dkeys = get_variable_function(str(PartType) + '_', True)
+
+                    if 'Masses' not in load_keys:
+                        dkeys.append('{}_Masses'.format(PartType))
+
+                    for key in (sorted(dkeys)):
                         print(key)
                     return None
                 else:
-                    return keys
+                    return load_keys
             else:
                 print('PartType not in hdf5 file')
 
@@ -405,6 +409,11 @@ class Snapshot(dict):
                 raise RuntimeError(msg)
             parttype = int(key[0])
             name = key[2:]
+
+            if parttype >= self.nspecies:
+                msg = 'Simulation only has {} species.'
+                raise RuntimeError(msg.format(self.nspecies))
+
             if name in self.info(parttype, False):
                 self.load_data(parttype, name)
             else:

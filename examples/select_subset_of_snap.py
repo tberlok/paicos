@@ -5,6 +5,9 @@ snap = pa.Snapshot(pa.root_dir + '/data', 247)
 
 snap['0_MagneticField']
 snap['1_Coordinates']
+snap['1_Masses']
+del snap['1_Masses']
+
 index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
 selected_snap = snap.select(index)
 
@@ -14,6 +17,7 @@ dm_cut = np.ones(selected_snap['1_Coordinates'].shape[0], dtype=bool)
 dm_cut[:10000] = False
 
 further_selected_snap = selected_snap.select(dm_cut, 1)
+further_selected_snap['1_Masses']
 
 K = further_selected_snap['0_Temperatures'].unit_quantity
 new_index = further_selected_snap['0_Temperatures'] > 5e7 * K

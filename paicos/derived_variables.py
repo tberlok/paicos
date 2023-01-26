@@ -17,7 +17,7 @@ def get_variable_function(variable_str, info=False):
         raise RuntimeError(msg)
 
     parttype = int(variable_str[0])
-    # name = variable_str[2:]
+    name = variable_str[2:]
 
     # User functions are always preferred
     from .util import user_functions
@@ -45,6 +45,28 @@ def get_variable_function(variable_str, info=False):
     else:
         if info:
             func_or_list = list({}.keys())
+
+        elif name == 'Masses':
+
+            def get_masses_from_header(snap):
+                """
+                Get mass of particle type from the mass table
+                """
+                import numpy as np
+
+                if parttype in snap.dic_selection_index.keys():
+                    npart = snap.dic_selection_index[parttype].shape[0]
+                else:
+                    npart = snap.npart[parttype]
+                if snap.masstable[parttype] != 0:
+                    return np.ones(npart)*snap.masstable[parttype]
+                else:
+                    msg = ('Tried to get {} from the mass_table but '
+                           'snap.masstable[{}] is zero')
+                    raise RuntimeError(msg.format(variable_str, parttype))
+
+            func_or_list = get_masses_from_header
+
         else:
             msg = ('\n\nA function to calculate the variable {} is not ' +
                    'implemented!\n\nIn fact, no derived variables are ' +
