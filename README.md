@@ -76,9 +76,6 @@ python examples/histogram2d_example.py
 # Loading images
 python examples/image_reader_example.py
 
-# Creating radial profiles
-python examples/radial_profiles_example.py
-
 # Setting up user-defined functions for obtaining derived variables
 python examples/user_defined_functions_example.py
 
