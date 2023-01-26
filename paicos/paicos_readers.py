@@ -41,6 +41,13 @@ class PaicosReader(dict):
             if isinstance(f[name], h5py._hl.dataset.Dataset):
                 self[name] = util.load_dataset(f, name, group=group,
                                                converter=self.converter)
+            elif isinstance(f[name], h5py._hl.group.Group):
+                for data_name in f[name].keys():
+                    data = util.load_dataset(f, data_name, group=name,
+                                             converter=self.converter)
+                    if name not in self:
+                        self[name] = {}
+                    self[name][data_name] = data
 
 
 class ImageReader(PaicosReader):
