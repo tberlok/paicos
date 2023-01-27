@@ -1,5 +1,6 @@
 from . import settings
 from . import units
+import numpy as np
 
 user_functions = {}
 
@@ -26,16 +27,6 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     If the data has units then they are saved as an attribute.
     """
 
-    # Some tests for saving of TimeSeries
-    if isinstance(data, units.PaicosTimeSeries):
-        assert group is not None
-        if group_attrs is None:
-            group_attrs = {'PaicosTimeSeries': True}
-        else:
-            assert isinstance(group_attrs, dict)
-            if 'PaicosTimeSeries' not in group_attrs:
-                group_attrs.update({'PaicosTimeSeries': True})
-
     # Allow for storing data sets in groups or nested groups
     if group is None:
         path = hdf5file
@@ -50,7 +41,10 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     # Save data set
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
-        attrs = {'unit': data.unit.to_string()}
+        if isinstance(data, units.PaicosTimeSeries):
+            attrs = data.hdf5_attrs()
+        else:
+            attrs = {'unit': data.unit.to_string()}
         for key in attrs.keys():
             path[name].attrs[key] = attrs[key]
     else:
@@ -60,6 +54,8 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     if isinstance(data, units.PaicosTimeSeries):
         if 'scale_factor' not in path.keys():
             path.create_dataset('scale_factor', data=data.a)
+        else:
+            np.testing.assert_array_equal(path['scale_factor'][...], data.a)
 
 
 def load_dataset(hdf5file, name, converter=None, group=None):

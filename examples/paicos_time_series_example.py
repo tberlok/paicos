@@ -21,7 +21,6 @@ plt.loglog(B.a, Bphys, label=r'$B_{\mathrm{phys}}$')
 plt.xlabel('a')
 plt.ylabel(Bc.label() + r'$\;,\;$' + Bphys.label())
 plt.legend(frameon=False)
-plt.show()
 
 plt.figure(2)
 plt.clf()
