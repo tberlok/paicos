@@ -240,6 +240,7 @@ class ArepoConverter:
             elif name == 'Masses':
                 units = aunits['unit_mass']/h
             elif name == 'EnergyDissipation':
+                raise RuntimeError('Needs checking!')
                 units = aunits['unit_energy']/h
             elif name == 'InternalEnergy':
                 units = aunits['unit_energy']/aunits['unit_mass']

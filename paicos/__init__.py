@@ -51,6 +51,25 @@ def give_openMP_warnings(option):
     settings.give_openMP_warnings = option
 
 
+def set_aliases(aliases):
+    """
+    Assign a list of aliases for use as keys in snapshot objects.
+
+    input (dictionary): e.g.
+
+    aliases = {'0_Density': 'dens',
+           '0_Temperatures': 'T',
+           '0_MeanMolecularWeight': 'mu'}
+    """
+    msg = 'Your user-set aliases seem to not be unique'
+    assert len(set(aliases.values())) == len(aliases.values()), msg
+
+    inverse = {aliases[key]: key for key in aliases.keys()}
+    settings.aliases = aliases
+    settings.inverse_aliases = inverse
+    settings.use_aliases = True
+
+
 def user_settings_exists():
     import os
     if os.path.exists(root_dir + 'user_settings.py'):

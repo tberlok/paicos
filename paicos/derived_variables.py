@@ -1,3 +1,4 @@
+from . import settings
 
 
 def get_variable_function(variable_str, info=False):
@@ -8,6 +9,12 @@ def get_variable_function(variable_str, info=False):
     """
 
     assert type(variable_str) is str
+
+    # if settings.use_aliases:
+    #     if variable_str in settings.inverse_aliases.keys():
+    #         raise RuntimeError('load_data is not enabled for aliases')
+    #     if variable_str in settings.aliases:
+    #         variable_str = settings.aliases[variable_str]
 
     if not variable_str[0].isnumeric() or variable_str[1] != '_':
         msg = ('\n\nKeys are expected to consist of an integer ' +
@@ -99,6 +106,11 @@ def get_variable(snap, variable_str):
     name = variable_str[2:]
     if name in snap.info(parttype, False):
         snap.load_data(parttype, name)
+
+        if settings.use_aliases:
+            if variable_str in settings.aliases.keys():
+                variable_str = settings.aliases[variable_str]
+
         return snap[variable_str]
     else:
         return get_variable_function(variable_str, False)(snap)
