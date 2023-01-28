@@ -3,6 +3,7 @@ import numpy as np
 from astropy import units as u
 from . import units as pu
 from astropy.cosmology import LambdaCDM
+from . import settings
 
 
 class ArepoConverter:
@@ -145,7 +146,7 @@ class ArepoConverter:
                                            Ob0=OmegaBaryon, Ode0=OmegaLambda)
             # Current age of the universe and look back time
             self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
-            self.lookback_time = cosmo.lookback_time(self.z)
+            self.lookback_time = self.get_lookback_time(self.z)
         else:
             self.time = time * self.arepo_units['unit_time']
             self.a = 1
@@ -155,6 +156,25 @@ class ArepoConverter:
         self.length = self.get_paicos_quantity(1, 'Coordinates')
         self.mass = self.get_paicos_quantity(1, 'Masses')
         self.velocity = self.get_paicos_quantity(1, 'Velocities')
+
+    def get_lookback_time(self, z):
+        lookback_time = self.cosmo.lookback_time(z)
+
+        return self.__convert_to_paicos(lookback_time, z)
+
+    def get_age(self, z):
+        age = self.cosmo.lookback_time(1e100) - self.cosmo.lookback_time(z)
+
+        return self.__convert_to_paicos(age, z)
+
+    def __convert_to_paicos(self, time, z):
+        if settings.use_units:
+            a = 1.0/(z + 1.)
+            if isinstance(a, np.ndarray):
+                time = pu.PaicosTimeSeries(time, a=a, h=self.h)
+            else:
+                time = pu.PaicosQuantity(time, a=a, h=self.h)
+        return time
 
     def get_paicos_quantity(self, data, name, arepo_code_units=True):
 

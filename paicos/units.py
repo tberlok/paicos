@@ -102,6 +102,10 @@ class PaicosQuantity(Quantity):
         assert h is not None, 'Paicos quantity is missing a value for h'
         assert a is not None, 'Paicos quantity is missing a value for a'
 
+        if hasattr(value, 'unit'):
+            unit = value.unit
+            value = value.value
+
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
                               order=order, subok=subok, ndmin=ndmin)
 
@@ -147,11 +151,11 @@ class PaicosQuantity(Quantity):
         """
         return 1./self._a - 1.
 
-    def lookback(self, snap):
-        return snap.converter.cosmo.lookback_time(self.z)
+    def lookback_time(self, reader_object):
+        return reader_object.converter.get_lookback_time(self.z)
 
-    def age(self, snap):
-        return snap.converter.cosmo.lookback_time(1e100) - self.lookback(snap)
+    def age(self, reader_object):
+        return reader_object.converter.get_age(self.z)
 
     def __get_unit_dictionaries(self):
         codic = {}

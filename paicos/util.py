@@ -42,7 +42,7 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
         if isinstance(data, units.PaicosTimeSeries):
-            attrs = data.hdf5_attrs()
+            attrs = data.hdf5_attrs
         else:
             attrs = {'unit': data.unit.to_string()}
         for key in attrs.keys():
@@ -87,11 +87,20 @@ def load_dataset(hdf5file, name, converter=None, group=None):
 
     data = path[name][()]
 
+    h = converter.h
+
     if settings.use_units:
         if 'unit' in path[name].attrs.keys():
             from . import units as pu
             unit = path[name].attrs['unit']
-            data = pu.PaicosQuantity(data, unit, a=converter.a, h=converter.h)
+            if 'Paicos' in path[name].attrs.keys():
+                if path[name].attrs['Paicos'] == 'PaicosTimeSeries':
+                    a = path['scale_factor'][...]
+                    data = pu.PaicosTimeSeries(data, unit, a=a, h=h)
+                elif path[name].attrs['Paicos'] == 'PaicosQuantity':
+                    data = pu.PaicosQuantity(data, unit, a=converter.a, h=h)
+            else:
+                data = pu.PaicosQuantity(data, unit, a=converter.a, h=h)
     return data
 
 

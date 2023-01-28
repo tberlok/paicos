@@ -7,7 +7,7 @@ class PaicosWriter:
     """
     """
     def __init__(self, snap_or_object_containing_snap, basedir,
-                 basename="paicos_file", mode='w'):
+                 basename="paicos_file", add_snapnum=True, mode='w'):
 
         if isinstance(snap_or_object_containing_snap, Snapshot):
             self.snap = snap_or_object_containing_snap
@@ -26,7 +26,12 @@ class PaicosWriter:
         self.basedir = basedir
         self.basename = basename
 
-        name = basename + '_{:03d}.hdf5'.format(snapnum)
+        name = basename
+
+        if add_snapnum:
+            name += '_{:03d}.hdf5'.format(snapnum)
+        else:
+            name += '.hdf5'
         self.filename = basedir + name
         self.tmp_filename = basedir + 'tmp_' + name
 
@@ -89,3 +94,15 @@ class PaicosWriter:
         import os
         if self.mode == 'w':
             os.rename(self.tmp_filename, self.filename)
+
+
+class PaicosTimeSeriesWriter(PaicosWriter):
+    """
+    """
+    def __init__(self, snap_or_object_containing_snap, basedir,
+                 basename="paicos_file", add_snapnum=False, mode='w'):
+
+        super().__init__(snap_or_object_containing_snap, basedir,
+                         basename="paicos_time_series",
+                         add_snapnum=add_snapnum,
+                         mode=mode)

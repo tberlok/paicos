@@ -5,12 +5,18 @@ import h5py
 
 class PaicosReader(dict):
 
-    def __init__(self, basedir, snapnum, basename="projection", load_all=True):
+    def __init__(self, basedir, snapnum=None, basename="projection",
+                 load_all=True):
 
         if basedir[-1] != '/':
             basedir += '/'
         #
-        self.filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
+        self.filename = basedir + basename
+
+        if snapnum is not None:
+            self.filename += '_{:03d}.hdf5'.format(snapnum)
+        else:
+            self.filename += '.hdf5'
 
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)
