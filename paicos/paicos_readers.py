@@ -312,6 +312,7 @@ class PaicosReader(dict):
                 units = aunits['unit_mass']/h
             elif name == 'EnergyDissipation':
                 units = aunits['unit_energy']/h
+                raise RuntimeError('Needs checking!')
             elif name == 'InternalEnergy':
                 units = aunits['unit_energy']/aunits['unit_mass']
             elif name == 'MagneticField':
