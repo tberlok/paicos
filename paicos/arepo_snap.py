@@ -136,6 +136,8 @@ class Snapshot(PaicosReader):
 
         self.derived_data_counter = 0
 
+        self.__get_auto_comple_list()
+
     def info(self, PartType, verbose=True):
         """
         This function provides information about the keys of a certain
@@ -392,14 +394,25 @@ class Snapshot(PaicosReader):
                 P_key = settings.aliases[P_key]
         return super().__getitem__(P_key)
 
+    def __get_auto_comple_list(self):
+        self._auto_list = []
+
+        for i in range(self.nspecies):
+            for name in self.info(i, False):
+                P_key = str(i) + '_' + name
+                if settings.use_aliases:
+                    if P_key in settings.aliases.keys():
+                        P_key = settings.aliases[P_key]
+                self._auto_list.append(P_key)
+
     def _ipython_key_completions_(self):
         """
-        Auto-completion of dictionary. For now just the contents
-        of the gas cells. Should add the other parttypes as well.
-        Should also make it work with aliases...
+        Auto-completion of dictionary.
+
+        Only works with variables that can directly loaded.
         """
 
-        return ['0_' + name for name in self.info(0, False)]
+        return self._auto_list
 
     def remove_data(self, particle_type, blockname):
         """
