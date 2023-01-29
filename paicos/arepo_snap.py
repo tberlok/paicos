@@ -392,6 +392,15 @@ class Snapshot(PaicosReader):
                 P_key = settings.aliases[P_key]
         return super().__getitem__(P_key)
 
+    def _ipython_key_completions_(self):
+        """
+        Auto-completion of dictionary. For now just the contents
+        of the gas cells. Should add the other parttypes as well.
+        Should also make it work with aliases...
+        """
+
+        return ['0_' + name for name in self.info(0, False)]
+
     def remove_data(self, particle_type, blockname):
         """
         Remove data from object. Sometimes useful for for large datasets
