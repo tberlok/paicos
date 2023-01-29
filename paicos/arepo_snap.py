@@ -117,7 +117,7 @@ class Snapshot(dict):
         f.close()
 
         self.converter = ArepoConverter(self.first_snapfile_name)
-        if self.Parameters['ComovingIntegrationOn'] == 1:
+        if self.converter.ComovingIntegrationOn:
             self.age = self.converter.age
             self.lookback_time = self.converter.lookback_time
             self.z = self.converter.z
@@ -155,7 +155,7 @@ class Snapshot(dict):
 
         # get subfind catalog?
         if load_catalog is None:
-            if self.Parameters['ComovingIntegrationOn'] == 1:
+            if self.converter.ComovingIntegrationOn:
                 load_catalog = True
             else:
                 load_catalog = False

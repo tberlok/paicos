@@ -97,10 +97,11 @@ class PaicosQuantity(Quantity):
     """
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
-                subok=False, ndmin=0, h=None, a=None):
+                subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
 
         assert h is not None, 'Paicos quantity is missing a value for h'
         assert a is not None, 'Paicos quantity is missing a value for a'
+        assert comoving_sim is not None, 'is this from a comoving_sim?'
 
         if hasattr(value, 'unit'):
             unit = value.unit
@@ -111,6 +112,7 @@ class PaicosQuantity(Quantity):
 
         obj._h = h
         obj._a = a
+        obj._comoving_sim = comoving_sim
 
         return obj
 
@@ -135,7 +137,10 @@ class PaicosQuantity(Quantity):
         """
         The scale factor.
         """
-        return self._a
+        if self._comoving_sim:
+            return self._a
+        else:
+            return 1.
 
     @property
     def h(self):
@@ -149,13 +154,33 @@ class PaicosQuantity(Quantity):
         """
         The redshift.
         """
-        return 1./self._a - 1.
+        if self._comoving_sim:
+            return 1./self._a - 1.
+        else:
+            return 0.
 
     def lookback_time(self, reader_object):
-        return reader_object.converter.get_lookback_time(self.z)
+        if self._comoving_sim:
+            return reader_object.converter.get_lookback_time(self.z)
+        else:
+            msg = 'lookback_time not defined for non-comoving sim'
+            raise RuntimeError(msg)
 
     def age(self, reader_object):
-        return reader_object.converter.get_age(self.z)
+        if self._comoving_sim:
+            return reader_object.converter.get_age(self.z)
+        else:
+            msg = 'age not defined for non-comoving sim'
+            raise RuntimeError(msg)
+
+    @property
+    def time(self):
+        if self._comoving_sim:
+            msg = 'time not defined for comoving sim'
+            raise RuntimeError(msg)
+        else:
+            from astropy import units as u
+            return self._a*u.Unit('arepo_time')
 
     def __get_unit_dictionaries(self):
         codic = {}
@@ -486,7 +511,7 @@ class PaicosTimeSeries(PaicosQuantity):
     """
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
-                subok=False, ndmin=0, h=None, a=None):
+                subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
 
         if isinstance(value, list):
             a = np.array([value[i].a for i in range(value.shape[0])])
@@ -504,10 +529,12 @@ class PaicosTimeSeries(PaicosQuantity):
         assert len(value.shape) == 1, msg
 
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
-                              order=order, subok=subok, ndmin=ndmin, h=h, a=a)
+                              order=order, subok=subok, ndmin=ndmin, h=h, a=a,
+                              comoving_sim=comoving_sim)
 
         obj._h = h
         obj._a = a
+        obj._comoving_sim = comoving_sim
 
         return obj
 

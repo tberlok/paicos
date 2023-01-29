@@ -134,11 +134,11 @@ class ArepoConverter:
             phys_type = key.split('_')[1]
             u.def_physical_type(self.arepo_units[key], phys_type)
 
-        self.ComovingIntegrationOn = ComovingIntegrationOn
+        self.ComovingIntegrationOn = bool(ComovingIntegrationOn)
 
         self.h = HubbleParam
 
-        if ComovingIntegrationOn == 1:
+        if ComovingIntegrationOn:
             self.a = self.scale_factor = scale_factor
             self.z = self.redshift = redshift
             # Set up LambdaCDM cosmology to calculate times, etc
@@ -208,7 +208,7 @@ class ArepoConverter:
             aunits = self.arepo_units_in_cgs
 
         # Turn off a and h if we are not comoving or if h = 1
-        if self.ComovingIntegrationOn == 1:
+        if self.ComovingIntegrationOn:
             a = pu.small_a
         else:
             a = u.Unit('')

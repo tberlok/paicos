@@ -29,7 +29,7 @@ class PaicosReader(dict):
         self.h = self.converter.h
         self.scale_factor = self.a = self.converter.a
 
-        if self.Parameters['ComovingIntegrationOn'] == 1:
+        if self.converter.ComovingIntegrationOn:
             self.redshift = self.z = self.converter.z
             self.age = self.converter.age
             self.lookback_time = self.converter.lookback_time
