@@ -58,7 +58,7 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
             np.testing.assert_array_equal(path['scale_factor'][...], data.a)
 
 
-def load_dataset(hdf5file, name, converter=None, group=None):
+def load_dataset(hdf5file, name, group=None):
     """
     Load dataset, returning a paicos quantity if the attributes
     contain units and units are enabled.
@@ -72,10 +72,11 @@ def load_dataset(hdf5file, name, converter=None, group=None):
             msg = "'util.load_dataset' needs a file name or an open hdf5 file"
             raise RuntimeError(msg)
 
-    # Construct a convertor object if it was not passed
-    if converter is None:
-        from .arepo_converter import ArepoConverter
-        converter = ArepoConverter(hdf5file.filename)
+    comoving_sim = bool(hdf5file['Parameters'].attrs['ComovingIntegrationOn'])
+    Time = hdf5file['Header'].attrs['Time']
+    h = hdf5file['Parameters'].attrs['HubbleParam']
+    if h == 0. or h == 1.0:
+        h = 1.0
 
     # Allow for loading data sets in groups or nested groups
     if group is None:
@@ -87,20 +88,24 @@ def load_dataset(hdf5file, name, converter=None, group=None):
 
     data = path[name][()]
 
-    h = converter.h
-
     if settings.use_units:
         if 'unit' in path[name].attrs.keys():
             from . import units as pu
             unit = path[name].attrs['unit']
             if 'Paicos' in path[name].attrs.keys():
                 if path[name].attrs['Paicos'] == 'PaicosTimeSeries':
-                    a = path['scale_factor'][...]
-                    data = pu.PaicosTimeSeries(data, unit, a=a, h=h)
+                    if comoving_sim:
+                        Time = path['scale_factor'][...]
+                    else:
+                        Time = path['time'][...]
+                    data = pu.PaicosTimeSeries(data, unit, a=Time, h=h,
+                                               comoving_sim=comoving_sim)
                 elif path[name].attrs['Paicos'] == 'PaicosQuantity':
-                    data = pu.PaicosQuantity(data, unit, a=converter.a, h=h)
+                    data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                                             comoving_sim=comoving_sim)
             else:
-                data = pu.PaicosQuantity(data, unit, a=converter.a, h=h)
+                data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                                         comoving_sim=comoving_sim)
     return data
 
 

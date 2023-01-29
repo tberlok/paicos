@@ -131,6 +131,7 @@ class PaicosQuantity(Quantity):
         # Set Paicos specific parameters
         self._h = getattr(obj, 'h', None)
         self._a = getattr(obj, 'a', None)
+        self._comoving_sim = getattr(obj, 'comoving_sim', None)
 
     @property
     def a(self):
