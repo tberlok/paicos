@@ -1,6 +1,11 @@
 from . import util
 import h5py
+import numpy as np
 import os
+from astropy import units as u
+from . import units as pu
+from astropy.cosmology import LambdaCDM
+from . import settings
 
 
 class PaicosReader(dict):
@@ -8,6 +13,14 @@ class PaicosReader(dict):
     def __init__(self, basedir='.', snapnum=None, basename="snap",
                  load_all=True, to_physical=False,
                  basesubdir='snapdir', verbose=False):
+
+        self.basedir = basedir
+        self.snapnum = snapnum
+        self.basename = basename
+
+        self.to_physical = to_physical
+        self.basesubdir = basesubdir
+        self.verbose = verbose
 
         if basedir[-1] != '/':
             basedir += '/'
@@ -47,22 +60,274 @@ class PaicosReader(dict):
             self.Parameters = dict(f['Parameters'].attrs)
             keys = list(f.keys())
 
-        # self.converter = ArepoConverter(self.filename)
-
-        # self.h = self.converter.h
-        # self.scale_factor = self.a = self.converter.a
-
-        # if self.converter.ComovingIntegrationOn:
-            # self.redshift = self.z = self.converter.z
-            # self.age = self.converter.age
-            # self.lookback_time = self.converter.lookback_time
-        # else:
-            # self.time = self.converter.time
+        # Enable units
+        self.enable_units()
 
         # Load all data sets
-        # if load_all:
-        #     for key in keys:
-        #         self.load_data(key)
+        if load_all:
+            for key in keys:
+                self.load_data(key)
+
+    def enable_units(self):
+        """
+        Initialize arepo units, scale factor (a) and h (HubbleParam).
+
+        The input required is a hdf5 file with the Parameters and Header
+        groups found in arepo snapshots.
+        """
+
+        scale_factor = time = self.Header['Time']
+        redshift = self.Header['Redshift']
+        unit_length = self.Parameters['UnitLength_in_cm'] * u.cm
+        unit_mass = self.Parameters['UnitMass_in_g'] * u.g
+        unit_velocity = self.Parameters['UnitVelocity_in_cm_per_s'] * u.cm/u.s
+        unit_time = unit_length / unit_velocity
+        unit_energy = unit_mass * unit_velocity**2
+        unit_pressure = (unit_mass/unit_length) / unit_time**2
+        unit_density = unit_mass/unit_length**3
+        Omega0 = self.Parameters['Omega0']
+        OmegaBaryon = self.Parameters['OmegaBaryon']
+        OmegaLambda = self.Parameters['OmegaLambda']
+
+        HubbleParam = self.Parameters['HubbleParam']
+        ComovingIntegrationOn = self.Parameters['ComovingIntegrationOn']
+
+        _ns = globals()
+        arepo_mass = u.def_unit(
+            ["arepo_mass"],
+            unit_mass,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo mass unit",
+            format={"latex": r"arepo\_mass"},
+        )
+        arepo_time = u.def_unit(
+            ["arepo_time"],
+            unit_time,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo time unit",
+            format={"latex": r"arepo\_time"},
+        )
+        arepo_length = u.def_unit(
+            ["arepo_length"],
+            unit_length,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo length unit",
+            format={"latex": r"arepo\_length"},
+        )
+        arepo_velocity = u.def_unit(
+            ["arepo_velocity"],
+            unit_velocity,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo velocity unit",
+            format={"latex": r"arepo\_velocity"},
+        )
+        arepo_pressure = u.def_unit(
+            ["arepo_pressure"],
+            unit_pressure,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo pressure unit",
+            format={"latex": r"arepo\_pressure"},
+        )
+        arepo_energy = u.def_unit(
+            ["arepo_energy"],
+            unit_energy,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo energy unit",
+            format={"latex": r"arepo\_energy"},
+        )
+        arepo_density = u.def_unit(
+            ["arepo_density"],
+            unit_density,
+            prefixes=False,
+            namespace=_ns,
+            doc="Arepo density unit",
+            format={"latex": r"arepo\_density"},
+        )
+
+        self.arepo_units_in_cgs = {'unit_length': unit_length,
+                                   'unit_mass': unit_mass,
+                                   'unit_velocity': unit_velocity,
+                                   'unit_time': unit_time,
+                                   'unit_energy': unit_energy,
+                                   'unit_pressure': unit_pressure,
+                                   'unit_density': unit_density}
+
+        self.arepo_units = {'unit_length': arepo_length,
+                            'unit_mass': arepo_mass,
+                            'unit_velocity': arepo_velocity,
+                            'unit_time': arepo_time,
+                            'unit_energy': arepo_energy,
+                            'unit_pressure': arepo_pressure,
+                            'unit_density': arepo_density}
+
+        # Enable arepo units globally
+        for key in self.arepo_units:
+            u.add_enabled_units(self.arepo_units[key])
+            phys_type = key.split('_')[1]
+            u.def_physical_type(self.arepo_units[key], phys_type)
+
+        self.ComovingIntegrationOn = bool(ComovingIntegrationOn)
+        self.comoving_sim = self.ComovingIntegrationOn
+
+        self.h = HubbleParam
+
+        if ComovingIntegrationOn:
+            self.a = self.scale_factor = scale_factor
+            self.z = self.redshift = redshift
+            # Set up LambdaCDM cosmology to calculate times, etc
+            self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
+                                           Ob0=OmegaBaryon, Ode0=OmegaLambda)
+            # Current age of the universe and look back time
+            self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
+            self.lookback_time = self.get_lookback_time(self.z)
+        else:
+            self.time = time * self.arepo_units['unit_time']
+            self.a = 1
+            if self.h == 0:
+                self.h = 1
+
+        self.length = self.get_paicos_quantity(1, 'Coordinates')
+        self.mass = self.get_paicos_quantity(1, 'Masses')
+        self.velocity = self.get_paicos_quantity(1, 'Velocities')
+
+    def get_lookback_time(self, z):
+        lookback_time = self.cosmo.lookback_time(z)
+
+        return self.__convert_to_paicos(lookback_time, z)
+
+    def get_age(self, z):
+        age = self.cosmo.lookback_time(1e100) - self.cosmo.lookback_time(z)
+
+        return self.__convert_to_paicos(age, z)
+
+    def __convert_to_paicos(self, time, z):
+        if settings.use_units:
+            a = 1.0/(z + 1.)
+            if isinstance(a, np.ndarray):
+                time = pu.PaicosTimeSeries(time, a=a, h=self.h,
+                                           comoving_sim=self.comoving_sim)
+            else:
+                time = pu.PaicosQuantity(time, a=a, h=self.h,
+                                         comoving_sim=self.comoving_sim)
+        return time
+
+    def get_paicos_quantity(self, data, name, arepo_code_units=True):
+
+        if hasattr(data, 'unit'):
+            msg = 'Data already had units! {}'.format(name)
+            raise RuntimeError(msg)
+
+        unit = self.find_unit(name, arepo_code_units)
+
+        data = np.array(data)
+
+        return pu.PaicosQuantity(data, unit, a=self.a, h=self.h,
+                                 comoving_sim=self.comoving_sim)
+
+    def find_unit(self, name, arepo_code_units=True):
+        """
+        Here we find the units including the scaling with a and h
+        of a quantity.
+
+        The input 'name' can be either a data attribute
+        from arepo (which currently does not exist for all variables)
+        or it can be a string corresponding to one of the data types,
+        i.e. 'Velocities' or 'Coordinates'
+
+        For this latter, hardcoded, option, I have implemented a few of the
+        gas variables.
+        """
+        import astropy.units as u
+        if arepo_code_units:
+            aunits = self.arepo_units
+        else:
+            aunits = self.arepo_units_in_cgs
+
+        # Turn off a and h if we are not comoving or if h = 1
+        if self.ComovingIntegrationOn:
+            a = pu.small_a
+        else:
+            a = u.Unit('')
+
+        if self.h == 1:
+            h = u.Unit('')
+        else:
+            h = pu.small_h
+
+        if arepo_code_units:
+            def find(name):
+                return self.find_unit(name, True)
+        else:
+            def find(name):
+                return self.find_unit(name, False)
+
+        if isinstance(name, dict):
+            # Create units for the quantity
+            if 'unit' in name:
+                units = 1*u.Unit(name['unit'])
+            else:
+                # Arepo data attributes and the units from the Parameter
+                # group in the hdf5 file are here combined
+                # Create comoving dictionary
+                comoving_dic = {}
+                for key in ['a_scaling', 'h_scaling']:
+                    comoving_dic.update({key: name[key]})
+
+                comoving_dic.update({'small_h': self.h,
+                                     'scale_factor': self.a})
+                units = aunits['unit_length']**(name['length_scaling']) * \
+                    aunits['unit_mass']**(name['mass_scaling']) * \
+                    aunits['unit_velocity']**(name['velocity_scaling']) * \
+                    a**comoving_dic['a_scaling'] * \
+                    h**comoving_dic['h_scaling']
+
+        elif isinstance(name, str):
+
+            unitless_vars = ['ElectronAbundance', 'MachNumber',
+                             'GFM_Metallicity', 'GFM_Metals']
+            if name == 'Coordinates':
+                units = aunits['unit_length']*a/h
+            elif name == 'Density':
+                units = find('Masses')/find('Volume')
+            elif name == 'Volume':
+                units = find('Coordinates')**3
+            elif name in unitless_vars:
+                units = ''
+            elif name == 'Masses':
+                units = aunits['unit_mass']/h
+            elif name == 'EnergyDissipation':
+                units = aunits['unit_energy']/h
+            elif name == 'InternalEnergy':
+                units = aunits['unit_energy']/aunits['unit_mass']
+            elif name == 'MagneticField':
+                units = aunits['unit_pressure']**(1/2)*a**(-2)*h
+            elif name == 'BfieldGradient':
+                units = find('MagneticField')/find('Coordinates')
+            elif name == 'MagneticFieldDivergence':
+                units = find('BfieldGradient')
+            elif name == 'Velocities':
+                units = aunits['unit_velocity']*a**(1/2)
+            elif name == 'Velocities':
+                units = aunits['unit_velocity']*a**(1/2)
+            elif name == 'VelocityGradient':
+                units = find('Velocities')/find('Coordinates')
+            elif name == 'Enstrophy':
+                units = (find('VelocityGradient'))**2
+            elif name == 'Temperature':
+                units = u.K
+            elif name == 'Pressure':
+                units = aunits['unit_pressure'] * h**2 / a**3
+            else:
+                err_msg = 'invalid option name={}, cannot find units'
+                raise RuntimeError(err_msg.format(name))
+
+        return units
 
     def load_data(self, name, group=None):
 
@@ -92,7 +357,109 @@ class Catalog2(PaicosReader):
                          load_all=load_all, to_physical=to_physical,
                          basesubdir='groups', verbose=verbose)
 
+        # give names to specific header fields
+        self.nfiles = self.Header["NumFiles"]
+        self.ngroups = self.Header["Ngroups_Total"]
 
+        if "Nsubgroups_Total" in self.Header.keys():
+            self.nsubs = self.Header["Nsubgroups_Total"]
+        else:
+            self.nsubs = self.Header["Nsubhalos_Total"]
+
+        # Load all data
+        self.load_all_data()
+
+    def load_data(self):
+        """
+        Overwrite the base class method
+        """
+        pass
+
+    def load_all_data(self):
+
+        skip_gr = 0
+        skip_sub = 0
+        for ifile in range(self.nfiles):
+            if self.multi_file is False:
+                cur_filename = self.filename
+            else:
+                if self.no_subdir:
+                    cur_filename = self.multi_wo_dir.format(ifile)
+                else:
+                    cur_filename = self.multi_file.format(ifile)
+
+            if self.verbose:
+                print("reading file", cur_filename)
+
+            f = h5py.File(cur_filename, "r")
+
+            ng = int(f["Header"].attrs["Ngroups_ThisFile"])
+
+            if "Nsubgroups_ThisFile" in f["Header"].attrs.keys():
+                ns = int(f["Header"].attrs["Nsubgroups_ThisFile"])
+            else:
+                ns = int(f["Header"].attrs["Nsubhalos_ThisFile"])
+
+            # initialze arrays
+            if ifile == 0:
+                self['Group'] = {}
+                self['Sub'] = {}
+                for ikey in f["Group"].keys():
+                    if f["Group/"+ikey].shape.__len__() == 1:
+                        self['Group'][ikey] = np.empty(
+                            self.ngroups, dtype=f["Group/"+ikey].dtype)
+                    elif f["Group/"+ikey].shape.__len__() == 2:
+                        self['Group'][ikey] = np.empty(
+                            (self.ngroups, f["Group/"+ikey].shape[1]),
+                            dtype=f["Group/"+ikey].dtype)
+                    else:
+                        assert False
+
+                for ikey in f["Subhalo"].keys():
+                    if f["Subhalo/"+ikey].shape.__len__() == 1:
+                        self['Sub'][ikey] = np.empty(
+                            self.nsubs, dtype=f["Subhalo/"+ikey].dtype)
+                    elif f["Subhalo/"+ikey].shape.__len__() == 2:
+                        self['Sub'][ikey] = np.empty(
+                            (self.nsubs, f["Subhalo/"+ikey].shape[1]),
+                            dtype=f["Subhalo/"+ikey].dtype)
+                    else:
+                        assert False
+
+            # read group data
+            for ikey in f["Group"].keys():
+                self['Group'][ikey][skip_gr:skip_gr+ng] = f["Group/"+ikey]
+
+            # read subhalo data
+            for ikey in f["Subhalo"].keys():
+                self['Sub'][ikey][skip_sub:skip_sub+ns] = f["Subhalo/"+ikey]
+
+            skip_gr += ng
+            skip_sub += ns
+
+            f.close()
+
+        if settings.use_units:
+
+            mass_keys = ['GroupMass',
+                         'Group_M_Crit200',
+                         'Group_M_Crit500',
+                         'Group_M_Mean200',
+                         'Group_M_TopHat200']
+
+            pos_keys = ['GroupPos',
+                        'Group_R_Crit200',
+                        'Group_R_Crit500',
+                        'Group_R_Mean200',
+                        'Group_R_TopHat200']
+
+            for key in pos_keys:
+                self['Group'][key] = self.get_paicos_quantity(
+                                    self['Group'][key], 'Coordinates')
+
+            for key in mass_keys:
+                self['Group'][key] = self.get_paicos_quantity(
+                                     self['Group'][key], 'Masses')
 
 
 class ImageReader(PaicosReader):
