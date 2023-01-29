@@ -1,4 +1,3 @@
-from .arepo_snap import Snapshot
 from . import util
 import h5py
 
@@ -6,19 +5,15 @@ import h5py
 class PaicosWriter:
     """
     """
-    def __init__(self, snap_or_object_containing_snap, basedir,
+    def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=True, mode='w'):
 
-        if isinstance(snap_or_object_containing_snap, Snapshot):
-            self.snap = snap_or_object_containing_snap
-        else:
-            self.snap = snap_or_object_containing_snap.snap
-
-        self.arepo_snap_filename = self.snap.first_snapfile_name
+        self.reader_object = reader_object
+        self.org_filename = reader_object.filename
 
         self.mode = mode
 
-        snapnum = self.snap.snapnum
+        snapnum = reader_object.snapnum
 
         if basedir[-1] != '/':
             basedir += '/'
@@ -45,7 +40,7 @@ class PaicosWriter:
         Copy over attributes from the original arepo snapshot.
         In this way we will have access to units used, redshift etc
         """
-        g = h5py.File(self.arepo_snap_filename, 'r')
+        g = h5py.File(self.org_filename, 'r')
         with h5py.File(self.tmp_filename, 'w') as f:
             for group in ['Header', 'Parameters', 'Config']:
                 f.create_group(group)
@@ -84,7 +79,8 @@ class PaicosWriter:
 
     def perform_consistency_checks(self):
         with h5py.File(self.filename, 'r') as f:
-            assert f['Header'].attrs['Time'] == self.snap.Header['Time']
+            org_time = self.reader_object.Header['Time']
+            assert f['Header'].attrs['Time'] == org_time
 
         self.perform_extra_consistency_checks()
 
@@ -99,10 +95,10 @@ class PaicosWriter:
 class PaicosTimeSeriesWriter(PaicosWriter):
     """
     """
-    def __init__(self, snap_or_object_containing_snap, basedir,
+    def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=False, mode='w'):
 
-        super().__init__(snap_or_object_containing_snap, basedir,
+        super().__init__(reader_object, basedir,
                          basename="paicos_time_series",
                          add_snapnum=add_snapnum,
                          mode=mode)

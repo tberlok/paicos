@@ -6,7 +6,7 @@ def test_radial_selection():
 
     snap = pa.Snapshot(pa.root_dir + '/data', 247, basename='reduced_snap',
                        load_catalog=False)
-    center = [398968.4, 211682.6, 629969.9]*snap.converter.length
+    center = [398968.4, 211682.6, 629969.9]*snap.length
 
     r_max = 300*center.unit_quantity
 

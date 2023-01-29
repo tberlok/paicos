@@ -1,13 +1,12 @@
 from .arepo_catalog import Catalog
-from .arepo_converter import ArepoConverter
+from .paicos_readers import PaicosReader
 import numpy as np
-import os
 import time
 import h5py
 from . import settings
 
 
-class Snapshot(dict):
+class Snapshot(PaicosReader):
     """
     This is a Python class for reading Arepo snapshots, which are simulations
     of the evolution of the universe using a code called Arepo. The class is
@@ -49,8 +48,8 @@ class Snapshot(dict):
 
     """
 
-    def __init__(self, basedir, snapnum, basename="snap", verbose=False,
-                 no_snapdir=False, load_catalog=None,
+    def __init__(self, basedir, snapnum, basename="snap", load_all=False,
+                 to_physical=False, load_catalog=None, verbose=False,
                  dic_selection_index={}):
         """
         Initialize the Snapshot class.
@@ -76,55 +75,13 @@ class Snapshot(dict):
                              False for non-comoving simulations.
     """
 
-        self.basedir = basedir
-        self.snapnum = snapnum
-        self.basename = basename
-        self.verbose = verbose
-        self.no_snapdir = no_snapdir
+        super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
+                         load_all=load_all, to_physical=to_physical,
+                         basesubdir='snapdir', verbose=verbose)
+
         self.load_catalog = load_catalog
 
         self.dic_selection_index = dic_selection_index
-
-        # in case single file
-        self.snapname = self.basedir + "/" + \
-            basename + "_" + str(self.snapnum).zfill(3)
-        self.multi_file = False
-        self.first_snapfile_name = self.snapname + ".hdf5"
-
-        # if multiple files
-        if not os.path.exists(self.first_snapfile_name):
-            if not self.no_snapdir:
-                self.snapname = self.basedir + "/" + "snapdir_" + \
-                    str(self.snapnum).zfill(3) + "/" + \
-                    basename + "_" + str(self.snapnum).zfill(3)
-            else:
-                self.snapname = self.basedir + "/" + \
-                    basename + "_" + str(self.snapnum).zfill(3)
-            self.first_snapfile_name = self.snapname+".0.hdf5"
-            assert os.path.exists(self.first_snapfile_name)
-            self.multi_file = True
-
-        if self.verbose:
-            print("snapshot", snapnum, "found")
-
-        # get header of first file
-        f = h5py.File(self.first_snapfile_name, 'r')
-
-        self.Header = dict(f['Header'].attrs)
-        self.Parameters = dict(f['Parameters'].attrs)
-        self.Config = dict(f['Config'].attrs)
-
-        f.close()
-
-        self.converter = ArepoConverter(self.first_snapfile_name)
-        if self.converter.ComovingIntegrationOn:
-            self.age = self.converter.age
-            self.lookback_time = self.converter.lookback_time
-            self.z = self.converter.z
-            if self.verbose:
-                print("at z =", self.z)
-        else:
-            self.time = self.converter.time
 
         self.nfiles = self.Header["NumFilesPerSnapshot"]
         self.npart = self.Header["NumPart_Total"]
@@ -134,9 +91,6 @@ class Snapshot(dict):
             print("has", self.nspecies, "particle types")
             print("with npart =", self.npart)
 
-        self.a = self.converter.a
-        self.h = self.converter.h
-
         self.box = self.Header["BoxSize"]
         box_size = [self.box, self.box, self.box]
 
@@ -145,7 +99,7 @@ class Snapshot(dict):
                 box_size[ii] *= self.Config['LONG_' + dim]
 
         if settings.use_units:
-            get_paicos_quantity = self.converter.get_paicos_quantity
+            get_paicos_quantity = self.get_paicos_quantity
             self.box_size = get_paicos_quantity(box_size, 'Coordinates')
             self.masstable = get_paicos_quantity(self.Header["MassTable"],
                                                  'Masses')
@@ -155,7 +109,7 @@ class Snapshot(dict):
 
         # get subfind catalog?
         if load_catalog is None:
-            if self.converter.ComovingIntegrationOn:
+            if self.ComovingIntegrationOn:
                 load_catalog = True
             else:
                 load_catalog = False
@@ -164,7 +118,7 @@ class Snapshot(dict):
             try:
                 self.Cat = Catalog(
                     self.basedir, self.snapnum, verbose=self.verbose,
-                    subfind_catalog=True, converter=self.converter)
+                    subfind_catalog=True)
             except FileNotFoundError:
                 self.Cat = None
 
@@ -173,19 +127,12 @@ class Snapshot(dict):
                 try:
                     self.Cat = Catalog(
                         self.basedir, self.snapnum, verbose=self.verbose,
-                        subfind_catalog=False, converter=self.converter)
+                        subfind_catalog=False)
                 except FileNotFoundError:
                     import warnings
                     warnings.warn('no catalog found')
 
         self.P_attrs = dict()  # attributes
-
-        if 'GAMMA' in self.Config:
-            self.gamma = self.Config['GAMMA']
-        elif 'ISOTHERMAL' in self.Config:
-            self.gamma = 1
-        else:
-            self.gamma = 5/3
 
         self.derived_data_counter = 0
 
@@ -213,7 +160,7 @@ class Snapshot(dict):
         type.
         """
         PartType_str = 'PartType{}'.format(PartType)
-        with h5py.File(self.first_snapfile_name, 'r') as file:
+        with h5py.File(self.filename, 'r') as file:
             if PartType_str in list(file.keys()):
                 load_keys = list(file[PartType_str].keys())
                 if verbose:
@@ -274,12 +221,13 @@ class Snapshot(dict):
         skip_part = 0
 
         for ifile in range(self.nfiles):
-            cur_filename = self.snapname
-
-            if self.multi_file:
-                cur_filename += "." + str(ifile)
-
-            cur_filename += ".hdf5"
+            if self.multi_file is False:
+                cur_filename = self.filename
+            else:
+                if self.no_subdir:
+                    cur_filename = self.multi_wo_dir.format(ifile)
+                else:
+                    cur_filename = self.multi_file.format(ifile)
 
             f = h5py.File(cur_filename, "r")
 
@@ -295,9 +243,7 @@ class Snapshot(dict):
                         dtype=f[datname].dtype)
                 # Load attributes
                 data_attributes = dict(f[PartType_str][blockname].attrs)
-                if len(data_attributes) > 0:
-                    data_attributes.update({'small_h': self.h,
-                                            'scale_factor': self.a})
+
                 self.P_attrs[P_key] = data_attributes
 
             self[P_key][skip_part:skip_part+np_file] = f[datname]
@@ -326,8 +272,7 @@ class Snapshot(dict):
 
         if settings.use_units or give_units:
             try:
-                self[P_key] = self.converter.get_paicos_quantity(self[P_key],
-                                                                 blockname)
+                self[P_key] = self.get_paicos_quantity(self[P_key], blockname)
             except:
                 from warnings import warn
                 warn('Failed to give {} units'.format(P_key))
@@ -432,58 +377,6 @@ class Snapshot(dict):
         if P_key in self.P_attrs:
             del self.P_attrs[P_key]
 
-    def get_volumes(self):
-        self["0_Volume"]
-        from warnings import warn
-        warn(("This method will be soon deprecated in favor of automatic " +
-              " loading using:\n\n" +
-              " snap['0_Volume']\n\n or the explicit command\n\n" +
-              "snap.get_derived_data(0, 'Volume')"),
-             DeprecationWarning, stacklevel=2)
-
-    def get_temperatures(self):
-        self['0_Temperatures']
-        from warnings import warn
-        warn(("This method will be soon deprecated in favor of automatic " +
-              " loading using:\n\n" +
-              " snap['0_Temperatures']\n\n or the explicit command\n\n" +
-              "snap.get_derived_data(0, 'Temperatures')"),
-             DeprecationWarning, stacklevel=2)
-
-    # find subhalos that particles belong to
-    def get_host_subhalos(self, particle_type):
-        if str(particle_type)+"_HostSub" in self.P:
-            return
-
-        if self.verbose:
-            print("getting host subhalos ...")
-            start_time = time.time()
-
-        # -2 if not part of any FoF group
-        hostsubhalos = -2*np.ones(self.npart[particle_type], dtype=np.int32)
-        hostsubhalos[0:(self.Cat.Group["GroupLenType"][:, particle_type]).sum(
-            dtype=np.int64)] = -1   # -1 if not part of any subhalo
-
-        firstpart_gr = 0
-        cur_sub = 0
-        for igr in range(self.Cat.ngroups):
-            firstpart_sub = firstpart_gr
-
-            for isub in range(self.Cat.Group["GroupNsubs"][igr]):
-                hostsubhalos[firstpart_sub:firstpart_sub +
-                             self.Cat.Sub["SubhaloLenType"][cur_sub, particle_type]] = cur_sub
-
-                firstpart_sub += self.Cat.Sub["SubhaloLenType"][cur_sub,
-                                                                particle_type]
-                cur_sub += 1
-
-            firstpart_gr += self.Cat.Group["GroupLenType"][igr, particle_type]
-
-        self.P[str(particle_type)+"_HostSub"] = hostsubhalos
-
-        if self.verbose:
-            print("... done! (took", time.time()-start_time, "s)")
-
     def select(self, selection_index, parttype=0):
         """
         Create a new snapshot object which will only contain
@@ -514,7 +407,7 @@ class Snapshot(dict):
         select_snap = Snapshot(self.basedir, self.snapnum,
                                basename=self.basename,
                                verbose=self.verbose,
-                               no_snapdir=self.no_snapdir,
+                               to_physical=self.to_physical,
                                load_catalog=self.load_catalog,
                                dic_selection_index=dic_selection_index)
 

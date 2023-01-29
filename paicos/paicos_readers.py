@@ -63,6 +63,14 @@ class PaicosReader(dict):
         # Enable units
         self.enable_units()
 
+        # Find the adiabatic index
+        if 'GAMMA' in self.Config:
+            self.gamma = self.Config['GAMMA']
+        elif 'ISOTHERMAL' in self.Config:
+            self.gamma = 1
+        else:
+            self.gamma = 5/3
+
         # Load all data sets
         if load_all:
             for key in keys:
@@ -77,6 +85,7 @@ class PaicosReader(dict):
         """
 
         scale_factor = time = self.Header['Time']
+        self._Time = float(time)
         redshift = self.Header['Redshift']
         unit_length = self.Parameters['UnitLength_in_cm'] * u.cm
         unit_mass = self.Parameters['UnitMass_in_g'] * u.g
@@ -217,17 +226,17 @@ class PaicosReader(dict):
                                          comoving_sim=self.comoving_sim)
         return time
 
-    def get_paicos_quantity(self, data, name, arepo_code_units=True):
+    def get_paicos_quantity(self, data, name):
 
         if hasattr(data, 'unit'):
             msg = 'Data already had units! {}'.format(name)
             raise RuntimeError(msg)
 
-        unit = self.find_unit(name, arepo_code_units)
+        unit = self.find_unit(name)
 
         data = np.array(data)
 
-        return pu.PaicosQuantity(data, unit, a=self.a, h=self.h,
+        return pu.PaicosQuantity(data, unit, a=self._Time, h=self.h,
                                  comoving_sim=self.comoving_sim)
 
     def find_unit(self, name, arepo_code_units=True):
@@ -340,124 +349,6 @@ class PaicosReader(dict):
                     if name not in self:
                         self[name] = {}
                     self[name][data_name] = data
-
-
-class Catalog2(PaicosReader):
-    def __init__(self, basedir='.', snapnum=None, load_all=True,
-                 to_physical=False, subfind_catalog=True, verbose=False):
-
-        if subfind_catalog:
-            basename = 'fof_subhalo_tab'
-        else:
-            basename = 'fof_tab'
-
-        super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
-                         load_all=load_all, to_physical=to_physical,
-                         basesubdir='groups', verbose=verbose)
-
-        # give names to specific header fields
-        self.nfiles = self.Header["NumFiles"]
-        self.ngroups = self.Header["Ngroups_Total"]
-
-        if "Nsubgroups_Total" in self.Header.keys():
-            self.nsubs = self.Header["Nsubgroups_Total"]
-        else:
-            self.nsubs = self.Header["Nsubhalos_Total"]
-
-        # Load all data
-        self.load_all_data()
-
-    def load_data(self):
-        """
-        Overwrite the base class method
-        """
-        pass
-
-    def load_all_data(self):
-
-        skip_gr = 0
-        skip_sub = 0
-        for ifile in range(self.nfiles):
-            if self.multi_file is False:
-                cur_filename = self.filename
-            else:
-                if self.no_subdir:
-                    cur_filename = self.multi_wo_dir.format(ifile)
-                else:
-                    cur_filename = self.multi_file.format(ifile)
-
-            if self.verbose:
-                print("reading file", cur_filename)
-
-            f = h5py.File(cur_filename, "r")
-
-            ng = int(f["Header"].attrs["Ngroups_ThisFile"])
-
-            if "Nsubgroups_ThisFile" in f["Header"].attrs.keys():
-                ns = int(f["Header"].attrs["Nsubgroups_ThisFile"])
-            else:
-                ns = int(f["Header"].attrs["Nsubhalos_ThisFile"])
-
-            # initialze arrays
-            if ifile == 0:
-                self['Group'] = {}
-                self['Sub'] = {}
-                for ikey in f["Group"].keys():
-                    if f["Group/"+ikey].shape.__len__() == 1:
-                        self['Group'][ikey] = np.empty(
-                            self.ngroups, dtype=f["Group/"+ikey].dtype)
-                    elif f["Group/"+ikey].shape.__len__() == 2:
-                        self['Group'][ikey] = np.empty(
-                            (self.ngroups, f["Group/"+ikey].shape[1]),
-                            dtype=f["Group/"+ikey].dtype)
-                    else:
-                        assert False
-
-                for ikey in f["Subhalo"].keys():
-                    if f["Subhalo/"+ikey].shape.__len__() == 1:
-                        self['Sub'][ikey] = np.empty(
-                            self.nsubs, dtype=f["Subhalo/"+ikey].dtype)
-                    elif f["Subhalo/"+ikey].shape.__len__() == 2:
-                        self['Sub'][ikey] = np.empty(
-                            (self.nsubs, f["Subhalo/"+ikey].shape[1]),
-                            dtype=f["Subhalo/"+ikey].dtype)
-                    else:
-                        assert False
-
-            # read group data
-            for ikey in f["Group"].keys():
-                self['Group'][ikey][skip_gr:skip_gr+ng] = f["Group/"+ikey]
-
-            # read subhalo data
-            for ikey in f["Subhalo"].keys():
-                self['Sub'][ikey][skip_sub:skip_sub+ns] = f["Subhalo/"+ikey]
-
-            skip_gr += ng
-            skip_sub += ns
-
-            f.close()
-
-        if settings.use_units:
-
-            mass_keys = ['GroupMass',
-                         'Group_M_Crit200',
-                         'Group_M_Crit500',
-                         'Group_M_Mean200',
-                         'Group_M_TopHat200']
-
-            pos_keys = ['GroupPos',
-                        'Group_R_Crit200',
-                        'Group_R_Crit500',
-                        'Group_R_Mean200',
-                        'Group_R_TopHat200']
-
-            for key in pos_keys:
-                self['Group'][key] = self.get_paicos_quantity(
-                                    self['Group'][key], 'Coordinates')
-
-            for key in mass_keys:
-                self['Group'][key] = self.get_paicos_quantity(
-                                     self['Group'][key], 'Masses')
 
 
 class ImageReader(PaicosReader):

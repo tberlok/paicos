@@ -67,7 +67,7 @@ def get_variable_function_gas(variable_str, info=False):
             variable = (gm1 * snap["0_InternalEnergy"] *
                         mmean * mhydrogen).to('K')
         else:
-            u_v = snap.converter.arepo_units['unit_velocity']
+            u_v = snap.arepo_units['unit_velocity']
             variable = (gm1 * snap["0_InternalEnergy"] *
                         u_v**2 * mmean * mhydrogen
                         ).to('K').value

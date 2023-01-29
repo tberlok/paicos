@@ -9,7 +9,6 @@ from .projector import Projector
 from .projector2 import Projector2
 from .nested_projector import NestedProjector
 from .slicer import Slicer
-from .arepo_converter import ArepoConverter
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
 from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader
 from .histogram import Histogram

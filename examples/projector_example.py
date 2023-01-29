@@ -53,6 +53,6 @@ for use_units in [False, True]:
     plt.show()
 
     if not use_units:
-        M = snap.converter.get_paicos_quantity(snap['0_Masses'], 'Masses')
+        M = snap.get_paicos_quantity(snap['0_Masses'], 'Masses')
         # Projection now has units
         projected_mass = projector.project_variable(M)

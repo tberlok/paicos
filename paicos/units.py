@@ -151,24 +151,31 @@ class PaicosQuantity(Quantity):
         return self._h
 
     @property
+    def comoving_sim(self):
+        """
+        Whether the simulation had ComovingIntegrationOn
+        """
+        return self._comoving_sim
+
+    @property
     def z(self):
         """
         The redshift.
         """
-        if self._comoving_sim:
+        if self.comoving_sim:
             return 1./self._a - 1.
         else:
             return 0.
 
     def lookback_time(self, reader_object):
-        if self._comoving_sim:
+        if self.comoving_sim:
             return reader_object.converter.get_lookback_time(self.z)
         else:
             msg = 'lookback_time not defined for non-comoving sim'
             raise RuntimeError(msg)
 
     def age(self, reader_object):
-        if self._comoving_sim:
+        if self.comoving_sim:
             return reader_object.converter.get_age(self.z)
         else:
             msg = 'age not defined for non-comoving sim'
@@ -176,7 +183,7 @@ class PaicosQuantity(Quantity):
 
     @property
     def time(self):
-        if self._comoving_sim:
+        if self.comoving_sim:
             msg = 'time not defined for comoving sim'
             raise RuntimeError(msg)
         else:
@@ -203,7 +210,8 @@ class PaicosQuantity(Quantity):
         Returns a new PaicosQuantity with the same units as the current
         PaicosQuantity and a numeric value of 1.
         """
-        return PaicosQuantity(1., self.unit, a=self.a, h=self.h)
+        return PaicosQuantity(1., self.unit, a=self.a, h=self.h,
+                              comoving_sim=self.comoving_sim)
 
     @property
     def uq(self):
