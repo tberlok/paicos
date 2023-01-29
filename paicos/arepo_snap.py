@@ -202,6 +202,13 @@ class Snapshot(PaicosReader):
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
+
+        if settings.use_aliases:
+            if P_key in settings.inverse_aliases.keys():
+                raise RuntimeError('load_data is not enabled for aliases')
+            if P_key in settings.aliases.keys():
+                P_key = settings.aliases[P_key]
+
         if blockname not in self.info(particle_type, False):
             msg = 'Unable to load parttype {}, blockname {} as this field is not in the hdf5 file'
             raise RuntimeError(msg.format(particle_type, blockname))
@@ -307,6 +314,10 @@ class Snapshot(PaicosReader):
             self.derived_data_counter += 1
 
         func = get_variable_function(P_key)
+
+        if settings.use_aliases:
+            if P_key in settings.aliases.keys():
+                P_key = settings.aliases[P_key]
         self[P_key] = func(self)
 
         if verbose:
@@ -314,7 +325,7 @@ class Snapshot(PaicosReader):
             if self.derived_data_counter == 0:
                 print('\t[DONE]\n')
 
-    def __getitem__(self, key):
+    def __getitem__(self, P_key):
         """
         This method is a special method in Python classes, known as a "magic
         method" that allows instances of the class to be accessed like a
@@ -323,7 +334,7 @@ class Snapshot(PaicosReader):
         This method is used to access the data stored in the class, it takes a
         single argument:
 
-        key : a string that represents the data that is being accessed, it
+        P_key : a string that represents the data that is being accessed, it
         should be in the format of parttype_name, where parttype is an integer
         and name is the name of the data block. It first checks if the key is
         already in the class, if not it checks if the key is in the format of
@@ -345,15 +356,26 @@ class Snapshot(PaicosReader):
         be loaded.
         """
 
-        if key not in self.keys():
-            if not key[0].isnumeric() or key[1] != '_':
+        if settings.use_aliases:
+            # msg = ("\n\nYou have set the alias '{}' for the variable '{}'. " +
+            #        "This means that you have to use the alias!")
+            # if P_key in settings.aliases.keys():
+            #     alias = settings.aliases[P_key]
+            #     raise RuntimeError(msg.format(alias, P_key))
+
+            if P_key in settings.inverse_aliases.keys():
+                # print('Changing key from {} to {}'.format(P_key, settings.inverse_aliases[P_key]))
+                P_key = settings.inverse_aliases[P_key]
+
+        if P_key not in self.keys():
+            if not P_key[0].isnumeric() or P_key[1] != '_':
                 msg = ('\n\nKeys are expected to consist of an integer ' +
                        '(the particle type) and a blockname, separated by a ' +
                        ' _. For instance 0_Density. You can get the ' +
                        'available fields like so: snap.info(0)')
                 raise RuntimeError(msg)
-            parttype = int(key[0])
-            name = key[2:]
+            parttype = int(P_key[0])
+            name = P_key[2:]
 
             if parttype >= self.nspecies:
                 msg = 'Simulation only has {} species.'
@@ -365,7 +387,10 @@ class Snapshot(PaicosReader):
                 verbose = settings.print_info_when_deriving_variables
                 self.get_derived_data(parttype, name, verbose=verbose)
 
-        return super().__getitem__(key)
+        if settings.use_aliases:
+            if P_key in settings.aliases.keys():
+                P_key = settings.aliases[P_key]
+        return super().__getitem__(P_key)
 
     def remove_data(self, particle_type, blockname):
         """

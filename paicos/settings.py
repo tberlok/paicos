@@ -14,3 +14,6 @@ double_precision = True
 
 # OpenMP info
 give_openMP_warnings = True
+
+# Whether to use aliases, e.g. dens instead of 0_Density
+use_aliases = False

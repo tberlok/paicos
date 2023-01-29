@@ -6,7 +6,6 @@ from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog
 from .projector import Projector
-from .projector2 import Projector2
 from .nested_projector import NestedProjector
 from .slicer import Slicer
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
@@ -49,6 +48,25 @@ def print_info_when_deriving_variables(option):
 
 def give_openMP_warnings(option):
     settings.give_openMP_warnings = option
+
+
+def set_aliases(aliases):
+    """
+    Assign a list of aliases for use as keys in snapshot objects.
+
+    input (dictionary): e.g.
+
+    aliases = {'0_Density': 'dens',
+           '0_Temperatures': 'T',
+           '0_MeanMolecularWeight': 'mu'}
+    """
+    msg = 'Your user-set aliases seem to not be unique'
+    assert len(set(aliases.values())) == len(aliases.values()), msg
+
+    inverse = {aliases[key]: key for key in aliases.keys()}
+    settings.aliases = aliases
+    settings.inverse_aliases = inverse
+    settings.use_aliases = True
 
 
 def user_settings_exists():
