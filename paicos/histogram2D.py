@@ -173,8 +173,7 @@ class Histogram2D:
 
         assert settings.use_units
 
-        unit_label = self.hist_units.to_string(format='latex')[1:-1]
-        unit_label = r'[' + unit_label + r']'
+        unit_label = self.hist2d.label()[1:-1]
 
         if self.logscale:
             colorlabel = (r'/\left(\mathrm{d}\mathrm{log}_{10} ' + x_symbol +

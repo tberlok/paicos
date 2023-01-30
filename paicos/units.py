@@ -362,7 +362,16 @@ class PaicosQuantity(Quantity):
 
         normal_unit = self._get_new_units([small_h, small_a])
 
-        unit_label = normal_unit.to_string(format='latex')[1:-1]
+        # unit_label = normal_unit.to_string(format='latex')[1:-1]
+
+        codic, dic = self.__get_unit_dictionaries()
+
+        unit_label = ''
+        for ii, key in enumerate(dic.keys()):
+            _, unit_str = self.__scaling_and_scaling_str(key)
+            unit_label += unit_str
+            if ii < len(dic.keys()) - 1:
+                unit_label += r'\;'
 
         label = (co_label + r'\; \left[' + unit_label + r'\right]')
 
@@ -375,7 +384,7 @@ class PaicosQuantity(Quantity):
                     elif a_sc == 0:
                         label = unit_label
                     if h_sc == -1:
-                        label = label + r'/h'
+                        label = label + r'\;h^{-1}'
 
             label = '[' + label + ']'
 
@@ -405,8 +414,18 @@ class PaicosQuantity(Quantity):
         """
         from fractions import Fraction
         codic, dic = self.__get_unit_dictionaries()
-        scaling = codic[unit]
-        base_string = unit.to_string(format='unicode')
+        # print(unit, dic, codic)
+        if unit in codic.keys():
+            scaling = codic[unit]
+        elif unit in dic.keys():
+            scaling = dic[unit]
+        else:
+            raise RuntimeError('should not happen')
+
+        if unit in codic.keys():
+            base_string = unit.to_string(format='unicode')
+        elif unit in dic.keys():
+            base_string = unit.to_string(format='latex')[1:-1]
         scaling_str = str(Fraction(scaling).limit_denominator(10000))
         if scaling_str == '0':
             scaling_str = ''
