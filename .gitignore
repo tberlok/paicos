@@ -5,3 +5,4 @@
 *__pycache__*
 build/
 user_settings.py
+*.hdf5

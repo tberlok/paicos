@@ -192,11 +192,11 @@ class Snapshot(PaicosReader):
         if not use_only_user_functions:
             def_functs = derived_variables.default_functions
             for key in def_functs.keys():
-                if key not in self._this_snap_funcs:
+                if key not in self._this_snap_funcs.keys():
                     self._this_snap_funcs.update({key: def_functs[key]})
 
         self._dependency_dic = {}
-        for key in self._this_snap_funcs:
+        for key in self._this_snap_funcs.keys():
             func = self._this_snap_funcs[key]
             sig = signature(func)
             if len(sig.parameters) == 2:
@@ -206,28 +206,35 @@ class Snapshot(PaicosReader):
 
         dependency_dic = dict(self._dependency_dic)
 
-        # First substitute all dependencies that are
-        # at the top level of the dictionary
-        for key in dependency_dic.keys():
-            deps = dependency_dic[key]
-            for dep in list(deps):
-                if dep in dependency_dic.keys():
-                    deps.remove(dep)
-                    for subdep in dependency_dic[dep]:
-                        deps.append(subdep)
+        # This will fail for very nested dependencies.
+        for jj in range(3):
+            # First substitute all dependencies that are
+            # at the top level of the dictionary
+            for key in dependency_dic.keys():
+                deps = dependency_dic[key]
+                for dep in list(deps):
+                    if dep in dependency_dic.keys():
+                        deps.remove(dep)
+                        for subdep in dependency_dic[dep]:
+                            deps.append(subdep)
 
-        # Then remove all the dependencies that can be loaded
-        for key in dependency_dic.keys():
-            deps = dependency_dic[key]
-            for dep in list(deps):
-                if dep in self._all_avail_load:
-                    deps.remove(dep)
+            # Then remove all the dependencies that can be loaded
+            for key in dependency_dic.keys():
+                deps = dependency_dic[key]
+                for dep in list(deps):
+                    if dep in self._all_avail_load:
+                        deps.remove(dep)
 
         # Delete the entries where we do not have the requirements
         for key in dependency_dic.keys():
             dep = len(dependency_dic[key])
             if dep > 0:
-                print('deleting {}'.format(key))
+                if key in user_functs.keys():
+                    import warnings
+                    msg = ('Deleting the user function: {} because its ' +
+                           'dependency: {} is missing')
+                    warnings.warn(msg.format(user_functs[key],
+                                  dependency_dic[key]))
                 del self._this_snap_funcs[key]
 
     def get_variable_function(self, P_key, info=False):

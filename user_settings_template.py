@@ -22,16 +22,10 @@ pa.give_openMP_warnings(False)
 
 
 # Examples of adding user-defined functions
-def TemperaturesTimesMassesSquared(snap):
+def TemperaturesTimesMassesSquared(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_TemperaturesTimesMasses', '0_Masses']
     return snap['0_TemperaturesTimesMasses']*snap['0_Masses']
 
 
-def MassesPartType1(snap):
-    import numpy as np
-    M = snap.masstable[1]*np.ones(snap['1_Coordinates'].shape[0],
-                                  dtype=np.float32)
-    return M
-
-
 pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
-pa.add_user_function('1_Masses', MassesPartType1)

@@ -13,10 +13,6 @@ def Volume(snap, get_dependencies=False):
     return snap["0_Masses"] / snap["0_Density"]
 
 
-def EnergyDissipation(snap):
-    return snap['0_EnergyDissipation']
-
-
 def MachnumberTimesEnergyDissipation(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_Machnumber', '0_EnergyDissipation']
@@ -248,7 +244,6 @@ functions = {
     "0_GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
     "0_Volume": Volume,
     "0_Temperatures": Temperatures,
-    "0_EnergyDissipation": EnergyDissipation,
     "0_MachnumberTimesEnergyDissipation": MachnumberTimesEnergyDissipation,
     "0_MagneticFieldSquared": MagneticFieldSquared,
     "0_MagneticFieldStrength": MagneticFieldStrength,
