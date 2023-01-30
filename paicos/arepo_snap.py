@@ -306,7 +306,9 @@ class Snapshot(dict):
 
         if settings.double_precision:
             # Load all variables with double precision
-            self[P_key] = self[P_key].astype(np.float64)
+            import numbers
+            if not issubclass(self[P_key].dtype.type, numbers.Integral):
+                self[P_key] = self[P_key].astype(np.float64)
         else:
             import warnings
             warnings.warn('\n\nThe cython routines expect double precision ' +

@@ -164,9 +164,11 @@ class ArepoConverter:
 
         unit = self.find_unit(name, arepo_code_units)
 
-        data = np.array(data)
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
 
-        return pu.PaicosQuantity(data, unit, a=self.a, h=self.h)
+        return pu.PaicosQuantity(data, unit, a=self.a, h=self.h,
+                                 dtype=data.dtype)
 
     def find_unit(self, name, arepo_code_units=True):
         """
@@ -228,7 +230,7 @@ class ArepoConverter:
         elif isinstance(name, str):
 
             unitless_vars = ['ElectronAbundance', 'MachNumber',
-                             'GFM_Metallicity', 'GFM_Metals']
+                             'GFM_Metallicity', 'GFM_Metals', 'ParticleIDs']
             if name == 'Coordinates':
                 units = aunits['unit_length']*a/h
             elif name == 'Density':
