@@ -9,11 +9,6 @@ pa.set_aliases(aliases)
 
 snap = pa.Snapshot(pa.root_dir + '/data', 247)
 
-try:
-    snap.load_data(0, 'Density')
-except RuntimeError:
-    print('Expected runtime error')
-
 snap.load_data(0, 'Masses')
 
 snap['dens']
@@ -27,3 +22,5 @@ snap['T']
 # snap['0_Densitt']
 
 # snap['dfadsfdsf']
+
+snap.info(0)

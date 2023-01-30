@@ -2,8 +2,6 @@ from . import settings
 from . import units
 import numpy as np
 
-user_functions = {}
-
 openMP_has_issues = None
 
 

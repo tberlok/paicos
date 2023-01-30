@@ -28,7 +28,8 @@ def use_units(use_units):
 
 
 def add_user_function(variable_string, function):
-    util.user_functions.update({variable_string: function})
+    from . import derived_variables
+    derived_variables.user_functions.update({variable_string: function})
 
 
 def use_only_user_functions(use_only_user_functions):

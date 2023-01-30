@@ -136,7 +136,90 @@ class Snapshot(PaicosReader):
 
         self.derived_data_counter = 0
 
+        self._add_mass_to_user_funcs()
+
         self.__get_auto_comple_list()
+
+    def _add_mass_to_user_funcs(self):
+
+        self._this_snap_funcs = {}
+
+        class Mass:
+            def __init__(self, parttype):
+                self.parttype = parttype
+
+            def get_masses_from_header(self, snap):
+                """
+                Get mass of particle type from the mass table
+                """
+                parttype = self.parttype
+                if parttype in snap.dic_selection_index.keys():
+                    npart = snap.dic_selection_index[parttype].shape[0]
+                else:
+                    npart = snap.npart[parttype]
+                return np.ones(npart)*snap.masstable[parttype]
+
+        for parttype in range(self.nspecies):
+            if self.masstable[parttype] != 0:
+                P_key = str(parttype) + '_Masses'
+                obj = Mass(parttype)
+                self._this_snap_funcs[P_key] = obj.get_masses_from_header
+
+    def get_variable_function(self, P_key, info=False):
+
+        from . import derived_variables
+        from .settings import use_only_user_functions
+
+        assert type(P_key) is str
+
+        if not P_key[0].isnumeric() or P_key[1] != '_':
+            msg = ('\n\nKeys are expected to consist of an integer ' +
+                   '(the particle type) and a blockname, separated by a ' +
+                   ' _. For instance 0_Density. You can get the ' +
+                   'available fields like so: snap.info(0)')
+            raise RuntimeError(msg)
+
+        user_functs = dict(derived_variables.user_functions)
+
+        # Add functions for getting mass of particles found in mass table
+        for key in self._this_snap_funcs.keys():
+            user_functs.update({key: self._this_snap_funcs[key]})
+
+        def_functs = derived_variables.default_functions
+
+        # Return a function corresponding to the key
+        if not info:
+            msg = '\n\n{} not found in the user_functions: {}'
+            msg = msg.format(P_key, user_functs)
+            if P_key in user_functs.keys():
+                return user_functs[P_key]
+            if use_only_user_functions:
+                raise RuntimeError(msg)
+            else:
+                if P_key in def_functs.keys():
+                    return def_functs[P_key]
+                else:
+                    msg += ', nor in the default functions: {}'
+                    msg = msg.format(P_key, user_functs, def_functs)
+                    raise RuntimeError(msg)
+
+        # Return a list with all available keys (to be modified with a
+        # dependency graph)
+        if info:
+            parttype = int(P_key[0])
+            # name = P_key[2:]
+
+            avail_list = []
+            for key in user_functs.keys():
+                if int(key[0]) == parttype:
+                    avail_list.append(key)
+
+            if not use_only_user_functions:
+                for key in def_functs.keys():
+                    if int(key[0]) == parttype:
+                        if key not in avail_list:
+                            avail_list.append(key)
+            return avail_list
 
     def info(self, PartType, verbose=True):
         """
@@ -165,20 +248,33 @@ class Snapshot(PaicosReader):
         with h5py.File(self.filename, 'r') as file:
             if PartType_str in list(file.keys()):
                 load_keys = list(file[PartType_str].keys())
+                load_keys = [str(PartType) + '_' + key for key in load_keys]
                 if verbose:
                     print('\nKeys for ' + PartType_str + ' in the hdf5 file:')
                     for key in (sorted(load_keys)):
-                        print(key)
-                    # if PartType == 0:
-                    from .derived_variables import get_variable_function
-                    print('\nPossible derived variables are:')
-                    dkeys = get_variable_function(str(PartType) + '_', True)
+                        if settings.use_aliases:
+                            if key in settings.aliases.keys():
+                                alias = settings.aliases[key]
+                                msg = alias + '\t'*5 + '(an alias of {})'
+                                print(msg.format(key))
+                            else:
+                                print(key)
+                        else:
+                            print(key)
 
-                    if 'Masses' not in load_keys:
-                        dkeys.append('{}_Masses'.format(PartType))
+                    print('\nPossible derived variables are:')
+                    dkeys = self.get_variable_function(str(PartType) + '_', True)
 
                     for key in (sorted(dkeys)):
-                        print(key)
+                        if settings.use_aliases:
+                            if key in settings.aliases.keys():
+                                alias = settings.aliases[key]
+                                msg = alias + '\t'*5 + '(an alias of {})'
+                                print(msg.format(key))
+                            else:
+                                print(key)
+                        else:
+                            print(key)
                     return None
                 else:
                     return load_keys
@@ -207,20 +303,19 @@ class Snapshot(PaicosReader):
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
+        alias_key = P_key
 
         if settings.use_aliases:
-            if P_key in settings.inverse_aliases.keys():
-                raise RuntimeError('load_data is not enabled for aliases')
             if P_key in settings.aliases.keys():
-                P_key = settings.aliases[P_key]
+                alias_key = settings.aliases[P_key]
 
-        if blockname not in self.info(particle_type, False):
+        if P_key not in self.info(particle_type, False):
             msg = 'Unable to load parttype {}, blockname {} as this field is not in the hdf5 file'
             raise RuntimeError(msg.format(particle_type, blockname))
 
         datname = "PartType"+str(particle_type)+"/"+blockname
         PartType_str = 'PartType{}'.format(particle_type)
-        if P_key in self:
+        if alias_key in self:
             if self.verbose:
                 print(blockname, "for species",
                       particle_type, "already in memory")
@@ -247,26 +342,26 @@ class Snapshot(PaicosReader):
 
             if ifile == 0:   # initialize array
                 if f[datname].shape.__len__() == 1:
-                    self[P_key] = np.empty(
+                    self[alias_key] = np.empty(
                         self.npart[particle_type], dtype=f[datname].dtype)
                 else:
-                    self[P_key] = np.empty(
+                    self[alias_key] = np.empty(
                         (self.npart[particle_type], f[datname].shape[1]),
                         dtype=f[datname].dtype)
                 # Load attributes
                 data_attributes = dict(f[PartType_str][blockname].attrs)
 
-                self.P_attrs[P_key] = data_attributes
+                self.P_attrs[alias_key] = data_attributes
 
-            self[P_key][skip_part:skip_part+np_file] = f[datname]
+            self[alias_key][skip_part:skip_part+np_file] = f[datname]
 
             skip_part += np_file
 
         if settings.double_precision:
             # Load all variables with double precision
             import numbers
-            if not issubclass(self[P_key].dtype.type, numbers.Integral):
-                self[P_key] = self[P_key].astype(np.float64)
+            if not issubclass(self[alias_key].dtype.type, numbers.Integral):
+                self[alias_key] = self[alias_key].astype(np.float64)
         else:
             import warnings
             warnings.warn('\n\nThe cython routines expect double precision ' +
@@ -276,20 +371,21 @@ class Snapshot(PaicosReader):
         # Only keep the cells with True in the selection index array
         if particle_type in self.dic_selection_index.keys():
             selection_index = self.dic_selection_index[particle_type]
-            shape = self[P_key].shape
+            shape = self[alias_key].shape
             if len(shape) == 1:
-                self[P_key] = self[P_key][selection_index]
+                self[alias_key] = self[alias_key][selection_index]
             elif len(shape) == 2:
-                self[P_key] = self[P_key][selection_index, :]
+                self[alias_key] = self[alias_key][selection_index, :]
             else:
                 raise RuntimeError('Data has unexpected shape!')
 
         if settings.use_units or give_units:
             try:
-                self[P_key] = self.get_paicos_quantity(self[P_key], blockname)
+                self[alias_key] = self.get_paicos_quantity(self[alias_key],
+                                                           blockname)
             except:
                 from warnings import warn
-                warn('Failed to give {} units'.format(P_key))
+                warn('Failed to give {} units'.format(alias_key))
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
@@ -303,13 +399,13 @@ class Snapshot(PaicosReader):
         snap.get_derived_data(0, 'Temperatures')
 
         """
-        from .derived_variables import get_variable_function
+        # from .derived_variables import get_variable_function
 
         P_key = str(particle_type) + "_" + blockname
 
         msg = ('\n\n{} is in the hdf5 file(s), please use load_data instead ' +
                'of get_derived_data').format(blockname)
-        assert blockname not in self.info(particle_type, False), msg
+        assert P_key not in self.info(particle_type, False), msg
 
         if verbose:
             msg1 = 'Attempting to get derived variable: {}...'.format(P_key)
@@ -320,7 +416,7 @@ class Snapshot(PaicosReader):
                 print('\n\t' + msg2, end='')
             self.derived_data_counter += 1
 
-        func = get_variable_function(P_key)
+        func = self.get_variable_function(P_key)
 
         if settings.use_aliases:
             if P_key in settings.aliases.keys():
@@ -364,14 +460,8 @@ class Snapshot(PaicosReader):
         """
 
         if settings.use_aliases:
-            # msg = ("\n\nYou have set the alias '{}' for the variable '{}'. " +
-            #        "This means that you have to use the alias!")
-            # if P_key in settings.aliases.keys():
-            #     alias = settings.aliases[P_key]
-            #     raise RuntimeError(msg.format(alias, P_key))
 
             if P_key in settings.inverse_aliases.keys():
-                # print('Changing key from {} to {}'.format(P_key, settings.inverse_aliases[P_key]))
                 P_key = settings.inverse_aliases[P_key]
 
         if P_key not in self.keys():
@@ -388,7 +478,7 @@ class Snapshot(PaicosReader):
                 msg = 'Simulation only has {} species.'
                 raise RuntimeError(msg.format(self.nspecies))
 
-            if name in self.info(parttype, False):
+            if P_key in self.info(parttype, False):
                 self.load_data(parttype, name)
             else:
                 verbose = settings.print_info_when_deriving_variables
@@ -403,8 +493,7 @@ class Snapshot(PaicosReader):
         self._auto_list = []
 
         for i in range(self.nspecies):
-            for name in self.info(i, False):
-                P_key = str(i) + '_' + name
+            for P_key in self.info(i, False):
                 if settings.use_aliases:
                     if P_key in settings.aliases.keys():
                         P_key = settings.aliases[P_key]
