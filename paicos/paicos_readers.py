@@ -45,10 +45,12 @@ class PaicosReader(dict):
             elif os.path.exists(multi_file.format(0)):
                 self.multi_file = True
                 self.first_file_name = self.filename = multi_file.format(0)
+                self.multi_filename = multi_file
                 self.no_subdir = False
             elif os.path.exists(multi_wo_dir.format(0)):
                 self.multi_file = True
                 self.first_file_name = self.filename = multi_wo_dir.format(0)
+                self.multi_filename = multi_file
                 self.no_subdir = True
             else:
                 err_msg = "File: {} not found found"

@@ -46,7 +46,7 @@ class Catalog(PaicosReader):
                 if self.no_subdir:
                     cur_filename = self.multi_wo_dir.format(ifile)
                 else:
-                    cur_filename = self.multi_file.format(ifile)
+                    cur_filename = self.multi_filename.format(ifile)
 
             if self.verbose:
                 print("reading file", cur_filename)

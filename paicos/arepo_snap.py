@@ -380,7 +380,7 @@ class Snapshot(PaicosReader):
                 if self.no_subdir:
                     cur_filename = self.multi_wo_dir.format(ifile)
                 else:
-                    cur_filename = self.multi_file.format(ifile)
+                    cur_filename = self.multi_filename.format(ifile)
 
             f = h5py.File(cur_filename, "r")
 
