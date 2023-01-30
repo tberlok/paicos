@@ -235,7 +235,7 @@ class PaicosReader(dict):
     @property
     def lookback_time(self):
         if self.comoving_sim:
-            return self._lookback_time(self.z)
+            return self._lookback_time
         else:
             raise RuntimeError('Non-comoving object has no lookback_time')
 
