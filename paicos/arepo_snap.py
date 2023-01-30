@@ -183,7 +183,10 @@ class Snapshot(PaicosReader):
                 else:
                     return load_keys
             else:
-                print('PartType not in hdf5 file')
+                if verbose:
+                    print('PartType not in hdf5 file')
+                else:
+                    return []
 
     def load_data(self, particle_type, blockname, give_units=False):
         """
