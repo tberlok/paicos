@@ -138,6 +138,9 @@ class Snapshot(PaicosReader):
 
         self._add_mass_to_user_funcs()
 
+        self._find_available_for_loading()
+        self._find_available_functions()
+
         self.__get_auto_comple_list()
 
     def _add_mass_to_user_funcs(self):
@@ -165,10 +168,67 @@ class Snapshot(PaicosReader):
                 obj = Mass(parttype)
                 self._this_snap_funcs[P_key] = obj.get_masses_from_header
 
-    def get_variable_function(self, P_key, info=False):
+    def _find_available_for_loading(self):
+        self._all_avail_load = []
+        for PartType in range(self.nspecies):
+            PartType_str = 'PartType{}'.format(PartType)
+            with h5py.File(self.filename, 'r') as file:
+                if PartType_str in list(file.keys()):
+                    load_keys = list(file[PartType_str].keys())
+                    for key in load_keys:
+                        P_key = str(PartType) + '_' + key
+                        self._all_avail_load.append(P_key)
 
-        from . import derived_variables
+    def _find_available_functions(self):
         from .settings import use_only_user_functions
+        from . import derived_variables
+        from inspect import signature
+
+        user_functs = derived_variables.user_functions
+
+        for key in user_functs.keys():
+            self._this_snap_funcs.update({key: user_functs[key]})
+
+        if not use_only_user_functions:
+            def_functs = derived_variables.default_functions
+            for key in def_functs.keys():
+                if key not in self._this_snap_funcs:
+                    self._this_snap_funcs.update({key: def_functs[key]})
+
+        self._dependency_dic = {}
+        for key in self._this_snap_funcs:
+            func = self._this_snap_funcs[key]
+            sig = signature(func)
+            if len(sig.parameters) == 2:
+                self._dependency_dic[key] = func(self, True)
+            else:
+                self._dependency_dic[key] = []
+
+        dependency_dic = dict(self._dependency_dic)
+
+        # First substitute all dependencies that are
+        # at the top level of the dictionary
+        for key in dependency_dic.keys():
+            deps = dependency_dic[key]
+            for dep in list(deps):
+                if dep in dependency_dic.keys():
+                    i = deps.index(dep)
+                    deps[i] = dependency_dic[dep]
+
+        # Then remove all the dependencies that can be loaded
+        for key in dependency_dic.keys():
+            deps = dependency_dic[key]
+            for dep in list(deps):
+                if dep in self._all_avail_load:
+                    deps.remove(dep)
+
+        # Delete the entries where we do not have the requirements
+        for key in dependency_dic.keys():
+            dep = len(dependency_dic[key])
+            if dep > 0:
+                del self._this_snap_funcs[key]
+
+    def get_variable_function(self, P_key, info=False):
 
         assert type(P_key) is str
 
@@ -179,46 +239,23 @@ class Snapshot(PaicosReader):
                    'available fields like so: snap.info(0)')
             raise RuntimeError(msg)
 
-        user_functs = dict(derived_variables.user_functions)
-
-        # Add functions for getting mass of particles found in mass table
-        for key in self._this_snap_funcs.keys():
-            user_functs.update({key: self._this_snap_funcs[key]})
-
-        def_functs = derived_variables.default_functions
-
-        # Return a function corresponding to the key
         if not info:
-            msg = '\n\n{} not found in the user_functions: {}'
-            msg = msg.format(P_key, user_functs)
-            if P_key in user_functs.keys():
-                return user_functs[P_key]
-            if use_only_user_functions:
-                raise RuntimeError(msg)
+            if P_key in self._this_snap_funcs.keys():
+                return self._this_snap_funcs[P_key]
             else:
-                if P_key in def_functs.keys():
-                    return def_functs[P_key]
-                else:
-                    msg += ', nor in the default functions: {}'
-                    msg = msg.format(P_key, user_functs, def_functs)
-                    raise RuntimeError(msg)
+                msg = '\n\n{} not found in the functions: {}'
+                msg = msg.format(P_key, self._this_snap_funcs)
+                raise RuntimeError(msg)
 
-        # Return a list with all available keys (to be modified with a
-        # dependency graph)
+        # Return a list with all available keys for this parttype
         if info:
             parttype = int(P_key[0])
-            # name = P_key[2:]
 
             avail_list = []
-            for key in user_functs.keys():
+            for key in self._this_snap_funcs.keys():
                 if int(key[0]) == parttype:
                     avail_list.append(key)
 
-            if not use_only_user_functions:
-                for key in def_functs.keys():
-                    if int(key[0]) == parttype:
-                        if key not in avail_list:
-                            avail_list.append(key)
             return avail_list
 
     def info(self, PartType, verbose=True):

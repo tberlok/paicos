@@ -1,11 +1,15 @@
 import numpy as np
 
 
-def GFM_MetallicityTimesMasses(snap):
+def GFM_MetallicityTimesMasses(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Masses', '0_GFM_Metallicity']
     return snap['0_Masses']*snap['0_GFM_Metallicity']
 
 
-def Volume(snap):
+def Volume(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Masses', '0_Density']
     return snap["0_Masses"] / snap["0_Density"]
 
 
@@ -13,29 +17,42 @@ def EnergyDissipation(snap):
     return snap['0_EnergyDissipation']
 
 
-def MachnumberTimesEnergyDissipation(snap):
+def MachnumberTimesEnergyDissipation(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Machnumber', '0_EnergyDissipation']
     variable = snap['0_Machnumber']*snap['0_EnergyDissipation']
     return variable
 
 
-def MagneticFieldSquared(snap):
+def MagneticFieldSquared(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_MagneticField']
     return np.sum(snap['0_MagneticField']**2, axis=1)
 
 
-def MagneticFieldStrength(snap):
+def MagneticFieldStrength(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_MagneticField']
     return np.sqrt(np.sum(snap['0_MagneticField']**2, axis=1))
 
 
-def VelocityMagnitude(snap):
+def VelocityMagnitude(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Velocities']
     return np.sqrt(np.sum(snap['0_Velocities']**2, axis=1))
 
 
-def MagneticFieldSquaredTimesVolume(snap):
+def MagneticFieldSquaredTimesVolume(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Volume', '0_MagneticField']
     variable = snap["0_Volume"]*np.sum(snap['0_MagneticField']**2, axis=1)
     return variable
 
 
-def Pressure(snap):
+def Pressure(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_InternalEnergy', '0_Density']
+
     if snap.gamma == 1:
         msg = 'Temperature field not supported for isothermal EOS!'
         raise RuntimeError(msg)
@@ -44,7 +61,10 @@ def Pressure(snap):
     return variable
 
 
-def PressureTimesVolume(snap):
+def PressureTimesVolume(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Pressure', '0_Volume']
+
     if '0_Pressure' in snap.keys():
         return snap['0_Pressure'] * snap['0_Volume']
     else:
@@ -57,7 +77,11 @@ def PressureTimesVolume(snap):
     return variable
 
 
-def Temperatures(snap):
+def Temperatures(snap, get_dependencies=False):
+
+    if get_dependencies:
+        return ['0_InternalEnergy', '0_MeanMolecularWeight']
+
     from astropy import constants as c
     mhydrogen = c.m_e + c.m_p
 
@@ -82,11 +106,17 @@ def Temperatures(snap):
     return variable
 
 
-def TemperaturesTimesMasses(snap):
+def TemperaturesTimesMasses(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Temperatures', '0_Masses']
+
     return snap["0_Temperatures"]*snap['0_Masses']
 
 
-def Current(snap):
+def Current(snap, get_dependencies=False):
+
+    if get_dependencies:
+        return ['0_BfieldGradient']
 
     def get_index(ii, jj):
         return ii*3 + jj
@@ -99,8 +129,11 @@ def Current(snap):
     return J
 
 
-def Enstrophy(snap):
+def Enstrophy(snap, get_dependencies=False):
     # absolute vorticity squared times one half ("enstrophy")
+
+    if get_dependencies:
+        return ['0_VelocityGradient']
 
     def get_index(ii, jj):
         return ii*3 + jj
@@ -113,8 +146,11 @@ def Enstrophy(snap):
     return enstrophy
 
 
-def EnstrophyTimesMasses(snap):
+def EnstrophyTimesMasses(snap, get_dependencies=False):
     # absolute vorticity squared times one half ("enstrophy")
+
+    if get_dependencies:
+        return ['0_VelocityGradient']
 
     # Reshaping is slow
     if False:
@@ -143,6 +179,7 @@ def EnstrophyTimesMasses(snap):
 
 
 def MeanMolecularWeight(snap):
+
     if '0_GFM_Metals' in snap.info(0, False):
         hydrogen_abundance = snap['0_GFM_Metals'][:, 0]
     else:
@@ -172,7 +209,11 @@ def NumberDensity(snap):
     return number_density_gas
 
 
-def MagneticCurvature(snap):
+def MagneticCurvature(snap, get_dependencies=False):
+
+    if get_dependencies:
+        return ['0_MagneticField', '0_BfieldGradient']
+
     from . import util
 
     @util.remove_astro_units
@@ -186,7 +227,10 @@ def MagneticCurvature(snap):
     return curva
 
 
-def VelocityCurvature(snap):
+def VelocityCurvature(snap, get_dependencies=False):
+    if get_dependencies:
+        return ['0_Velocities', '0_VelocityGradient']
+
     from . import util
 
     @util.remove_astro_units
