@@ -9,7 +9,8 @@ snap.load_data(0, 'Density')
 unit = snap['0_MagneticField'].unit
 
 a = np.logspace(-2, 0, 100)
-B = pa.units.PaicosTimeSeries(np.ones_like(a), unit, h=snap.h, a=a)
+B = pa.units.PaicosTimeSeries(np.ones_like(a), unit, h=snap.h, a=a,
+                              comoving_sim=True)
 
 Bc = B.to('uG').no_small_h
 Bphys = B.to_physical.to('uG')

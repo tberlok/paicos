@@ -61,6 +61,7 @@ class PaicosReader(dict):
             keys = list(f.keys())
 
         # Enable units
+        self.get_units_and_other_parameters()
         self.enable_units()
 
         # Find the adiabatic index
@@ -76,7 +77,7 @@ class PaicosReader(dict):
             for key in keys:
                 self.load_data(key)
 
-    def enable_units(self):
+    def get_units_and_other_parameters(self):
         """
         Initialize arepo units, scale factor (a) and h (HubbleParam).
 
@@ -84,9 +85,10 @@ class PaicosReader(dict):
         groups found in arepo snapshots.
         """
 
-        scale_factor = time = self.Header['Time']
-        self._Time = float(time)
-        redshift = self.Header['Redshift']
+        self._Time = self.Header['Time']
+        self._Redshift = self.Header['Redshift']
+        self._HubbleParam = self.Parameters['HubbleParam']
+
         unit_length = self.Parameters['UnitLength_in_cm'] * u.cm
         unit_mass = self.Parameters['UnitMass_in_g'] * u.g
         unit_velocity = self.Parameters['UnitVelocity_in_cm_per_s'] * u.cm/u.s
@@ -98,8 +100,18 @@ class PaicosReader(dict):
         OmegaBaryon = self.Parameters['OmegaBaryon']
         OmegaLambda = self.Parameters['OmegaLambda']
 
-        HubbleParam = self.Parameters['HubbleParam']
         ComovingIntegrationOn = self.Parameters['ComovingIntegrationOn']
+
+        self.ComovingIntegrationOn = bool(ComovingIntegrationOn)
+        self.comoving_sim = self.ComovingIntegrationOn
+
+        if self.ComovingIntegrationOn:
+            # Set up LambdaCDM cosmology to calculate times, etc
+            self.cosmo = LambdaCDM(H0=100*self.h, Om0=Omega0,
+                                   Ob0=OmegaBaryon, Ode0=OmegaLambda)
+            # Current age of the universe and look back time
+            self._age = self.get_age(self.z)
+            self._lookback_time = self.get_lookback_time(self.z)
 
         _ns = globals()
         arepo_mass = u.def_unit(
@@ -175,35 +187,69 @@ class PaicosReader(dict):
                             'unit_pressure': arepo_pressure,
                             'unit_density': arepo_density}
 
+    def enable_units(self):
         # Enable arepo units globally
         for key in self.arepo_units:
             u.add_enabled_units(self.arepo_units[key])
             phys_type = key.split('_')[1]
             u.def_physical_type(self.arepo_units[key], phys_type)
 
-        self.ComovingIntegrationOn = bool(ComovingIntegrationOn)
-        self.comoving_sim = self.ComovingIntegrationOn
-
-        self.h = HubbleParam
-
-        if ComovingIntegrationOn:
-            self.a = self.scale_factor = scale_factor
-            self.z = self.redshift = redshift
-            # Set up LambdaCDM cosmology to calculate times, etc
-            self.cosmo = cosmo = LambdaCDM(H0=100*HubbleParam, Om0=Omega0,
-                                           Ob0=OmegaBaryon, Ode0=OmegaLambda)
-            # Current age of the universe and look back time
-            self.age = cosmo.lookback_time(1e100) - cosmo.lookback_time(self.z)
-            self.lookback_time = self.get_lookback_time(self.z)
-        else:
-            self.time = time * self.arepo_units['unit_time']
-            self.a = 1
-            if self.h == 0:
-                self.h = 1
-
         self.length = self.get_paicos_quantity(1, 'Coordinates')
         self.mass = self.get_paicos_quantity(1, 'Masses')
         self.velocity = self.get_paicos_quantity(1, 'Velocities')
+
+    @property
+    def a(self):
+        """
+        The scale factor.
+        """
+        if self.comoving_sim:
+            return self._Time
+        else:
+            raise RuntimeError('Non-comoving object has no scale factor')
+            # return 1.
+
+    @property
+    def h(self):
+        """
+        The reduced Hubble parameter
+        """
+        if self._HubbleParam == 0:
+            return 1.0
+        else:
+            return self._HubbleParam
+
+    @property
+    def z(self):
+        """
+        The redshift.
+        """
+        if self.comoving_sim:
+            return self._Redshift
+        else:
+            raise RuntimeError('Non-comoving object has no redshift')
+            # return 0.
+
+    @property
+    def lookback_time(self):
+        if self.comoving_sim:
+            return self._lookback_time(self.z)
+        else:
+            raise RuntimeError('Non-comoving object has no lookback_time')
+
+    @property
+    def age(self):
+        if self.comoving_sim:
+            return self._age
+        else:
+            raise RuntimeError('Non-comoving object has no lookback_time')
+
+    @property
+    def time(self):
+        if self.comoving_sim:
+            return self.age
+        else:
+            return self._Time * self.arepo_units['unit_time']
 
     def get_lookback_time(self, z):
         lookback_time = self.cosmo.lookback_time(z)
@@ -299,7 +345,7 @@ class PaicosReader(dict):
         elif isinstance(name, str):
 
             unitless_vars = ['ElectronAbundance', 'MachNumber',
-                             'GFM_Metallicity', 'GFM_Metals']
+                             'GFM_Metallicity', 'GFM_Metals', 'ParticleIDs']
             if name == 'Coordinates':
                 units = aunits['unit_length']*a/h
             elif name == 'Density':

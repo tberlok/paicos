@@ -129,19 +129,19 @@ class PaicosQuantity(Quantity):
             return
 
         # Set Paicos specific parameters
-        self._h = getattr(obj, 'h', None)
-        self._a = getattr(obj, 'a', None)
-        self._comoving_sim = getattr(obj, 'comoving_sim', None)
+        self._h = getattr(obj, '_h', None)
+        self._a = getattr(obj, '_a', None)
+        self._comoving_sim = getattr(obj, '_comoving_sim', None)
 
     @property
     def a(self):
         """
         The scale factor.
         """
-        if self._comoving_sim:
+        if self.comoving_sim:
             return self._a
         else:
-            return 1.
+            raise RuntimeError('Non-comoving object has no scale factor')
 
     @property
     def h(self):
@@ -165,18 +165,18 @@ class PaicosQuantity(Quantity):
         if self.comoving_sim:
             return 1./self._a - 1.
         else:
-            return 0.
+            raise RuntimeError('Non-comoving object has no redshift')
 
     def lookback_time(self, reader_object):
         if self.comoving_sim:
-            return reader_object.converter.get_lookback_time(self.z)
+            return reader_object.get_lookback_time(self.z)
         else:
             msg = 'lookback_time not defined for non-comoving sim'
             raise RuntimeError(msg)
 
     def age(self, reader_object):
         if self.comoving_sim:
-            return reader_object.converter.get_age(self.z)
+            return reader_object.get_age(self.z)
         else:
             msg = 'age not defined for non-comoving sim'
             raise RuntimeError(msg)
@@ -210,7 +210,7 @@ class PaicosQuantity(Quantity):
         Returns a new PaicosQuantity with the same units as the current
         PaicosQuantity and a numeric value of 1.
         """
-        return PaicosQuantity(1., self.unit, a=self.a, h=self.h,
+        return PaicosQuantity(1., self.unit, a=self._a, h=self.h,
                               comoving_sim=self.comoving_sim)
 
     @property
@@ -402,7 +402,10 @@ class PaicosQuantity(Quantity):
         The value of the resulting object is scaled accordingly.
         """
         codic, dic = self.__get_unit_dictionaries()
-        factor = self.h**codic[small_h] * self.a**codic[small_a]
+        factor = self.h**codic[small_h]
+
+        if self.comoving_sim:
+            factor *= self.a**codic[small_a]
 
         value = self.view(np.ndarray)
         new_unit = self._get_new_units([small_a, small_h])
@@ -442,8 +445,8 @@ class PaicosQuantity(Quantity):
         """
         err_msg = "Operation requires objects to have same a and h value."
         if isinstance(value, PaicosQuantity):
-            if value.a != self.a:
-                info = ' Obj1.a={}, Obj2.a={}'.format(self.a, value.a)
+            if value._a != self._a:
+                info = ' Obj1._a={}, Obj2._a={}'.format(self._a, value._a)
                 raise RuntimeError(err_msg + info)
             if value.h != self.h:
                 info = ' Obj1.h={}, Obj2.h={}'.format(self.h, value.h)
@@ -542,7 +545,7 @@ class PaicosTimeSeries(PaicosQuantity):
                 subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
 
         if isinstance(value, list):
-            a = np.array([value[i].a for i in range(value.shape[0])])
+            a = np.array([value[i]._a for i in range(value.shape[0])])
             h = value[0].h  # Could check that they are all the same...
             value = np.array(value)
         elif isinstance(value, np.ndarray):
@@ -585,8 +588,8 @@ class PaicosTimeSeries(PaicosQuantity):
             raise RuntimeError(msg)
         elif isinstance(value, PaicosTimeSeries):
             try:
-                info = '\nObj1.a={}.\n\nObj2.a={}'.format(self.a, value.a)
-                np.testing.assert_array_equal(value.a, self.a)
+                info = '\nObj1.a={}.\n\nObj2.a={}'.format(self._a, value._a)
+                np.testing.assert_array_equal(value._a, self._a)
             except AssertionError:
                 raise RuntimeError(err_msg + info)
             if value.h != self.h:
