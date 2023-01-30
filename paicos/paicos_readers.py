@@ -280,10 +280,12 @@ class PaicosReader(dict):
 
         unit = self.find_unit(name)
 
-        data = np.array(data)
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
 
         return pu.PaicosQuantity(data, unit, a=self._Time, h=self.h,
-                                 comoving_sim=self.comoving_sim)
+                                 comoving_sim=self.comoving_sim,
+                                 dtype=data.dtype)
 
     def find_unit(self, name, arepo_code_units=True):
         """
