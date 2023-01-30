@@ -141,6 +141,8 @@ class Snapshot(PaicosReader):
         self._find_available_for_loading()
         self._find_available_functions()
 
+        self._identify_parttypes()
+
         self.__get_auto_comple_list()
 
     def _add_mass_to_user_funcs(self):
@@ -170,6 +172,7 @@ class Snapshot(PaicosReader):
 
     def _find_available_for_loading(self):
         self._all_avail_load = []
+        self._part_avail_load = {i: [] for i in range(self.nspecies)}
         for PartType in range(self.nspecies):
             PartType_str = 'PartType{}'.format(PartType)
             with h5py.File(self.filename, 'r') as file:
@@ -178,6 +181,17 @@ class Snapshot(PaicosReader):
                     for key in load_keys:
                         P_key = str(PartType) + '_' + key
                         self._all_avail_load.append(P_key)
+                        self._part_avail_load[PartType].append(P_key)
+
+    def _identify_parttypes(self):
+        self._type_info = {0: 'voronoi_cells'}
+        for p in range(1, self.nspecies):
+            bh = any(['BH_' in key for key in self._part_avail_load[p]])
+            star = any(['GFM_' in key for key in self._part_avail_load[p]])
+            if bh:
+                self._type_info[p] = 'black_holes'
+            if star:
+                self._type_info[p] = 'stars'
 
     def _find_available_functions(self):
         from .settings import use_only_user_functions
@@ -426,12 +440,18 @@ class Snapshot(PaicosReader):
                 raise RuntimeError('Data has unexpected shape!')
 
         if settings.use_units or give_units:
-            try:
+            if particle_type in self._type_info.keys():
+                ptype = self._type_info[particle_type]  # e.g. 'voronoi_cells'
                 self[alias_key] = self.get_paicos_quantity(self[alias_key],
-                                                           blockname)
-            except:
-                from warnings import warn
-                warn('Failed to give {} units'.format(alias_key))
+                                                           blockname,
+                                                           field=ptype)
+            else:
+                # Assume dark matter for the units
+                self[alias_key] = self.get_paicos_quantity(self[alias_key],
+                                                           blockname,
+                                                           field='dark_matter')
+            if not hasattr(self[alias_key], 'unit'):
+                del self[alias_key]
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")

@@ -274,13 +274,51 @@ class PaicosReader(dict):
                                          comoving_sim=self.comoving_sim)
         return time
 
-    def get_paicos_quantity(self, data, name):
+    def get_paicos_quantity(self, data, name, field=None):
 
         if hasattr(data, 'unit'):
             msg = 'Data already had units! {}'.format(name)
             raise RuntimeError(msg)
 
-        unit = self.find_unit(name)
+        if field is not None:
+            import astropy.units as u
+            from . import unit_specifications
+            if field == 'voronoi_cells':
+                unit_str = unit_specifications.voronoi_cells[name]
+            elif field == 'dark_matter':
+                unit_str = unit_specifications.dark_matter[name]
+            elif field == 'stars':
+                unit_str = unit_specifications.stars[name]
+            elif field == 'black_holes':
+                unit_str = unit_specifications.black_holes[name]
+            elif field == 'groups':
+                unit_str = unit_specifications.groups[name]
+            elif field == 'subhalos':
+                unit_str = unit_specifications.subhalos[name]
+            else:
+                raise RuntimeError('unknown field: {}'.format(field))
+
+            is_unit = (isinstance(unit_str, u.core.CompositeUnit)
+                       or isinstance(unit_str, u.core.IrreducibleUnit))
+
+            if unit_str == '':
+                unit = u.Unit('')
+            elif is_unit:
+                print(unit_str)
+                unit = unit_str
+            elif unit_str is False:
+                msg = '\n\nUnit for {}, {} not implemented!'
+                msg += '\nPlease add it to unit_specifications'
+                import warnings
+                from . import settings
+                if settings.strict_units:
+                    raise RuntimeError(msg.format(field, name))
+                # warnings.warn(msg.format(field, name))
+                return data
+            else:
+                unit = self.find_unit(unit_str)
+        else:
+            unit = self.find_unit(name)
 
         if not isinstance(data, np.ndarray):
             data = np.array(data)
@@ -360,6 +398,8 @@ class PaicosReader(dict):
                 units = ''
             elif name == 'Masses':
                 units = aunits['unit_mass']/h
+            elif name == 'Potential':
+                units = aunits['unit_velocity']**2/a
             elif name == 'EnergyDissipation':
                 units = aunits['unit_energy']/h
                 raise RuntimeError('Needs checking!')

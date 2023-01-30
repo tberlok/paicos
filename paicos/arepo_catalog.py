@@ -100,23 +100,16 @@ class Catalog(PaicosReader):
             f.close()
 
         if settings.use_units:
-
-            mass_keys = ['GroupMass',
-                         'Group_M_Crit200',
-                         'Group_M_Crit500',
-                         'Group_M_Mean200',
-                         'Group_M_TopHat200']
-
-            pos_keys = ['GroupPos',
-                        'Group_R_Crit200',
-                        'Group_R_Crit500',
-                        'Group_R_Mean200',
-                        'Group_R_TopHat200']
-
-            for key in pos_keys:
+            for key in list(self.Group.keys()):
                 self.Group[key] = self.get_paicos_quantity(
-                                    self.Group[key], 'Coordinates')
+                                    self.Group[key], key,
+                                    field='groups')
+                if not hasattr(self.Group[key], 'unit'):
+                    del self.Group[key]
 
-            for key in mass_keys:
-                self.Group[key] = self.get_paicos_quantity(
-                                     self.Group[key], 'Masses')
+            for key in list(self.Sub.keys()):
+                self.Sub[key] = self.get_paicos_quantity(
+                                    self.Sub[key], key,
+                                    field='subhalos')
+                if not hasattr(self.Sub[key], 'unit'):
+                    del self.Sub[key]
