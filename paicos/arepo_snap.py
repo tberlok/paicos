@@ -212,8 +212,9 @@ class Snapshot(PaicosReader):
             deps = dependency_dic[key]
             for dep in list(deps):
                 if dep in dependency_dic.keys():
-                    i = deps.index(dep)
-                    deps[i] = dependency_dic[dep]
+                    deps.remove(dep)
+                    for subdep in dependency_dic[dep]:
+                        deps.append(subdep)
 
         # Then remove all the dependencies that can be loaded
         for key in dependency_dic.keys():
@@ -226,6 +227,7 @@ class Snapshot(PaicosReader):
         for key in dependency_dic.keys():
             dep = len(dependency_dic[key])
             if dep > 0:
+                print('deleting {}'.format(key))
                 del self._this_snap_funcs[key]
 
     def get_variable_function(self, P_key, info=False):
@@ -529,12 +531,14 @@ class Snapshot(PaicosReader):
     def __get_auto_comple_list(self):
         self._auto_list = []
 
-        for i in range(self.nspecies):
-            for P_key in self.info(i, False):
-                if settings.use_aliases:
-                    if P_key in settings.aliases.keys():
-                        P_key = settings.aliases[P_key]
-                self._auto_list.append(P_key)
+        self._auto_list = self._all_avail_load
+        for key in self._this_snap_funcs.keys():
+            self._auto_list.append(key)
+
+        if settings.use_aliases:
+            for ii, P_key in enumerate(self._auto_list):
+                if P_key in settings.aliases.keys():
+                    self._auto_list[ii] = settings.aliases[P_key]
 
     def _ipython_key_completions_(self):
         """
