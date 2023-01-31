@@ -545,8 +545,9 @@ class PaicosTimeSeries(PaicosQuantity):
                 subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
 
         if isinstance(value, list):
-            a = np.array([value[i]._a for i in range(len(value))])
             h = value[0].h  # Could check that they are all the same...
+            comoving_sim = value[0].comoving_sim
+            a = np.array([value[i]._a for i in range(len(value))])
             value = np.array([value[i].value for i in range(len(value))])
         elif isinstance(value, np.ndarray):
             assert h is not None
