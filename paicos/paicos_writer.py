@@ -96,9 +96,9 @@ class PaicosTimeSeriesWriter(PaicosWriter):
     """
     """
     def __init__(self, reader_object, basedir,
-                 basename="paicos_file", add_snapnum=False, mode='w'):
+                 basename="paicos_time_series", add_snapnum=False, mode='w'):
 
         super().__init__(reader_object, basedir,
-                         basename="paicos_time_series",
+                         basename=basename,
                          add_snapnum=add_snapnum,
                          mode=mode)
