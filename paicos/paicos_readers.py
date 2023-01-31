@@ -65,6 +65,7 @@ class PaicosReader(dict):
         # Enable units
         self.get_units_and_other_parameters()
         self.enable_units()
+        self.add_user_units()
 
         # Find the adiabatic index
         if 'GAMMA' in self.Config:
@@ -200,6 +201,35 @@ class PaicosReader(dict):
         self.mass = self.get_paicos_quantity(1, 'Masses')
         self.velocity = self.get_paicos_quantity(1, 'Velocities')
 
+    def add_user_units(self):
+        """
+        Add all user supplied units
+        """
+        from . import unit_specifications
+
+        unit_dict = unit_specifications.unit_dict
+        user_unit_dict = util.user_unit_dict
+
+        err_msg = ("\n\nThe user supplied unit for '{}:{}' already exists " +
+                   "in the default Paicos settings. Changing from '{}' to  " +
+                   "'{}' is not allowed. Please make a pull request if you " +
+                   " have found a bug.")
+
+        for field in user_unit_dict.keys():
+            for name in user_unit_dict[field].keys():
+
+                # Check for overwriting and changing of defaults
+                if name in unit_dict[field].keys():
+                    def_unit = unit_dict[field][name]
+                    user_unit = user_unit_dict[field][name]
+                    if user_unit != def_unit:
+                        msg = err_msg.format(field, name, def_unit, user_unit)
+                        del user_unit_dict[field][name]
+                        raise RuntimeError(msg)
+
+                # Set the new units
+                unit_dict[field][name] = user_unit_dict[field][name]
+
     @property
     def a(self):
         """
@@ -298,26 +328,17 @@ class PaicosReader(dict):
         """
         from . import unit_specifications
 
-        pos_fields = ['default', 'voronoi_cells', 'dark_matter',
-                      'stars', 'black_holes', 'groups', 'subhalos']
-
-        if field not in pos_fields:
+        if field not in unit_specifications.unit_dict.keys():
             raise RuntimeError('unknown field: {}'.format(field))
 
-        if field == 'default':
-            unit = unit_specifications.default[name]
-        elif field == 'voronoi_cells':
-            unit = unit_specifications.voronoi_cells[name]
-        elif field == 'dark_matter':
-            unit = unit_specifications.dark_matter[name]
-        elif field == 'stars':
-            unit = unit_specifications.stars[name]
-        elif field == 'black_holes':
-            unit = unit_specifications.black_holes[name]
-        elif field == 'groups':
-            unit = unit_specifications.groups[name]
-        elif field == 'subhalos':
-            unit = unit_specifications.subhalos[name]
+        if name not in unit_specifications.unit_dict[field].keys():
+            unit = False
+        else:
+            unit = unit_specifications.unit_dict[field][name]
+
+        # Convert string to astropy unit
+        if isinstance(unit, str):
+            unit = u.Unit(unit)
 
         if unit is False:
             msg = '\n\nUnit for {}, {} not implemented!'
@@ -327,8 +348,6 @@ class PaicosReader(dict):
                 raise RuntimeError(msg.format(field, name))
             else:
                 return False
-            # import warnings
-            # warnings.warn(msg.format(field, name))
 
         return self._sanitize_unit(unit)
 

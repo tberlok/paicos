@@ -4,6 +4,14 @@ import numpy as np
 
 openMP_has_issues = None
 
+user_unit_dict = {'default': {},
+                  'voronoi_cells': {},
+                  'dark_matter': {},
+                  'stars': {},
+                  'black_holes': {},
+                  'groups': {},
+                  'subhalos': {}}
+
 
 def get_project_root_dir():
     import os

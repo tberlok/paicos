@@ -40,15 +40,15 @@ voronoi_cells = {
     'Coordinates': Coordinates,
     'Density': Density,
     'ElectronAbundance': unit_less,
-    'EnergyDissipation': u.Unit('arepo_energy arepo_time^-1 small_a^-1'),
+    'EnergyDissipation': 'arepo_energy arepo_time^-1 small_a^-1',
     'GFM_AGNRadiation': False,  # u.Unit('erg s^-1 cm^-2')*u.Unit(str(4*np.pi)),
-    'GFM_CoolingRate': u.Unit('erg cm^3 s^-1'),
+    'GFM_CoolingRate': 'erg cm^3 s^-1',
     'GFM_Metallicity': unit_less,
     'GFM_Metals': unit_less,
-    'GFM_WindDMVelDisp': u.Unit('arepo_velocity'),
+    'GFM_WindDMVelDisp': 'arepo_velocity',
     'GFM_WindHostHaloMass': Masses,
     'HighResGasMass': Masses,
-    'InternalEnergy': u.Unit('arepo_energy / arepo_mass'),
+    'InternalEnergy': 'arepo_energy / arepo_mass',
     'Machnumber': unit_less,
     'MagneticField': MagneticField,
     'MagneticFieldDivergence': MagneticField / Coordinates,
@@ -57,12 +57,12 @@ voronoi_cells = {
     'NeutralHydrogenAbundance': unit_less,
     'ParticleIDs': unit_less,
     'Potential': Potential,
-    'Pressure': u.Unit('arepo_pressure  small_h^2 small_a^-3'),
+    'Pressure': 'arepo_pressure  small_h^2 small_a^-3',
     'StarFormationRate': StarFormationRate,
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
-    'SubfindVelDisp': u.Unit('arepo_velocity'),
+    'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities,
     'VelocityGradient': Velocities/Coordinates
 }
@@ -75,7 +75,7 @@ dark_matter = {
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
-    'SubfindVelDisp': u.Unit('arepo_velocity'),
+    'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities
 }
 
@@ -85,14 +85,14 @@ stars = {
     'GFM_Metallicity': unit_less,
     'GFM_Metals': unit_less,
     'GFM_StellarFormationTime': unit_less,
-    'GFM_StellarPhotometrics': u.Unit('mag'),
+    'GFM_StellarPhotometrics': 'mag',
     'Masses': Masses,
     'ParticleIDs': unit_less,
     'Potential': Potential,
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
-    'SubfindVelDisp': u.Unit('arepo_velocity'),
+    'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities
 }
 
@@ -116,9 +116,9 @@ black_holes = {
     'BH_Mdot': Mdot,
     'BH_MdotBondi': Mdot,
     'BH_MdotEddington': Mdot,
-    'BH_Pressure': u.Unit('arepo_mass arepo_length^-1 arepo_time^-2'),
+    'BH_Pressure': 'arepo_mass arepo_length^-1 arepo_time^-2',
     'BH_Progs': unit_less,
-    'BH_U': u.Unit('arepo_velocity^2'),
+    'BH_U': 'arepo_velocity^2',
     'Coordinates': Coordinates,
     'Masses': Masses,
     'ParticleIDs': unit_less,
@@ -126,7 +126,7 @@ black_holes = {
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
-    'SubfindVelDisp': u.Unit('arepo_velocity'),
+    'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities
 }
 
@@ -146,7 +146,7 @@ groups = {
     'GroupSFR': StarFormationRate,
     'GroupStarMetalFractions': unit_less,
     'GroupStarMetallicity': unit_less,
-    'GroupVel': u.Unit('arepo_velocity / small_a'),  # not Velocities!
+    'GroupVel': 'arepo_velocity / small_a',  # note the a-factor!
     'GroupWindMass': Masses,
     'Group_M_Crit200': Masses,
     'Group_M_Crit500': Masses,
@@ -194,19 +194,28 @@ subhalos = {
     'SubhaloSFRinHalfRad': StarFormationRate,
     'SubhaloSFRinMaxRad': StarFormationRate,
     'SubhaloSFRinRad': StarFormationRate,
-    'SubhaloSpin': u.Unit('arepo_length / small_h arepo_velocity'),  # Check!
+    'SubhaloSpin': 'arepo_length / small_h arepo_velocity',  # Check!
     'SubhaloStarMetalFractions': unit_less,
     'SubhaloStarMetalFractionsHalfRad': unit_less,
     'SubhaloStarMetalFractionsMaxRad': unit_less,
     'SubhaloStarMetallicity': unit_less,
     'SubhaloStarMetallicityHalfRad': unit_less,
     'SubhaloStarMetallicityMaxRad': unit_less,
-    'SubhaloStellarPhotometrics': u.Unit('mag'),
+    'SubhaloStellarPhotometrics': 'mag',
     'SubhaloStellarPhotometricsMassInRad': Masses,
     'SubhaloStellarPhotometricsRad': Coordinates,
-    'SubhaloVel': u.Unit('arepo_velocity'),
-    'SubhaloVelDisp': u.Unit('arepo_velocity'),
-    'SubhaloVmax': u.Unit('arepo_velocity'),
+    'SubhaloVel': 'arepo_velocity',
+    'SubhaloVelDisp': 'arepo_velocity',
+    'SubhaloVmax': 'arepo_velocity',
     'SubhaloVmaxRad': Velocities,
     'SubhaloWindMass': Masses
 }
+
+unit_dict = {'default': default,
+             'voronoi_cells': voronoi_cells,
+             'dark_matter': dark_matter,
+             'stars': stars,
+             'black_holes': black_holes,
+             'groups': groups,
+             'subhalos': subhalos
+             }
