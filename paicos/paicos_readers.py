@@ -274,160 +274,83 @@ class PaicosReader(dict):
                                          comoving_sim=self.comoving_sim)
         return time
 
-    def get_paicos_quantity(self, data, name, field=None):
+    def get_paicos_quantity(self, data, name, field='default'):
 
         if hasattr(data, 'unit'):
             msg = 'Data already had units! {}'.format(name)
             raise RuntimeError(msg)
 
-        if field is not None:
-            import astropy.units as u
-            from . import unit_specifications
-            if field == 'voronoi_cells':
-                unit_str = unit_specifications.voronoi_cells[name]
-            elif field == 'dark_matter':
-                unit_str = unit_specifications.dark_matter[name]
-            elif field == 'stars':
-                unit_str = unit_specifications.stars[name]
-            elif field == 'black_holes':
-                unit_str = unit_specifications.black_holes[name]
-            elif field == 'groups':
-                unit_str = unit_specifications.groups[name]
-            elif field == 'subhalos':
-                unit_str = unit_specifications.subhalos[name]
-            else:
-                raise RuntimeError('unknown field: {}'.format(field))
-
-            is_unit = (isinstance(unit_str, u.core.CompositeUnit)
-                       or isinstance(unit_str, u.core.IrreducibleUnit))
-
-            if unit_str == '':
-                unit = u.Unit('')
-            elif is_unit:
-                print(unit_str)
-                unit = unit_str
-            elif unit_str is False:
-                msg = '\n\nUnit for {}, {} not implemented!'
-                msg += '\nPlease add it to unit_specifications'
-                import warnings
-                from . import settings
-                if settings.strict_units:
-                    raise RuntimeError(msg.format(field, name))
-                # warnings.warn(msg.format(field, name))
-                return data
-            else:
-                unit = self.find_unit(unit_str)
-        else:
-            unit = self.find_unit(name)
+        unit = self.find_unit(name, field)
 
         if not isinstance(data, np.ndarray):
             data = np.array(data)
 
-        return pu.PaicosQuantity(data, unit, a=self._Time, h=self.h,
-                                 comoving_sim=self.comoving_sim,
-                                 dtype=data.dtype)
+        if unit:
+            return pu.PaicosQuantity(data, unit, a=self._Time, h=self.h,
+                                     comoving_sim=self.comoving_sim,
+                                     dtype=data.dtype)
+        else:
+            return data
 
-    def find_unit(self, name, arepo_code_units=True):
+    def find_unit(self, name, field):
         """
-        Here we find the units including the scaling with a and h
-        of a quantity.
-
-        The input 'name' can be either a data attribute
-        from arepo (which currently does not exist for all variables)
-        or it can be a string corresponding to one of the data types,
-        i.e. 'Velocities' or 'Coordinates'
-
-        For this latter, hardcoded, option, I have implemented a few of the
-        gas variables.
+        Find unit for a given quantity
         """
-        import astropy.units as u
-        if arepo_code_units:
-            aunits = self.arepo_units
-        else:
-            aunits = self.arepo_units_in_cgs
+        from . import unit_specifications
 
-        # Turn off a and h if we are not comoving or if h = 1
-        if self.ComovingIntegrationOn:
-            a = pu.small_a
-        else:
-            a = u.Unit('')
+        pos_fields = ['default', 'voronoi_cells', 'dark_matter',
+                      'stars', 'black_holes', 'groups', 'subhalos']
 
-        if self.h == 1:
-            h = u.Unit('')
-        else:
-            h = pu.small_h
+        if field not in pos_fields:
+            raise RuntimeError('unknown field: {}'.format(field))
 
-        if arepo_code_units:
-            def find(name):
-                return self.find_unit(name, True)
-        else:
-            def find(name):
-                return self.find_unit(name, False)
+        if field == 'default':
+            unit = unit_specifications.default[name]
+        elif field == 'voronoi_cells':
+            unit = unit_specifications.voronoi_cells[name]
+        elif field == 'dark_matter':
+            unit = unit_specifications.dark_matter[name]
+        elif field == 'stars':
+            unit = unit_specifications.stars[name]
+        elif field == 'black_holes':
+            unit = unit_specifications.black_holes[name]
+        elif field == 'groups':
+            unit = unit_specifications.groups[name]
+        elif field == 'subhalos':
+            unit = unit_specifications.subhalos[name]
 
-        if isinstance(name, dict):
-            # Create units for the quantity
-            if 'unit' in name:
-                units = 1*u.Unit(name['unit'])
+        if unit is False:
+            msg = '\n\nUnit for {}, {} not implemented!'
+            msg += '\nPlease add it to unit_specifications'
+            from . import settings
+            if settings.strict_units:
+                raise RuntimeError(msg.format(field, name))
             else:
-                # Arepo data attributes and the units from the Parameter
-                # group in the hdf5 file are here combined
-                # Create comoving dictionary
-                comoving_dic = {}
-                for key in ['a_scaling', 'h_scaling']:
-                    comoving_dic.update({key: name[key]})
+                return False
+            # import warnings
+            # warnings.warn(msg.format(field, name))
 
-                comoving_dic.update({'small_h': self.h,
-                                     'scale_factor': self.a})
-                units = aunits['unit_length']**(name['length_scaling']) * \
-                    aunits['unit_mass']**(name['mass_scaling']) * \
-                    aunits['unit_velocity']**(name['velocity_scaling']) * \
-                    a**comoving_dic['a_scaling'] * \
-                    h**comoving_dic['h_scaling']
+        return self._sanitize_unit(unit)
 
-        elif isinstance(name, str):
+    def _sanitize_unit(self, unit):
+        """
+        Removes 'a' factors for non-comoving simulations,
+        and 'h' factors for simulations with HubbleParam=1.
+        """
 
-            unitless_vars = ['ElectronAbundance', 'MachNumber',
-                             'GFM_Metallicity', 'GFM_Metals', 'ParticleIDs']
-            if name == 'Coordinates':
-                units = aunits['unit_length']*a/h
-            elif name == 'Density':
-                units = find('Masses')/find('Volume')
-            elif name == 'Volume':
-                units = find('Coordinates')**3
-            elif name in unitless_vars:
-                units = ''
-            elif name == 'Masses':
-                units = aunits['unit_mass']/h
-            elif name == 'Potential':
-                units = aunits['unit_velocity']**2/a
-            elif name == 'EnergyDissipation':
-                units = aunits['unit_energy']/h
-                raise RuntimeError('Needs checking!')
-            elif name == 'InternalEnergy':
-                units = aunits['unit_energy']/aunits['unit_mass']
-            elif name == 'MagneticField':
-                units = aunits['unit_pressure']**(1/2)*a**(-2)*h
-            elif name == 'BfieldGradient':
-                units = find('MagneticField')/find('Coordinates')
-            elif name == 'MagneticFieldDivergence':
-                units = find('BfieldGradient')
-            elif name == 'Velocities':
-                units = aunits['unit_velocity']*a**(1/2)
-            elif name == 'Velocities':
-                units = aunits['unit_velocity']*a**(1/2)
-            elif name == 'VelocityGradient':
-                units = find('Velocities')/find('Coordinates')
-            elif name == 'Enstrophy':
-                units = (find('VelocityGradient'))**2
-            elif name == 'Temperature':
-                units = u.K
-            elif name == 'Pressure':
-                units = aunits['unit_pressure'] * h**2 / a**3
-            else:
-                err_msg = 'invalid option name={}, cannot find units'
-                raise RuntimeError(err_msg.format(name))
+        remove_list = []
+        if not self.ComovingIntegrationOn:
+            remove_list.append(u.Unit('small_a'))
 
-        return units
+        if self.h == 1.:
+            remove_list.append(u.Unit('small_h'))
+
+        unit_list = []
+        for base, power in zip(unit.bases, unit.powers):
+            if base not in remove_list:
+                unit_list.append(base**power)
+
+        return np.product(unit_list)
 
     def load_data(self, name, group=None):
 
