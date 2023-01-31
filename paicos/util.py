@@ -145,7 +145,8 @@ def remove_astro_units(func):
 def get_index_of_radial_range(pos, center, r_min, r_max):
     from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
     xc, yc, zc = center[0], center[1], center[2]
-    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max)
+    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max,
+                                             settings.numthreads)
     return index
 
 
@@ -155,7 +156,8 @@ def get_index_of_region(pos, center, widths, box):
     xc, yc, zc = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
     index = get_index_of_region_cython(pos, xc, yc, zc,
-                                       width_x, width_y, width_z, box)
+                                       width_x, width_y, width_z, box,
+                                       settings.numthreads)
     return index
 
 
@@ -167,17 +169,20 @@ def get_index_of_slice_region(pos, center, widths, thickness, box):
         from .cython.get_index_of_region_functions import get_index_of_x_slice_region
         index = get_index_of_x_slice_region(pos, xc, yc, zc,
                                             width_y, width_z,
-                                            thickness, box)
+                                            thickness, box,
+                                            settings.numthreads)
     elif widths[1] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_y_slice_region
         index = get_index_of_y_slice_region(pos, xc, yc, zc,
                                             width_x, width_z,
-                                            thickness, box)
+                                            thickness, box,
+                                            settings.numthreads)
     elif widths[2] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_z_slice_region
         index = get_index_of_z_slice_region(pos, xc, yc, zc,
                                             width_x, width_y,
-                                            thickness, box)
+                                            thickness, box,
+                                            settings.numthreads)
     else:
         raise RuntimeError('width={} should have length 3 and contain a zero!')
 
