@@ -1,26 +1,20 @@
 import paicos as pa
 
-aliases = {'0_Density': 'dens',
-           '0_Temperatures': 'T',
-           '0_MeanMolecularWeight': 'mu'}
+aliases = {'0_Temperatures': 'T',
+           '0_MeanMolecularWeight': 'mu',
+           '0_Masses': 'mass',
+           '0_InternalEnergy': 'u',
+           '0_Density': 'rho',
+           '0_MagneticField': 'bfld',
+           '0_Velocities': 'vel',
+           '0_Pressure': 'pres'}
 
 
 pa.set_aliases(aliases)
 
-snap = pa.Snapshot(pa.root_dir + '/data', 247)
+p = pa.Snapshot(pa.root_dir + '/data', 247)
+p['rho']
+p['T']
+p['bfld']
 
-snap.load_data(0, 'Masses')
-
-snap['dens']
-# snap['0_Volume']
-
-# snap['0_Temperatures']
-snap['T']
-
-# snap.load_data(0, 'Volume')
-
-# snap['0_Densitt']
-
-# snap['dfadsfdsf']
-
-snap.info(0)
+p.info(0)
