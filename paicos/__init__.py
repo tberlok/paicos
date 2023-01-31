@@ -53,7 +53,7 @@ def add_user_unit(field, blockname, unit):
     unit (string): The unit that the blockname should have.
                                    String inputs are preferred, e.g.,
 
-                         'arepo_mass arepo_length small_a^2 small_h^(-3/2'
+                         'arepo_mass arepo_length small_a^2 small_h^(-3/2)'
 
                    The available arepo units are
 
