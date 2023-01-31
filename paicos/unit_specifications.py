@@ -14,7 +14,7 @@ unit_less = u.Unit('')
 
 Coordinates = u.Unit('arepo_length small_a / small_h')
 Masses = u.Unit('arepo_mass / small_h')
-Velocities = u.Unit('arepo_mass / small_h')
+Velocities = u.Unit('arepo_velocity  small_a^(1/2)')
 
 Potential = u.Unit('arepo_velocity^2 / small_a')
 
