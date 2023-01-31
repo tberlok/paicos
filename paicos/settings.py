@@ -19,4 +19,4 @@ give_openMP_warnings = True
 use_aliases = False
 
 # Strictly enforce units
-strict_units = False
+strict_units = True

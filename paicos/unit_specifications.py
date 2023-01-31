@@ -1,6 +1,15 @@
 # import numpy as np
 import astropy.units as u
 
+"""
+Here we specify the units used in all the different fields commonly used
+in Arepo simulations.
+
+These units have been gathered by looking at the source code
+and cross-referencing with the overview at:
+https://www.tng-project.org/data/docs/specifications/
+"""
+
 unit_less = u.Unit('')
 
 Coordinates = u.Unit('arepo_length small_a / small_h')
@@ -21,6 +30,9 @@ default = {
     'Velocities': Velocities
 }
 
+
+StarFormationRate = u.Unit('Msun/yr')
+
 voronoi_cells = {
     'AllowRefinement': unit_less,
     'BfieldGradient': MagneticField / Coordinates,
@@ -28,8 +40,7 @@ voronoi_cells = {
     'Coordinates': Coordinates,
     'Density': Density,
     'ElectronAbundance': unit_less,
-    'EnergyDissipation': False,
-    # (1/𝑎)1010𝑀⊙/ckpc(km/s)3
+    'EnergyDissipation': u.Unit('arepo_energy arepo_time^-1 small_a^-1'),
     'GFM_AGNRadiation': False,  # u.Unit('erg s^-1 cm^-2')*u.Unit(str(4*np.pi)),
     'GFM_CoolingRate': u.Unit('erg cm^3 s^-1'),
     'GFM_Metallicity': unit_less,
@@ -47,7 +58,7 @@ voronoi_cells = {
     'ParticleIDs': unit_less,
     'Potential': Potential,
     'Pressure': u.Unit('arepo_pressure  small_h^2 small_a^-3'),
-    'StarFormationRate': u.Unit('Msun yr^-1'),
+    'StarFormationRate': StarFormationRate,
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
@@ -74,7 +85,7 @@ stars = {
     'GFM_Metallicity': unit_less,
     'GFM_Metals': unit_less,
     'GFM_StellarFormationTime': unit_less,
-    'GFM_StellarPhotometrics': False,
+    'GFM_StellarPhotometrics': u.Unit('mag'),
     'Masses': Masses,
     'ParticleIDs': unit_less,
     'Potential': Potential,
@@ -123,20 +134,20 @@ groups = {
     'GroupBHMass': Masses,
     'GroupBHMdot': Mdot,
     'GroupCM': Coordinates,
-    'GroupFirstSub': False,
-    'GroupGasMetalFractions': False,
-    'GroupGasMetallicity': False,
-    'GroupLen': False,
-    'GroupLenType': False,
+    'GroupFirstSub': unit_less,
+    'GroupGasMetalFractions': unit_less,
+    'GroupGasMetallicity': unit_less,
+    'GroupLen': unit_less,
+    'GroupLenType': unit_less,
     'GroupMass': Masses,
-    'GroupMassType': False,
-    'GroupNsubs': False,
+    'GroupMassType': Masses,
+    'GroupNsubs': unit_less,
     'GroupPos': Coordinates,
-    'GroupSFR': False,
-    'GroupStarMetalFractions': False,
-    'GroupStarMetallicity': False,
-    'GroupVel': False,
-    'GroupWindMass': False,
+    'GroupSFR': StarFormationRate,
+    'GroupStarMetalFractions': unit_less,
+    'GroupStarMetallicity': unit_less,
+    'GroupVel': u.Unit('arepo_velocity / small_a'),  # not Velocities!
+    'GroupWindMass': Masses,
     'Group_M_Crit200': Masses,
     'Group_M_Crit500': Masses,
     'Group_M_Mean200': Masses,
@@ -148,54 +159,54 @@ groups = {
 }
 
 subhalos = {
-    'SubhaloBHMass': False,
-    'SubhaloBHMdot': False,
-    'SubhaloBfldDisk': False,
-    'SubhaloBfldHalo': False,
-    'SubhaloCM': False,
-    'SubhaloGasMetalFractions': False,
-    'SubhaloGasMetalFractionsHalfRad': False,
-    'SubhaloGasMetalFractionsMaxRad': False,
-    'SubhaloGasMetalFractionsSfr': False,
-    'SubhaloGasMetalFractionsSfrWeighted': False,
-    'SubhaloGasMetallicity': False,
-    'SubhaloGasMetallicityHalfRad': False,
-    'SubhaloGasMetallicityMaxRad': False,
-    'SubhaloGasMetallicitySfr': False,
-    'SubhaloGasMetallicitySfrWeighted': False,
-    'SubhaloGrNr': False,
-    'SubhaloHalfmassRad': False,
-    'SubhaloHalfmassRadType': False,
-    'SubhaloIDMostbound': False,
-    'SubhaloLen': False,
-    'SubhaloLenType': False,
-    'SubhaloMass': False,
-    'SubhaloMassInHalfRad': False,
-    'SubhaloMassInHalfRadType': False,
-    'SubhaloMassInMaxRad': False,
-    'SubhaloMassInMaxRadType': False,
-    'SubhaloMassInRad': False,
-    'SubhaloMassInRadType': False,
-    'SubhaloMassType': False,
-    'SubhaloParent': False,
-    'SubhaloPos': False,
-    'SubhaloSFR': False,
-    'SubhaloSFRinHalfRad': False,
-    'SubhaloSFRinMaxRad': False,
-    'SubhaloSFRinRad': False,
-    'SubhaloSpin': False,
-    'SubhaloStarMetalFractions': False,
-    'SubhaloStarMetalFractionsHalfRad': False,
-    'SubhaloStarMetalFractionsMaxRad': False,
-    'SubhaloStarMetallicity': False,
-    'SubhaloStarMetallicityHalfRad': False,
-    'SubhaloStarMetallicityMaxRad': False,
-    'SubhaloStellarPhotometrics': False,
-    'SubhaloStellarPhotometricsMassInRad': False,
-    'SubhaloStellarPhotometricsRad': False,
-    'SubhaloVel': False,
-    'SubhaloVelDisp': False,
-    'SubhaloVmax': False,
-    'SubhaloVmaxRad': False,
-    'SubhaloWindMass': False
+    'SubhaloBHMass': Masses,
+    'SubhaloBHMdot': Mdot,
+    'SubhaloBfldDisk': MagneticField,
+    'SubhaloBfldHalo': MagneticField,
+    'SubhaloCM': Coordinates,
+    'SubhaloGasMetalFractions': unit_less,
+    'SubhaloGasMetalFractionsHalfRad': unit_less,
+    'SubhaloGasMetalFractionsMaxRad': unit_less,
+    'SubhaloGasMetalFractionsSfr': unit_less,
+    'SubhaloGasMetalFractionsSfrWeighted': unit_less,
+    'SubhaloGasMetallicity': unit_less,
+    'SubhaloGasMetallicityHalfRad': unit_less,
+    'SubhaloGasMetallicityMaxRad': unit_less,
+    'SubhaloGasMetallicitySfr': unit_less,
+    'SubhaloGasMetallicitySfrWeighted': unit_less,
+    'SubhaloGrNr': unit_less,
+    'SubhaloHalfmassRad': Coordinates,
+    'SubhaloHalfmassRadType': Coordinates,
+    'SubhaloIDMostbound': unit_less,
+    'SubhaloLen': unit_less,
+    'SubhaloLenType': unit_less,
+    'SubhaloMass': Masses,
+    'SubhaloMassInHalfRad': Masses,
+    'SubhaloMassInHalfRadType': Masses,
+    'SubhaloMassInMaxRad': Masses,
+    'SubhaloMassInMaxRadType': Masses,
+    'SubhaloMassInRad': Masses,
+    'SubhaloMassInRadType': Masses,
+    'SubhaloMassType': Masses,
+    'SubhaloParent': unit_less,
+    'SubhaloPos': Coordinates,
+    'SubhaloSFR': StarFormationRate,
+    'SubhaloSFRinHalfRad': StarFormationRate,
+    'SubhaloSFRinMaxRad': StarFormationRate,
+    'SubhaloSFRinRad': StarFormationRate,
+    'SubhaloSpin': u.Unit('arepo_length / small_h arepo_velocity'),  # Check!
+    'SubhaloStarMetalFractions': unit_less,
+    'SubhaloStarMetalFractionsHalfRad': unit_less,
+    'SubhaloStarMetalFractionsMaxRad': unit_less,
+    'SubhaloStarMetallicity': unit_less,
+    'SubhaloStarMetallicityHalfRad': unit_less,
+    'SubhaloStarMetallicityMaxRad': unit_less,
+    'SubhaloStellarPhotometrics': u.Unit('mag'),
+    'SubhaloStellarPhotometricsMassInRad': Masses,
+    'SubhaloStellarPhotometricsRad': Coordinates,
+    'SubhaloVel': u.Unit('arepo_velocity'),
+    'SubhaloVelDisp': u.Unit('arepo_velocity'),
+    'SubhaloVmax': u.Unit('arepo_velocity'),
+    'SubhaloVmaxRad': Velocities,
+    'SubhaloWindMass': Masses
 }
