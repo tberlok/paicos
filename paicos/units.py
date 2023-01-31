@@ -547,6 +547,8 @@ class PaicosTimeSeries(PaicosQuantity):
         if isinstance(value, list):
             h = value[0].h  # Could check that they are all the same...
             comoving_sim = value[0].comoving_sim
+            unit = value[0].unit
+            dtype = value[0].dtype
             a = np.array([value[i]._a for i in range(len(value))])
             value = np.array([value[i].value for i in range(len(value))])
         elif isinstance(value, np.ndarray):
