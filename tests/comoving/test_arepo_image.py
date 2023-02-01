@@ -53,7 +53,8 @@ def test_arepo_image(load_catalog=False):
         for key in snap.Cat.Group.keys():
             image_file.write_data(key, snap.Cat.Group[key][index[:10]],
                                   group='Catalog',
-                                  group_attrs={'Description': 'Most massive FOFs'})
+                                  group_attrs={'Description':
+                                  'Most massive FOFs'})
 
     image_file.finalize()
 

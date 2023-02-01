@@ -97,16 +97,22 @@ class PaicosQuantity(Quantity):
     """
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
-                subok=False, ndmin=0, h=None, a=None):
+                subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
 
         assert h is not None, 'Paicos quantity is missing a value for h'
         assert a is not None, 'Paicos quantity is missing a value for a'
+        assert comoving_sim is not None, 'is this from a comoving_sim?'
+
+        if hasattr(value, 'unit'):
+            unit = value.unit
+            value = value.value
 
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
                               order=order, subok=subok, ndmin=ndmin)
 
         obj._h = h
         obj._a = a
+        obj._comoving_sim = comoving_sim
 
         return obj
 
@@ -123,15 +129,19 @@ class PaicosQuantity(Quantity):
             return
 
         # Set Paicos specific parameters
-        self._h = getattr(obj, 'h', None)
-        self._a = getattr(obj, 'a', None)
+        self._h = getattr(obj, '_h', None)
+        self._a = getattr(obj, '_a', None)
+        self._comoving_sim = getattr(obj, '_comoving_sim', None)
 
     @property
     def a(self):
         """
         The scale factor.
         """
-        return self._a
+        if self.comoving_sim:
+            return self._a
+        else:
+            raise RuntimeError('Non-comoving object has no scale factor')
 
     @property
     def h(self):
@@ -139,6 +149,46 @@ class PaicosQuantity(Quantity):
         The reduced Hubble parameter
         """
         return self._h
+
+    @property
+    def comoving_sim(self):
+        """
+        Whether the simulation had ComovingIntegrationOn
+        """
+        return self._comoving_sim
+
+    @property
+    def z(self):
+        """
+        The redshift.
+        """
+        if self.comoving_sim:
+            return 1./self._a - 1.
+        else:
+            raise RuntimeError('Non-comoving object has no redshift')
+
+    def lookback_time(self, reader_object):
+        if self.comoving_sim:
+            return reader_object.get_lookback_time(self.z)
+        else:
+            msg = 'lookback_time not defined for non-comoving sim'
+            raise RuntimeError(msg)
+
+    def age(self, reader_object):
+        if self.comoving_sim:
+            return reader_object.get_age(self.z)
+        else:
+            msg = 'age not defined for non-comoving sim'
+            raise RuntimeError(msg)
+
+    @property
+    def time(self):
+        if self.comoving_sim:
+            msg = 'time not defined for comoving sim'
+            raise RuntimeError(msg)
+        else:
+            from astropy import units as u
+            return self._a*u.Unit('arepo_time')
 
     def __get_unit_dictionaries(self):
         codic = {}
@@ -160,7 +210,8 @@ class PaicosQuantity(Quantity):
         Returns a new PaicosQuantity with the same units as the current
         PaicosQuantity and a numeric value of 1.
         """
-        return PaicosQuantity(1., self.unit, a=self.a, h=self.h)
+        return PaicosQuantity(1., self.unit, a=self._a, h=self.h,
+                              comoving_sim=self.comoving_sim)
 
     @property
     def uq(self):
@@ -311,7 +362,16 @@ class PaicosQuantity(Quantity):
 
         normal_unit = self._get_new_units([small_h, small_a])
 
-        unit_label = normal_unit.to_string(format='latex')[1:-1]
+        # unit_label = normal_unit.to_string(format='latex')[1:-1]
+
+        codic, dic = self.__get_unit_dictionaries()
+
+        unit_label = ''
+        for ii, key in enumerate(dic.keys()):
+            _, unit_str = self.__scaling_and_scaling_str(key)
+            unit_label += unit_str
+            if ii < len(dic.keys()) - 1:
+                unit_label += r'\;'
 
         label = (co_label + r'\; \left[' + unit_label + r'\right]')
 
@@ -324,7 +384,7 @@ class PaicosQuantity(Quantity):
                     elif a_sc == 0:
                         label = unit_label
                     if h_sc == -1:
-                        label = label + r'/h'
+                        label = label + r'\;h^{-1}'
 
             label = '[' + label + ']'
 
@@ -342,7 +402,10 @@ class PaicosQuantity(Quantity):
         The value of the resulting object is scaled accordingly.
         """
         codic, dic = self.__get_unit_dictionaries()
-        factor = self.h**codic[small_h] * self.a**codic[small_a]
+        factor = self.h**codic[small_h]
+
+        if self.comoving_sim:
+            factor *= self.a**codic[small_a]
 
         value = self.view(np.ndarray)
         new_unit = self._get_new_units([small_a, small_h])
@@ -354,8 +417,18 @@ class PaicosQuantity(Quantity):
         """
         from fractions import Fraction
         codic, dic = self.__get_unit_dictionaries()
-        scaling = codic[unit]
-        base_string = unit.to_string(format='unicode')
+        # print(unit, dic, codic)
+        if unit in codic.keys():
+            scaling = codic[unit]
+        elif unit in dic.keys():
+            scaling = dic[unit]
+        else:
+            raise RuntimeError('should not happen')
+
+        if unit in codic.keys():
+            base_string = unit.to_string(format='unicode')
+        elif unit in dic.keys():
+            base_string = unit.to_string(format='latex')[1:-1]
         scaling_str = str(Fraction(scaling).limit_denominator(10000))
         if scaling_str == '0':
             scaling_str = ''
@@ -372,8 +445,8 @@ class PaicosQuantity(Quantity):
         """
         err_msg = "Operation requires objects to have same a and h value."
         if isinstance(value, PaicosQuantity):
-            if value.a != self.a:
-                info = ' Obj1.a={}, Obj2.a={}'.format(self.a, value.a)
+            if value._a != self._a:
+                info = ' Obj1._a={}, Obj2._a={}'.format(self._a, value._a)
                 raise RuntimeError(err_msg + info)
             if value.h != self.h:
                 info = ' Obj1.h={}, Obj2.h={}'.format(self.h, value.h)
@@ -407,3 +480,118 @@ class PaicosQuantity(Quantity):
     def __truediv__(self, value):
         self.__sanity_check(value)
         return super().__truediv__(value)
+
+
+class PaicosTimeSeries(PaicosQuantity):
+
+    """
+    PaicosQuantity is a subclass of the astropy Quantity class which
+    represents a number with some associated unit.
+
+    This subclass in addition includes a and h factors used in the definition
+    of comoving variables.
+
+    Parameters
+    ----------
+
+    value: the numeric values of your data (similar to astropy Quantity)
+
+    a: the cosmological scale factor of your data
+
+    h: the reduced Hubble parameter, e.g. h = 0.7
+
+    unit: a string, e.g. 'g/cm^3 small_a^-3 small_h^2' or astropy Unit
+    The latter can be defined like this:
+
+    from paicos import units as pu
+    from astropy import units as u
+    unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
+
+    The naming of small_a and small_h is to avoid conflict with the already
+    existing 'annum' (i.e. a year) and 'h' (hour) units.
+
+    Returns
+    ----------
+
+    Methods/properties
+    ----------
+
+    no_small_h: returns a new comoving quantity where the h-factors have
+               been removed and the numeric value adjusted accordingly.
+
+    to_physical: returns a new  object where both a and h factors have been
+                 removed, i.e. we have switched from comoving values to
+                 the physical value.
+
+    label: Return a Latex label for use in plots.
+
+    Examples
+    ----------
+
+    units = 'g cm^-3 small_a^-3 small_h^2'
+    A = PaicosQuantity(2, units, h=0.7, a=1/128)
+
+    # Create a new comoving quantity where the h-factors have been removed
+    B = A.no_small_h
+
+    # Create a new quantity where both a and h factor have been removed,
+    # i.e. we have switched from a comoving quantity to the physical value
+
+    C = A.to_physical
+
+    """
+
+    def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
+                subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
+
+        if isinstance(value, list):
+            a = np.array([value[i]._a for i in range(value.shape[0])])
+            h = value[0].h  # Could check that they are all the same...
+            value = np.array(value)
+        elif isinstance(value, np.ndarray):
+            assert h is not None
+            assert a is not None
+            assert isinstance(a, np.ndarray)
+            assert a.shape[0] == value.shape[0]
+        else:
+            raise RuntimeError('unexpected input for value:', value)
+
+        msg = 'PaicosTimeSeries only supports 1D arrays'
+        assert len(value.shape) == 1, msg
+
+        obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
+                              order=order, subok=subok, ndmin=ndmin, h=h, a=a,
+                              comoving_sim=comoving_sim)
+
+        obj._h = h
+        obj._a = a
+        obj._comoving_sim = comoving_sim
+
+        return obj
+
+    @property
+    def hdf5_attrs(self):
+        """
+        Give the units as a dictionary for hdf5 data set attributes
+        """
+        return {'unit': self.unit.to_string(), 'Paicos': 'PaicosTimeSeries'}
+
+    def __sanity_check(self, value):
+        """
+        Function for sanity-checking addition, subtraction, multiplication
+        and division of quantities. They should all have same a and h.
+        """
+        err_msg = "Operation requires objects to have same a and h value.\n"
+        if isinstance(value, PaicosQuantity):
+            msg = ('operations combining PaicosQuantity and ' +
+                   'PaicosTimeSeries is not allowed.')
+            raise RuntimeError(msg)
+        elif isinstance(value, PaicosTimeSeries):
+            try:
+                info = '\nObj1.a={}.\n\nObj2.a={}'.format(self._a, value._a)
+                np.testing.assert_array_equal(value._a, self._a)
+            except AssertionError:
+                raise RuntimeError(err_msg + info)
+            if value.h != self.h:
+                info = '\nObj1.h={}.\n\nObj2.h={}'.format(self.h, value.h)
+                raise RuntimeError(err_msg + info)

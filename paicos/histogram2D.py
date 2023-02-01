@@ -173,8 +173,7 @@ class Histogram2D:
 
         assert settings.use_units
 
-        unit_label = self.hist_units.to_string(format='latex')[1:-1]
-        unit_label = r'[' + unit_label + r']'
+        unit_label = self.hist2d.label()[1:-1]
 
         if self.logscale:
             colorlabel = (r'/\left(\mathrm{d}\mathrm{log}_{10} ' + x_symbol +
@@ -272,7 +271,8 @@ class Histogram2D:
         if settings.use_units:
             from . import units as pu
             hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x.a,
-                                       h=self.x.h)
+                                       h=self.x.h,
+                                       comoving_sim=self.x.comoving_sim)
         return hist2d
 
     def copy_over_snapshot_information(self, filename):
@@ -281,7 +281,7 @@ class Histogram2D:
         In this way we will have access to units used, redshift etc
         """
         import h5py
-        g = h5py.File(self.snap.first_snapfile_name, 'r')
+        g = h5py.File(self.snap.filename, 'r')
         with h5py.File(filename, 'r+') as f:
             for group in ['Header', 'Parameters', 'Config']:
                 f.create_group(group)

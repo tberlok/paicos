@@ -51,8 +51,3 @@ for use_units in [False, True]:
         axes[ii].imshow(np.array((Masses/Volume)), origin='lower',
                         extent=np.array(projector.extent), norm=LogNorm())
     plt.show()
-
-    if not use_units:
-        M = snap.converter.get_paicos_quantity(snap['0_Masses'], 'Masses')
-        # Projection now has units
-        projected_mass = projector.project_variable(M)

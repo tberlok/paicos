@@ -1,13 +1,12 @@
 from .arepo_catalog import Catalog
-from .arepo_converter import ArepoConverter
+from .paicos_readers import PaicosReader
 import numpy as np
-import os
 import time
 import h5py
 from . import settings
 
 
-class Snapshot(dict):
+class Snapshot(PaicosReader):
     """
     This is a Python class for reading Arepo snapshots, which are simulations
     of the evolution of the universe using a code called Arepo. The class is
@@ -49,8 +48,8 @@ class Snapshot(dict):
 
     """
 
-    def __init__(self, basedir, snapnum, basename="snap", verbose=False,
-                 no_snapdir=False, load_catalog=None,
+    def __init__(self, basedir, snapnum, basename="snap", load_all=False,
+                 to_physical=False, load_catalog=None, verbose=False,
                  dic_selection_index={}):
         """
         Initialize the Snapshot class.
@@ -76,55 +75,13 @@ class Snapshot(dict):
                              False for non-comoving simulations.
     """
 
-        self.basedir = basedir
-        self.snapnum = snapnum
-        self.basename = basename
-        self.verbose = verbose
-        self.no_snapdir = no_snapdir
+        super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
+                         load_all=load_all, to_physical=to_physical,
+                         basesubdir='snapdir', verbose=verbose)
+
         self.load_catalog = load_catalog
 
         self.dic_selection_index = dic_selection_index
-
-        # in case single file
-        self.snapname = self.basedir + "/" + \
-            basename + "_" + str(self.snapnum).zfill(3)
-        self.multi_file = False
-        self.first_snapfile_name = self.snapname + ".hdf5"
-
-        # if multiple files
-        if not os.path.exists(self.first_snapfile_name):
-            if not self.no_snapdir:
-                self.snapname = self.basedir + "/" + "snapdir_" + \
-                    str(self.snapnum).zfill(3) + "/" + \
-                    basename + "_" + str(self.snapnum).zfill(3)
-            else:
-                self.snapname = self.basedir + "/" + \
-                    basename + "_" + str(self.snapnum).zfill(3)
-            self.first_snapfile_name = self.snapname+".0.hdf5"
-            assert os.path.exists(self.first_snapfile_name)
-            self.multi_file = True
-
-        if self.verbose:
-            print("snapshot", snapnum, "found")
-
-        # get header of first file
-        f = h5py.File(self.first_snapfile_name, 'r')
-
-        self.Header = dict(f['Header'].attrs)
-        self.Parameters = dict(f['Parameters'].attrs)
-        self.Config = dict(f['Config'].attrs)
-
-        f.close()
-
-        self.converter = ArepoConverter(self.first_snapfile_name)
-        if self.Parameters['ComovingIntegrationOn'] == 1:
-            self.age = self.converter.age
-            self.lookback_time = self.converter.lookback_time
-            self.z = self.converter.z
-            if self.verbose:
-                print("at z =", self.z)
-        else:
-            self.time = self.converter.time
 
         self.nfiles = self.Header["NumFilesPerSnapshot"]
         self.npart = self.Header["NumPart_Total"]
@@ -134,9 +91,6 @@ class Snapshot(dict):
             print("has", self.nspecies, "particle types")
             print("with npart =", self.npart)
 
-        self.a = self.converter.a
-        self.h = self.converter.h
-
         self.box = self.Header["BoxSize"]
         box_size = [self.box, self.box, self.box]
 
@@ -145,7 +99,7 @@ class Snapshot(dict):
                 box_size[ii] *= self.Config['LONG_' + dim]
 
         if settings.use_units:
-            get_paicos_quantity = self.converter.get_paicos_quantity
+            get_paicos_quantity = self.get_paicos_quantity
             self.box_size = get_paicos_quantity(box_size, 'Coordinates')
             self.masstable = get_paicos_quantity(self.Header["MassTable"],
                                                  'Masses')
@@ -155,7 +109,7 @@ class Snapshot(dict):
 
         # get subfind catalog?
         if load_catalog is None:
-            if self.Parameters['ComovingIntegrationOn'] == 1:
+            if self.ComovingIntegrationOn:
                 load_catalog = True
             else:
                 load_catalog = False
@@ -164,7 +118,7 @@ class Snapshot(dict):
             try:
                 self.Cat = Catalog(
                     self.basedir, self.snapnum, verbose=self.verbose,
-                    subfind_catalog=True, converter=self.converter)
+                    subfind_catalog=True)
             except FileNotFoundError:
                 self.Cat = None
 
@@ -173,21 +127,159 @@ class Snapshot(dict):
                 try:
                     self.Cat = Catalog(
                         self.basedir, self.snapnum, verbose=self.verbose,
-                        subfind_catalog=False, converter=self.converter)
+                        subfind_catalog=False)
                 except FileNotFoundError:
                     import warnings
                     warnings.warn('no catalog found')
 
         self.P_attrs = dict()  # attributes
 
-        if 'GAMMA' in self.Config:
-            self.gamma = self.Config['GAMMA']
-        elif 'ISOTHERMAL' in self.Config:
-            self.gamma = 1
-        else:
-            self.gamma = 5/3
-
         self.derived_data_counter = 0
+
+        self._add_mass_to_user_funcs()
+
+        self._find_available_for_loading()
+        self._find_available_functions()
+
+        self._identify_parttypes()
+
+        self.__get_auto_comple_list()
+
+    def _add_mass_to_user_funcs(self):
+
+        self._this_snap_funcs = {}
+
+        class Mass:
+            def __init__(self, parttype):
+                self.parttype = parttype
+
+            def get_masses_from_header(self, snap):
+                """
+                Get mass of particle type from the mass table
+                """
+                parttype = self.parttype
+                if parttype in snap.dic_selection_index.keys():
+                    npart = snap.dic_selection_index[parttype].shape[0]
+                else:
+                    npart = snap.npart[parttype]
+                return np.ones(npart)*snap.masstable[parttype]
+
+        for parttype in range(self.nspecies):
+            if self.masstable[parttype] != 0:
+                P_key = str(parttype) + '_Masses'
+                obj = Mass(parttype)
+                self._this_snap_funcs[P_key] = obj.get_masses_from_header
+
+    def _find_available_for_loading(self):
+        self._all_avail_load = []
+        self._part_avail_load = {i: [] for i in range(self.nspecies)}
+        for PartType in range(self.nspecies):
+            PartType_str = 'PartType{}'.format(PartType)
+            with h5py.File(self.filename, 'r') as file:
+                if PartType_str in list(file.keys()):
+                    load_keys = list(file[PartType_str].keys())
+                    for key in load_keys:
+                        P_key = str(PartType) + '_' + key
+                        self._all_avail_load.append(P_key)
+                        self._part_avail_load[PartType].append(P_key)
+
+    def _identify_parttypes(self):
+        self._type_info = {0: 'voronoi_cells'}
+        for p in range(1, self.nspecies):
+            bh = any(['BH_' in key for key in self._part_avail_load[p]])
+            star = any(['GFM_' in key for key in self._part_avail_load[p]])
+            if bh:
+                self._type_info[p] = 'black_holes'
+            if star:
+                self._type_info[p] = 'stars'
+
+    def _find_available_functions(self):
+        from .settings import use_only_user_functions
+        from . import derived_variables
+        from inspect import signature
+
+        user_functs = derived_variables.user_functions
+
+        for key in user_functs.keys():
+            self._this_snap_funcs.update({key: user_functs[key]})
+
+        if not use_only_user_functions:
+            def_functs = derived_variables.default_functions
+            for key in def_functs.keys():
+                if key not in self._this_snap_funcs.keys():
+                    self._this_snap_funcs.update({key: def_functs[key]})
+
+        self._dependency_dic = {}
+        for key in self._this_snap_funcs.keys():
+            func = self._this_snap_funcs[key]
+            sig = signature(func)
+            if len(sig.parameters) == 2:
+                self._dependency_dic[key] = func(self, True)
+            else:
+                self._dependency_dic[key] = []
+
+        dependency_dic = dict(self._dependency_dic)
+
+        # This will fail for very nested dependencies.
+        for jj in range(3):
+            # First substitute all dependencies that are
+            # at the top level of the dictionary
+            for key in dependency_dic.keys():
+                deps = dependency_dic[key]
+                for dep in list(deps):
+                    if dep in dependency_dic.keys():
+                        deps.remove(dep)
+                        for subdep in dependency_dic[dep]:
+                            deps.append(subdep)
+
+            # Then remove all the dependencies that can be loaded
+            for key in dependency_dic.keys():
+                deps = dependency_dic[key]
+                for dep in list(deps):
+                    if dep in self._all_avail_load:
+                        deps.remove(dep)
+
+        # Delete the entries where we do not have the requirements
+        for key in dependency_dic.keys():
+            dep = len(dependency_dic[key])
+            if dep > 0:
+                if key in user_functs.keys():
+                    import warnings
+                    msg = ('Deleting the user function: {} because its ' +
+                           'dependency: {} is missing')
+                    warnings.warn(msg.format(user_functs[key],
+                                  dependency_dic[key]))
+                del self._this_snap_funcs[key]
+
+    def get_variable_function(self, P_key, info=False):
+
+        assert type(P_key) is str
+
+        if not P_key[0].isnumeric() or P_key[1] != '_':
+            msg = ('\n\nKeys are expected to consist of an integer ' +
+                   '(the particle type) and a blockname, separated by a ' +
+                   ' _. For instance 0_Density. You can get the ' +
+                   'available fields like so: snap.info(0)')
+            raise RuntimeError(msg)
+
+        if not info:
+            if P_key in self._this_snap_funcs.keys():
+                return self._this_snap_funcs[P_key]
+            else:
+                msg = '\n\n{} not found in the functions: {}'
+                msg = msg.format(P_key, self._this_snap_funcs)
+                raise RuntimeError(msg)
+
+        # Return a list with all available keys for this parttype
+        if info:
+            parttype = int(P_key[0])
+
+            avail_list = []
+            for key in self._this_snap_funcs.keys():
+                if int(key[0]) == parttype:
+                    avail_list.append(key)
+
+            return avail_list
 
     def info(self, PartType, verbose=True):
         """
@@ -213,28 +305,44 @@ class Snapshot(dict):
         type.
         """
         PartType_str = 'PartType{}'.format(PartType)
-        with h5py.File(self.first_snapfile_name, 'r') as file:
+        with h5py.File(self.filename, 'r') as file:
             if PartType_str in list(file.keys()):
                 load_keys = list(file[PartType_str].keys())
+                load_keys = [str(PartType) + '_' + key for key in load_keys]
                 if verbose:
                     print('\nKeys for ' + PartType_str + ' in the hdf5 file:')
                     for key in (sorted(load_keys)):
-                        print(key)
-                    # if PartType == 0:
-                    from .derived_variables import get_variable_function
-                    print('\nPossible derived variables are:')
-                    dkeys = get_variable_function(str(PartType) + '_', True)
+                        if settings.use_aliases:
+                            if key in settings.aliases.keys():
+                                alias = settings.aliases[key]
+                                msg = alias + '\t'*5 + '(an alias of {})'
+                                print(msg.format(key))
+                            else:
+                                print(key)
+                        else:
+                            print(key)
 
-                    if 'Masses' not in load_keys:
-                        dkeys.append('{}_Masses'.format(PartType))
+                    print('\nPossible derived variables are:')
+                    dkeys = self.get_variable_function(str(PartType) + '_', True)
 
                     for key in (sorted(dkeys)):
-                        print(key)
+                        if settings.use_aliases:
+                            if key in settings.aliases.keys():
+                                alias = settings.aliases[key]
+                                msg = alias + '\t'*5 + '(an alias of {})'
+                                print(msg.format(key))
+                            else:
+                                print(key)
+                        else:
+                            print(key)
                     return None
                 else:
                     return load_keys
             else:
-                print('PartType not in hdf5 file')
+                if verbose:
+                    print('PartType not in hdf5 file')
+                else:
+                    return []
 
     def load_data(self, particle_type, blockname, give_units=False):
         """
@@ -255,13 +363,19 @@ class Snapshot(dict):
         assert particle_type < self.nspecies
 
         P_key = str(particle_type)+"_"+blockname
-        if blockname not in self.info(particle_type, False):
+        alias_key = P_key
+
+        if settings.use_aliases:
+            if P_key in settings.aliases.keys():
+                alias_key = settings.aliases[P_key]
+
+        if P_key not in self.info(particle_type, False):
             msg = 'Unable to load parttype {}, blockname {} as this field is not in the hdf5 file'
             raise RuntimeError(msg.format(particle_type, blockname))
 
         datname = "PartType"+str(particle_type)+"/"+blockname
         PartType_str = 'PartType{}'.format(particle_type)
-        if P_key in self:
+        if alias_key in self:
             if self.verbose:
                 print(blockname, "for species",
                       particle_type, "already in memory")
@@ -274,12 +388,13 @@ class Snapshot(dict):
         skip_part = 0
 
         for ifile in range(self.nfiles):
-            cur_filename = self.snapname
-
-            if self.multi_file:
-                cur_filename += "." + str(ifile)
-
-            cur_filename += ".hdf5"
+            if self.multi_file is False:
+                cur_filename = self.filename
+            else:
+                if self.no_subdir:
+                    cur_filename = self.multi_wo_dir.format(ifile)
+                else:
+                    cur_filename = self.multi_filename.format(ifile)
 
             f = h5py.File(cur_filename, "r")
 
@@ -287,28 +402,26 @@ class Snapshot(dict):
 
             if ifile == 0:   # initialize array
                 if f[datname].shape.__len__() == 1:
-                    self[P_key] = np.empty(
+                    self[alias_key] = np.empty(
                         self.npart[particle_type], dtype=f[datname].dtype)
                 else:
-                    self[P_key] = np.empty(
+                    self[alias_key] = np.empty(
                         (self.npart[particle_type], f[datname].shape[1]),
                         dtype=f[datname].dtype)
                 # Load attributes
                 data_attributes = dict(f[PartType_str][blockname].attrs)
-                if len(data_attributes) > 0:
-                    data_attributes.update({'small_h': self.h,
-                                            'scale_factor': self.a})
-                self.P_attrs[P_key] = data_attributes
 
-            self[P_key][skip_part:skip_part+np_file] = f[datname]
+                self.P_attrs[alias_key] = data_attributes
+
+            self[alias_key][skip_part:skip_part+np_file] = f[datname]
 
             skip_part += np_file
 
         if settings.double_precision:
             # Load all variables with double precision
             import numbers
-            if not issubclass(self[P_key].dtype.type, numbers.Integral):
-                self[P_key] = self[P_key].astype(np.float64)
+            if not issubclass(self[alias_key].dtype.type, numbers.Integral):
+                self[alias_key] = self[alias_key].astype(np.float64)
         else:
             import warnings
             warnings.warn('\n\nThe cython routines expect double precision ' +
@@ -318,21 +431,27 @@ class Snapshot(dict):
         # Only keep the cells with True in the selection index array
         if particle_type in self.dic_selection_index.keys():
             selection_index = self.dic_selection_index[particle_type]
-            shape = self[P_key].shape
+            shape = self[alias_key].shape
             if len(shape) == 1:
-                self[P_key] = self[P_key][selection_index]
+                self[alias_key] = self[alias_key][selection_index]
             elif len(shape) == 2:
-                self[P_key] = self[P_key][selection_index, :]
+                self[alias_key] = self[alias_key][selection_index, :]
             else:
                 raise RuntimeError('Data has unexpected shape!')
 
         if settings.use_units or give_units:
-            try:
-                self[P_key] = self.converter.get_paicos_quantity(self[P_key],
-                                                                 blockname)
-            except:
-                from warnings import warn
-                warn('Failed to give {} units'.format(P_key))
+            if particle_type in self._type_info.keys():
+                ptype = self._type_info[particle_type]  # e.g. 'voronoi_cells'
+                self[alias_key] = self.get_paicos_quantity(self[alias_key],
+                                                           blockname,
+                                                           field=ptype)
+            else:
+                # Assume dark matter for the units
+                self[alias_key] = self.get_paicos_quantity(self[alias_key],
+                                                           blockname,
+                                                           field='dark_matter')
+            if not hasattr(self[alias_key], 'unit'):
+                del self[alias_key]
 
         if self.verbose:
             print("... done! (took", time.time()-start_time, "s)")
@@ -346,13 +465,13 @@ class Snapshot(dict):
         snap.get_derived_data(0, 'Temperatures')
 
         """
-        from .derived_variables import get_variable_function
+        # from .derived_variables import get_variable_function
 
         P_key = str(particle_type) + "_" + blockname
 
         msg = ('\n\n{} is in the hdf5 file(s), please use load_data instead ' +
                'of get_derived_data').format(blockname)
-        assert blockname not in self.info(particle_type, False), msg
+        assert P_key not in self.info(particle_type, False), msg
 
         if verbose:
             msg1 = 'Attempting to get derived variable: {}...'.format(P_key)
@@ -363,7 +482,11 @@ class Snapshot(dict):
                 print('\n\t' + msg2, end='')
             self.derived_data_counter += 1
 
-        func = get_variable_function(P_key)
+        func = self.get_variable_function(P_key)
+
+        if settings.use_aliases:
+            if P_key in settings.aliases.keys():
+                P_key = settings.aliases[P_key]
         self[P_key] = func(self)
 
         if verbose:
@@ -371,7 +494,7 @@ class Snapshot(dict):
             if self.derived_data_counter == 0:
                 print('\t[DONE]\n')
 
-    def __getitem__(self, key):
+    def __getitem__(self, P_key):
         """
         This method is a special method in Python classes, known as a "magic
         method" that allows instances of the class to be accessed like a
@@ -380,7 +503,7 @@ class Snapshot(dict):
         This method is used to access the data stored in the class, it takes a
         single argument:
 
-        key : a string that represents the data that is being accessed, it
+        P_key : a string that represents the data that is being accessed, it
         should be in the format of parttype_name, where parttype is an integer
         and name is the name of the data block. It first checks if the key is
         already in the class, if not it checks if the key is in the format of
@@ -402,27 +525,56 @@ class Snapshot(dict):
         be loaded.
         """
 
-        if key not in self.keys():
-            if not key[0].isnumeric() or key[1] != '_':
+        if settings.use_aliases:
+
+            if P_key in settings.inverse_aliases.keys():
+                P_key = settings.inverse_aliases[P_key]
+
+        if P_key not in self.keys():
+            if not P_key[0].isnumeric() or P_key[1] != '_':
                 msg = ('\n\nKeys are expected to consist of an integer ' +
                        '(the particle type) and a blockname, separated by a ' +
                        ' _. For instance 0_Density. You can get the ' +
                        'available fields like so: snap.info(0)')
                 raise RuntimeError(msg)
-            parttype = int(key[0])
-            name = key[2:]
+            parttype = int(P_key[0])
+            name = P_key[2:]
 
             if parttype >= self.nspecies:
                 msg = 'Simulation only has {} species.'
                 raise RuntimeError(msg.format(self.nspecies))
 
-            if name in self.info(parttype, False):
+            if P_key in self.info(parttype, False):
                 self.load_data(parttype, name)
             else:
                 verbose = settings.print_info_when_deriving_variables
                 self.get_derived_data(parttype, name, verbose=verbose)
 
-        return super().__getitem__(key)
+        if settings.use_aliases:
+            if P_key in settings.aliases.keys():
+                P_key = settings.aliases[P_key]
+        return super().__getitem__(P_key)
+
+    def __get_auto_comple_list(self):
+        self._auto_list = []
+
+        self._auto_list = self._all_avail_load
+        for key in self._this_snap_funcs.keys():
+            self._auto_list.append(key)
+
+        if settings.use_aliases:
+            for ii, P_key in enumerate(self._auto_list):
+                if P_key in settings.aliases.keys():
+                    self._auto_list[ii] = settings.aliases[P_key]
+
+    def _ipython_key_completions_(self):
+        """
+        Auto-completion of dictionary.
+
+        Only works with variables that can directly loaded.
+        """
+
+        return self._auto_list
 
     def remove_data(self, particle_type, blockname):
         """
@@ -433,58 +585,6 @@ class Snapshot(dict):
             del self[P_key]
         if P_key in self.P_attrs:
             del self.P_attrs[P_key]
-
-    def get_volumes(self):
-        self["0_Volume"]
-        from warnings import warn
-        warn(("This method will be soon deprecated in favor of automatic " +
-              " loading using:\n\n" +
-              " snap['0_Volume']\n\n or the explicit command\n\n" +
-              "snap.get_derived_data(0, 'Volume')"),
-             DeprecationWarning, stacklevel=2)
-
-    def get_temperatures(self):
-        self['0_Temperatures']
-        from warnings import warn
-        warn(("This method will be soon deprecated in favor of automatic " +
-              " loading using:\n\n" +
-              " snap['0_Temperatures']\n\n or the explicit command\n\n" +
-              "snap.get_derived_data(0, 'Temperatures')"),
-             DeprecationWarning, stacklevel=2)
-
-    # find subhalos that particles belong to
-    def get_host_subhalos(self, particle_type):
-        if str(particle_type)+"_HostSub" in self.P:
-            return
-
-        if self.verbose:
-            print("getting host subhalos ...")
-            start_time = time.time()
-
-        # -2 if not part of any FoF group
-        hostsubhalos = -2*np.ones(self.npart[particle_type], dtype=np.int32)
-        hostsubhalos[0:(self.Cat.Group["GroupLenType"][:, particle_type]).sum(
-            dtype=np.int64)] = -1   # -1 if not part of any subhalo
-
-        firstpart_gr = 0
-        cur_sub = 0
-        for igr in range(self.Cat.ngroups):
-            firstpart_sub = firstpart_gr
-
-            for isub in range(self.Cat.Group["GroupNsubs"][igr]):
-                hostsubhalos[firstpart_sub:firstpart_sub +
-                             self.Cat.Sub["SubhaloLenType"][cur_sub, particle_type]] = cur_sub
-
-                firstpart_sub += self.Cat.Sub["SubhaloLenType"][cur_sub,
-                                                                particle_type]
-                cur_sub += 1
-
-            firstpart_gr += self.Cat.Group["GroupLenType"][igr, particle_type]
-
-        self.P[str(particle_type)+"_HostSub"] = hostsubhalos
-
-        if self.verbose:
-            print("... done! (took", time.time()-start_time, "s)")
 
     def select(self, selection_index, parttype=0):
         """
@@ -516,7 +616,7 @@ class Snapshot(dict):
         select_snap = Snapshot(self.basedir, self.snapnum,
                                basename=self.basename,
                                verbose=self.verbose,
-                               no_snapdir=self.no_snapdir,
+                               to_physical=self.to_physical,
                                load_catalog=self.load_catalog,
                                dic_selection_index=dic_selection_index)
 

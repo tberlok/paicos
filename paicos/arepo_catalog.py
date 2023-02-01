@@ -1,66 +1,21 @@
 import numpy as np
-import os
 import h5py
+from .paicos_readers import PaicosReader
+from . import settings
 
 
-class Catalog:
-    """
-    Catalog reader, originally written by Ewald Puchwein.
-
-    The Catalog class is a class for reading subhalo or halo catalogs in Arepo
-    snapshots, which are simulations of the evolution of the universe. The
-    class takes in the path of the directory containing the catalog, the
-    snapshot number, and a variety of other optional parameters such as
-    whether to use the verbose mode, read subfind catalog or fof catalog, and
-    whether to give units. The class uses this information to locate and open
-    the catalog files, and loads the catalog's header, parameters, and
-    configuration. The class also includes methods to extract the redshift,
-    scale factor, and other properties of the catalog and the number of groups
-    and subgroups in the catalog.
-    """
-
-    def __init__(self, basedir, snapnum, verbose=False, subfind_catalog=True,
-                 converter=None, give_units=False):
+class Catalog(PaicosReader):
+    def __init__(self, basedir='.', snapnum=None,
+                 to_physical=False, subfind_catalog=True, verbose=False):
 
         if subfind_catalog:
-            single_file = "/fof_subhalo_tab_{:03d}.hdf5"
-            multi_file = "/groups_{:03d}/fof_subhalo_tab_{:03d}.{}.hdf5"
-            multi_wo_dir = "/fof_subhalo_tab_{:03d}.{}.hdf5"
+            basename = 'fof_subhalo_tab'
         else:
-            single_file = "/fof_tab_{:03d}.hdf5"
-            multi_file = "/groups_{:03d}/fof_tab_{:03d}.{}.hdf5"
-            multi_wo_dir = "/fof_tab_{:03d}.{}.hdf5"
+            basename = 'fof_tab'
 
-        single_file = basedir + single_file.format(snapnum)
-        multi_file = basedir + multi_file.format(snapnum, snapnum, '{}')
-        multi_wo_dir = basedir + multi_wo_dir.format(snapnum, '{}')
-
-        if os.path.exists(single_file):
-            self.multi_file = False
-            self.first_file_name = single_file
-        elif os.path.exists(multi_file.format(0)):
-            self.multi_file = True
-            self.first_file_name = multi_file.format(0)
-            self.no_groupdir = False
-        elif os.path.exists(multi_wo_dir.format(0)):
-            self.multi_file = True
-            self.first_file_name = multi_wo_dir.format(0)
-            self.no_groupdir = True
-        else:
-            if subfind_catalog:
-                err_msg = "no subfind catalog for snapnum {} in basedir: {}"
-            else:
-                err_msg = "no fof catalog for snapnum {} in basedir: {}"
-            raise FileNotFoundError(err_msg.format(snapnum, basedir))
-
-        f = h5py.File(self.first_file_name, "r")
-        header_attrs = f['/Header'].attrs
-
-        self.Header = dict()
-        for ikey in header_attrs.keys():
-            self.Header[ikey] = header_attrs[ikey]
-
-        f.close()
+        super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
+                         load_all=False, to_physical=to_physical,
+                         basesubdir='groups', verbose=verbose)
 
         # give names to specific header fields
         self.nfiles = self.Header["NumFiles"]
@@ -71,26 +26,29 @@ class Catalog:
         else:
             self.nsubs = self.Header["Nsubhalos_Total"]
 
-        self.z = self.Header["Redshift"]
-        self.a = self.Header["Time"]
+        # Load all data
+        self.load_all_data()
 
-        if verbose:
-            print("done reading catalog!")
-            print("ngroups =", self.ngroups)
-            print("nsubs =", self.nsubs)
+    def load_data(self):
+        """
+        Overwrite the base class method
+        """
+        pass
+
+    def load_all_data(self):
 
         skip_gr = 0
         skip_sub = 0
         for ifile in range(self.nfiles):
             if self.multi_file is False:
-                cur_filename = self.first_file_name
+                cur_filename = self.filename
             else:
-                if self.no_groupdir:
-                    cur_filename = multi_wo_dir.format(ifile)
+                if self.no_subdir:
+                    cur_filename = self.multi_wo_dir.format(ifile)
                 else:
-                    cur_filename = multi_file.format(ifile)
+                    cur_filename = self.multi_filename.format(ifile)
 
-            if verbose:
+            if self.verbose:
                 print("reading file", cur_filename)
 
             f = h5py.File(cur_filename, "r")
@@ -104,9 +62,8 @@ class Catalog:
 
             # initialze arrays
             if ifile == 0:
-                self.Group = dict()
-                self.Sub = dict()
-
+                self.Group = {}
+                self.Sub = {}
                 for ikey in f["Group"].keys():
                     if f["Group/"+ikey].shape.__len__() == 1:
                         self.Group[ikey] = np.empty(
@@ -142,27 +99,17 @@ class Catalog:
 
             f.close()
 
-        from . import settings
-        give_units = settings.use_units or give_units
+        if settings.use_units:
+            for key in list(self.Group.keys()):
+                self.Group[key] = self.get_paicos_quantity(
+                                    self.Group[key], key,
+                                    field='groups')
+                if not hasattr(self.Group[key], 'unit'):
+                    del self.Group[key]
 
-        if give_units and converter is not None:
-
-            mass_keys = ['GroupMass',
-                         'Group_M_Crit200',
-                         'Group_M_Crit500',
-                         'Group_M_Mean200',
-                         'Group_M_TopHat200']
-
-            pos_keys = ['GroupPos',
-                        'Group_R_Crit200',
-                        'Group_R_Crit500',
-                        'Group_R_Mean200',
-                        'Group_R_TopHat200']
-
-            for key in pos_keys:
-                self.Group[key] = converter.get_paicos_quantity(
-                                    self.Group[key], 'Coordinates')
-
-            for key in mass_keys:
-                self.Group[key] = converter.get_paicos_quantity(
-                                     self.Group[key], 'Masses')
+            for key in list(self.Sub.keys()):
+                self.Sub[key] = self.get_paicos_quantity(
+                                    self.Sub[key], key,
+                                    field='subhalos')
+                if not hasattr(self.Sub[key], 'unit'):
+                    del self.Sub[key]

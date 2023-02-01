@@ -32,7 +32,7 @@ class ImageCreator:
 
         from paicos import settings
 
-        code_length = self.snap.converter.length
+        code_length = self.snap.length
 
         if hasattr(center, 'unit'):
             self.center = center
@@ -75,7 +75,8 @@ class ImageCreator:
 
         if settings.use_units:
             from paicos import units
-            self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h)
+            self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h,
+                                               comoving_sim=snap.comoving_sim)
         else:
             self.extent = np.array(self.extent)
 
@@ -116,7 +117,8 @@ class ArepoImage(PaicosWriter):
         self.direction = image_creator.direction
 
         # This creates an image at self.tmp_filename (if mode='w')
-        super().__init__(image_creator, basedir, basename=basename, mode=mode)
+        super().__init__(image_creator.snap, basedir, basename=basename,
+                         mode=mode)
 
         # Create image file and write information about image
         if self.mode == 'w':
@@ -134,16 +136,15 @@ class ArepoImage(PaicosWriter):
         self.write_data(name, data)
 
     def perform_extra_consistency_checks(self):
-        con = self.snap.converter
         with h5py.File(self.filename, 'r') as f:
-            center = util.load_dataset(f, 'center', con, group='image_info')
+            center = util.load_dataset(f, 'center', group='image_info')
             if settings.use_units:
                 assert center.unit == self.center.unit
                 np.testing.assert_array_equal(center.value, self.center.value)
             else:
                 np.testing.assert_array_equal(center, self.center)
 
-            widths = util.load_dataset(f, 'widths', con, group='image_info')
+            widths = util.load_dataset(f, 'widths', group='image_info')
             if settings.use_units:
                 assert widths.unit == self.widths.unit
                 np.testing.assert_array_equal(widths.value, self.widths.value)

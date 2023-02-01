@@ -1,8 +1,16 @@
 from . import settings
-
-user_functions = {}
+from . import units
+import numpy as np
 
 openMP_has_issues = None
+
+user_unit_dict = {'default': {},
+                  'voronoi_cells': {},
+                  'dark_matter': {},
+                  'stars': {},
+                  'black_holes': {},
+                  'groups': {},
+                  'subhalos': {}}
 
 
 def get_project_root_dir():
@@ -39,14 +47,24 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     # Save data set
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
-        attrs = {'unit': data.unit.to_string()}
+        if isinstance(data, units.PaicosTimeSeries):
+            attrs = data.hdf5_attrs
+        else:
+            attrs = {'unit': data.unit.to_string()}
         for key in attrs.keys():
             path[name].attrs[key] = attrs[key]
     else:
         path.create_dataset(name, data=data)
 
+    # Check if scale_factors are already saved
+    if isinstance(data, units.PaicosTimeSeries):
+        if 'scale_factor' not in path.keys():
+            path.create_dataset('scale_factor', data=data.a)
+        else:
+            np.testing.assert_array_equal(path['scale_factor'][...], data.a)
 
-def load_dataset(hdf5file, name, converter=None, group=None):
+
+def load_dataset(hdf5file, name, group=None):
     """
     Load dataset, returning a paicos quantity if the attributes
     contain units and units are enabled.
@@ -60,10 +78,11 @@ def load_dataset(hdf5file, name, converter=None, group=None):
             msg = "'util.load_dataset' needs a file name or an open hdf5 file"
             raise RuntimeError(msg)
 
-    # Construct a convertor object if it was not passed
-    if converter is None:
-        from .arepo_converter import ArepoConverter
-        converter = ArepoConverter(hdf5file.filename)
+    comoving_sim = bool(hdf5file['Parameters'].attrs['ComovingIntegrationOn'])
+    Time = hdf5file['Header'].attrs['Time']
+    h = hdf5file['Parameters'].attrs['HubbleParam']
+    if h == 0. or h == 1.0:
+        h = 1.0
 
     # Allow for loading data sets in groups or nested groups
     if group is None:
@@ -79,7 +98,20 @@ def load_dataset(hdf5file, name, converter=None, group=None):
         if 'unit' in path[name].attrs.keys():
             from . import units as pu
             unit = path[name].attrs['unit']
-            data = pu.PaicosQuantity(data, unit, a=converter.a, h=converter.h)
+            if 'Paicos' in path[name].attrs.keys():
+                if path[name].attrs['Paicos'] == 'PaicosTimeSeries':
+                    if comoving_sim:
+                        Time = path['scale_factor'][...]
+                    else:
+                        Time = path['time'][...]
+                    data = pu.PaicosTimeSeries(data, unit, a=Time, h=h,
+                                               comoving_sim=comoving_sim)
+                elif path[name].attrs['Paicos'] == 'PaicosQuantity':
+                    data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                                             comoving_sim=comoving_sim)
+            else:
+                data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                                         comoving_sim=comoving_sim)
     return data
 
 
@@ -113,7 +145,8 @@ def remove_astro_units(func):
 def get_index_of_radial_range(pos, center, r_min, r_max):
     from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
     xc, yc, zc = center[0], center[1], center[2]
-    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max)
+    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max,
+                                             settings.numthreads)
     return index
 
 
@@ -123,7 +156,8 @@ def get_index_of_region(pos, center, widths, box):
     xc, yc, zc = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
     index = get_index_of_region_cython(pos, xc, yc, zc,
-                                       width_x, width_y, width_z, box)
+                                       width_x, width_y, width_z, box,
+                                       settings.numthreads)
     return index
 
 
@@ -135,17 +169,20 @@ def get_index_of_slice_region(pos, center, widths, thickness, box):
         from .cython.get_index_of_region_functions import get_index_of_x_slice_region
         index = get_index_of_x_slice_region(pos, xc, yc, zc,
                                             width_y, width_z,
-                                            thickness, box)
+                                            thickness, box,
+                                            settings.numthreads)
     elif widths[1] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_y_slice_region
         index = get_index_of_y_slice_region(pos, xc, yc, zc,
                                             width_x, width_z,
-                                            thickness, box)
+                                            thickness, box,
+                                            settings.numthreads)
     elif widths[2] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_z_slice_region
         index = get_index_of_z_slice_region(pos, xc, yc, zc,
                                             width_x, width_y,
-                                            thickness, box)
+                                            thickness, box,
+                                            settings.numthreads)
     else:
         raise RuntimeError('width={} should have length 3 and contain a zero!')
 
