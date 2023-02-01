@@ -188,7 +188,10 @@ class PaicosQuantity(Quantity):
             raise RuntimeError(msg)
         else:
             from astropy import units as u
-            return self._a*u.Unit('arepo_time')
+            if hasattr(self._a, 'unit'):
+                return self._a
+            else:
+                return self._a*u.Unit('arepo_time')
 
     def __get_unit_dictionaries(self):
         codic = {}
@@ -485,60 +488,12 @@ class PaicosQuantity(Quantity):
 class PaicosTimeSeries(PaicosQuantity):
 
     """
-    PaicosQuantity is a subclass of the astropy Quantity class which
-    represents a number with some associated unit.
+    PaicosTimeSeries is a subclass of the PaicosQuantity and and shares many
+    of the same methods.
 
-    This subclass in addition includes a and h factors used in the definition
-    of comoving variables.
-
-    Parameters
-    ----------
-
-    value: the numeric values of your data (similar to astropy Quantity)
-
-    a: the cosmological scale factor of your data
-
-    h: the reduced Hubble parameter, e.g. h = 0.7
-
-    unit: a string, e.g. 'g/cm^3 small_a^-3 small_h^2' or astropy Unit
-    The latter can be defined like this:
-
-    from paicos import units as pu
-    from astropy import units as u
-    unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
-
-    The naming of small_a and small_h is to avoid conflict with the already
-    existing 'annum' (i.e. a year) and 'h' (hour) units.
-
-    Returns
-    ----------
-
-    Methods/properties
-    ----------
-
-    no_small_h: returns a new comoving quantity where the h-factors have
-               been removed and the numeric value adjusted accordingly.
-
-    to_physical: returns a new  object where both a and h factors have been
-                 removed, i.e. we have switched from comoving values to
-                 the physical value.
-
-    label: Return a Latex label for use in plots.
-
-    Examples
-    ----------
-
-    units = 'g cm^-3 small_a^-3 small_h^2'
-    A = PaicosQuantity(2, units, h=0.7, a=1/128)
-
-    # Create a new comoving quantity where the h-factors have been removed
-    B = A.no_small_h
-
-    # Create a new quantity where both a and h factor have been removed,
-    # i.e. we have switched from a comoving quantity to the physical value
-
-    C = A.to_physical
-
+    The time series is very similar to the PaicosQuantity but
+    the .a or .time properties now return arrays with same length
+    as the object itself (.shape[0]).
     """
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
@@ -556,6 +511,11 @@ class PaicosTimeSeries(PaicosQuantity):
             assert a is not None
             assert isinstance(a, np.ndarray)
             assert a.shape[0] == value.shape[0]
+            if hasattr(value, 'unit'):
+                if unit is not None:
+                    raise RuntimeError('value has units but you are also passing unit={}:'.format(unit))
+                unit = value.unit
+                value = value.value
         else:
             raise RuntimeError('unexpected input for value:', value)
 
