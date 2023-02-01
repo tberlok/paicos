@@ -37,7 +37,7 @@ make
 
 The examples require an Arepo snapshot. You can download one [here](https://www.dropbox.com/sh/xdmqpc72jprtfs7/AADTmM12Zqc4K5--R5OTb4oCa?dl=0) (1 GB Dropbox link).
 
-The main functionality is contained inside 8 classes. These are:
+The main functionality is contained inside some main classes. These are:
 
 - Snapshot (arepo_snap.py)
 
@@ -49,11 +49,11 @@ The main functionality is contained inside 8 classes. These are:
 
 - NestedProjector (nested_projector.py)
 
-- RadialProfiles (radial_profiles.py)
-
 - ArepoImage (arepo_image.py)
 
-- ArepoConverter (arepo_converter.py)
+- PaicosWriter (paicos_writer.py)
+
+- PaicosReader (paicos_readers.py)
 
 Each of these can by run in python, displaying their functionality, e.g.,
 
