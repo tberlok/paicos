@@ -17,10 +17,10 @@ for use_units in [False, True]:
     # widths = [10000, 10000, 2*R200c]
     widths = [10000, 10000, 10000]
     width_vec = (
-        [2*R200c, 10000, 20000],
-        [10000, 2*R200c, 20000],
-        [10000, 20000, 2*R200c],
-        )
+        [2 * R200c, 10000, 20000],
+        [10000, 2 * R200c, 20000],
+        [10000, 20000, 2 * R200c],
+    )
 
     plt.figure(1)
     plt.clf()
@@ -29,7 +29,7 @@ for use_units in [False, True]:
         widths = width_vec[ii]
         projector = pa.Projector(snap, center, widths, direction, npix=512)
 
-        image_file = pa.ArepoImage(projector, basedir=root_dir+'/data/',
+        image_file = pa.ArepoImage(projector, basedir=root_dir + '/data/',
                                    basename='projection_{}'.format(direction))
 
         Masses = projector.project_variable('0_Masses')
@@ -41,13 +41,13 @@ for use_units in [False, True]:
 
         # snap.get_temperatures()
         TemperaturesTimesMasses = projector.project_variable(
-                                snap['0_Temperatures'] * snap['0_Masses'])
+            snap['0_Temperatures'] * snap['0_Masses'])
         image_file.save_image('0_TemperaturesTimesMasses', TemperaturesTimesMasses)
 
         # Move from temporary filename to final filename
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.array((Masses/Volume)), origin='lower',
+        axes[ii].imshow(np.array((Masses / Volume)), origin='lower',
                         extent=np.array(projector.extent), norm=LogNorm())
     plt.show()

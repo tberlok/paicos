@@ -27,7 +27,7 @@ class Slicer(ImageCreator):
         # Pre-select a narrow region around the region-of-interest
         pos = snap["0_Coordinates"]
 
-        thickness = 4.0*np.cbrt((snap["0_Volume"]) / (4.0*np.pi/3.0))
+        thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
 
         self.slice = util.get_index_of_slice_region(pos, center, widths,
                                                     thickness, snap.box)
@@ -44,10 +44,10 @@ class Slicer(ImageCreator):
         height = extent[3] - extent[2]
 
         # TODO: Make assertion that dx=dy
-        npix_height = int(height/width*npix_width)
+        npix_height = int(height / width * npix_width)
 
-        w = extent[0] + (np.arange(npix_width) + 0.5)*width/npix_width
-        h = extent[2] + (np.arange(npix_height) + 0.5)*height/npix_height
+        w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
+        h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
 
         ww, hh = np.meshgrid(w, h)
         w = ww.flatten()
@@ -57,11 +57,11 @@ class Slicer(ImageCreator):
 
         ones = np.ones(w.shape[0])
         if direction == 'x':
-            image_points = np.vstack([ones*center[0], w, h]).T
+            image_points = np.vstack([ones * center[0], w, h]).T
         elif direction == 'y':
-            image_points = np.vstack([w, ones*center[1], h]).T
+            image_points = np.vstack([w, ones * center[1], h]).T
         elif direction == 'z':
-            image_points = np.vstack([w, h, ones*center[2]]).T
+            image_points = np.vstack([w, h, ones * center[2]]).T
 
         # Construct a tree and find the Voronoi cells closest to the image grid
         self.pos = pos[self.slice]
@@ -74,8 +74,8 @@ class Slicer(ImageCreator):
 
     def get_image(self, variable):
         from warnings import warn
-        warn('This method will be soon deprecated. in favor of the ' +
-             ' method with name: slice_variable',
+        warn('This method will be soon deprecated. in favor of the '
+             + ' method with name: slice_variable',
              DeprecationWarning, stacklevel=2)
 
         return self.slice_variable(variable)

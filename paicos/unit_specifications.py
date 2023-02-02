@@ -64,7 +64,7 @@ voronoi_cells = {
     'SubfindHsml': Coordinates,
     'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities,
-    'VelocityGradient': Velocities/Coordinates
+    'VelocityGradient': Velocities / Coordinates
 }
 
 dark_matter = {

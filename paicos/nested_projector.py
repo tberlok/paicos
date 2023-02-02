@@ -54,8 +54,8 @@ class NestedProjector(Projector):
         def log2int(x):
             return int(np.log2(x))
 
-        npix_low = nearest_power_of_two(width/np.max(self.hsml)*self.factor)
-        npix_high = nearest_power_of_two(width/np.min(self.hsml)*self.factor)
+        npix_low = nearest_power_of_two(width / np.max(self.hsml) * self.factor)
+        npix_high = nearest_power_of_two(width / np.min(self.hsml) * self.factor)
 
         if npix_high > self.npix:
             npix_high = self.npix
@@ -70,12 +70,12 @@ class NestedProjector(Projector):
             n_grid = 2**ii
 
             if self.verbose:
-                print(n_grid, width/n_grid)
+                print(n_grid, width / n_grid)
             n_grids.append(n_grid)
             if n_grid == npix_high:
                 bins.append(0.0)
             else:
-                bins.append(width/n_grid*self.factor)
+                bins.append(width / n_grid * self.factor)
 
         return bins, n_grids
 
@@ -89,7 +89,7 @@ class NestedProjector(Projector):
         repeats = factor
         new_image = np.repeat(np.repeat(image, repeats, axis=0),
                               repeats, axis=1)
-        return new_image/factor**2
+        return new_image / factor**2
 
     def sum_contributions(self, images):
         """
@@ -99,7 +99,7 @@ class NestedProjector(Projector):
         n = images[-1].shape[0]
         for image in images:
             full_image += self.increase_image_resolution(image,
-                                                         n//image.shape[0])
+                                                         n // image.shape[0])
 
         return full_image
 

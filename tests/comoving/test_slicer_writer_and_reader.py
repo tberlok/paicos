@@ -18,7 +18,7 @@ def test_slicer_writer_and_reader(show=False):
         [0.0, 2000, 2000],
         [2000, 0.0, 2000],
         [2000, 2000, 0.0],
-        )
+    )
 
     if show:
         plt.figure(1)
@@ -59,6 +59,8 @@ def test_slicer_writer_and_reader(show=False):
 
     # Example of how to read the image files
     im = pa.ImageReader('data', 247, 'red_slice_x')
+
+    im['0_Volume']
 
     if show:
         plt.show()

@@ -41,7 +41,7 @@ def test_projector(show=False):
 
             # Make a plot
             if show:
-                axes[ii].imshow(np.array((Masses/Volume)), origin='lower',
+                axes[ii].imshow(np.array((Masses / Volume)), origin='lower',
                                 extent=np.array(projector.extent),
                                 norm=LogNorm())
 

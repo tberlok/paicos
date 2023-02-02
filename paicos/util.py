@@ -18,7 +18,7 @@ def get_project_root_dir():
     path = os.path.dirname(os.path.abspath(__file__))
     root_dir = ''
     path_split = path.split('/')
-    for ii in range(1, len(path_split)-1):
+    for ii in range(1, len(path_split) - 1):
         root_dir += '/' + path_split[ii]
 
     return root_dir + '/'
@@ -208,25 +208,25 @@ def check_if_omp_has_issues(verbose=True):
 
     max_threads = get_openmp_settings(0, False)
     if settings.numthreads > max_threads:
-        msg = ('\n\nThe user specified number of OpenMP threads, {}, ' +
-               'exceeds the {} available on your system. Setting ' +
-               'numthreads to use half the available threads, i.e. {}.\n' +
-               'You can set numthreads with e.g. the command\n ' +
-               'paicos.set_numthreads(16)\n\n')
-        print(msg.format(settings.numthreads, max_threads, max_threads//2))
-        settings.numthreads = max_threads//2
+        msg = ('\n\nThe user specified number of OpenMP threads, {}, '
+               + 'exceeds the {} available on your system. Setting '
+               + 'numthreads to use half the available threads, i.e. {}.\n'
+               + 'You can set numthreads with e.g. the command\n '
+               + 'paicos.set_numthreads(16)\n\n')
+        print(msg.format(settings.numthreads, max_threads, max_threads // 2))
+        settings.numthreads = max_threads // 2
 
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
         return False
     else:
         import warnings
-        msg = ("OpenMP seems to have issues with reduction operators " +
-               "on your system, so we'll turn it off for those use cases. " +
-               "If you're on Mac then the issue is likely a " +
-               "compiler problem, discussed here:\n" +
-               "https://stackoverflow.com/questions/54776301/" +
-               "cython-prange-is-repeating-not-parallelizing.\n\n")
+        msg = ("OpenMP seems to have issues with reduction operators "
+               + "on your system, so we'll turn it off for those use cases. "
+               + "If you're on Mac then the issue is likely a "
+               + "compiler problem, discussed here:\n"
+               + "https://stackoverflow.com/questions/54776301/"
+               + "cython-prange-is-repeating-not-parallelizing.\n\n")
         if verbose:
             warnings.warn(msg)
         return True

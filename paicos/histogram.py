@@ -10,6 +10,7 @@ class Histogram:
 
     The heavy part of the computation is stored in idigit
     """
+
     def __init__(self, x, bins, logscale=False, verbose=False):
         """
         Initialize the class.
@@ -40,7 +41,7 @@ class Histogram:
 
         self.idigit = np.digitize(x, self.edges)
         if self.verbose:
-            print('This took {:1.2f} seconds'.format(time.time()-t))
+            print('This took {:1.2f} seconds'.format(time.time() - t))
 
     def _make_bins(self, bins):
         """
@@ -60,8 +61,8 @@ class Histogram:
         from . import settings
         if settings.use_units:
             assert lower.unit == upper.unit
-            edges = np.array(edges)*lower.unit_quantity
-            centers = np.array(centers)*lower.unit_quantity
+            edges = np.array(edges) * lower.unit_quantity
+            centers = np.array(centers) * lower.unit_quantity
         return edges, centers
 
     @util.remove_astro_units
@@ -82,8 +83,8 @@ class Histogram:
             lower = np.log10(lower)
             upper = np.log10(upper)
 
-        edges = lower + np.arange(nbins+1)*(upper-lower)/nbins
-        centers = 0.5*(edges[1:] + edges[:-1])
+        edges = lower + np.arange(nbins + 1) * (upper - lower) / nbins
+        centers = 0.5 * (edges[1:] + edges[:-1])
 
         if self.logscale:
             edges = 10**edges

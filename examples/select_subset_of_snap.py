@@ -8,10 +8,10 @@ snap['1_Coordinates']
 snap['1_Masses']
 del snap['1_Masses']
 
-index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
+index = snap['0_Density'] > snap['0_Density'].unit_quantity * 1e-6
 del snap['0_Density']
 selected_snap = snap.select(index)
-index, = np.where(snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6)
+index, = np.where(snap['0_Density'] > snap['0_Density'].unit_quantity * 1e-6)
 selected_snap2 = snap.select(index)
 np.testing.assert_array_equal(selected_snap2['0_Density'], selected_snap['0_Density'])
 

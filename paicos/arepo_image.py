@@ -9,6 +9,7 @@ class ImageCreator:
     """
     This is a base class for creating images from a snapshot.
     """
+
     def __init__(self, snap, center, widths, direction, npix=512):
         """
         Initialize the ImageCreator class. This method will be called
@@ -38,7 +39,7 @@ class ImageCreator:
             self.center = center
             assert center.unit == code_length.unit
         elif settings.use_units:
-            self.center = np.array(center)*code_length
+            self.center = np.array(center) * code_length
         else:
             self.center = np.array(center)
 
@@ -46,7 +47,7 @@ class ImageCreator:
             self.widths = widths
             assert widths.unit == code_length.unit
         elif settings.use_units:
-            self.widths = np.array(widths)*code_length
+            self.widths = np.array(widths) * code_length
         else:
             self.widths = np.array(widths)
 
@@ -62,16 +63,16 @@ class ImageCreator:
         self.npix = npix
 
         if direction == 'x':
-            self.extent = [self.yc - self.width_y/2, self.yc + self.width_y/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
+            self.extent = [self.yc - self.width_y / 2, self.yc + self.width_y / 2,
+                           self.zc - self.width_z / 2, self.zc + self.width_z / 2]
 
         elif direction == 'y':
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.zc - self.width_z/2, self.zc + self.width_z/2]
+            self.extent = [self.xc - self.width_x / 2, self.xc + self.width_x / 2,
+                           self.zc - self.width_z / 2, self.zc + self.width_z / 2]
 
         elif direction == 'z':
-            self.extent = [self.xc - self.width_x/2, self.xc + self.width_x/2,
-                           self.yc - self.width_y/2, self.yc + self.width_y/2]
+            self.extent = [self.xc - self.width_x / 2, self.xc + self.width_x / 2,
+                           self.yc - self.width_y / 2, self.yc + self.width_y / 2]
 
         if settings.use_units:
             from paicos import units
@@ -80,7 +81,7 @@ class ImageCreator:
         else:
             self.extent = np.array(self.extent)
 
-        area = (self.extent[1]-self.extent[0])*(self.extent[3]-self.extent[2])
+        area = (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
         self.area = area
 
 
@@ -95,9 +96,9 @@ class ArepoImage(PaicosWriter):
     which can be used to store images for later plotting with matplotlib.
 
     """
+
     def __init__(self, image_creator, basedir, basename="projection",
                  mode='w'):
-
         """
         If your image was created using a Paicos Projector or Slicer object,
         then you can pass such an object using the image_creator input

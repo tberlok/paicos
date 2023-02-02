@@ -5,6 +5,7 @@ import h5py
 class PaicosWriter:
     """
     """
+
     def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=True, mode='w'):
 
@@ -58,8 +59,8 @@ class PaicosWriter:
         f = h5py.File(filename, 'r+')
 
         if self.mode == 'a':
-            msg = ('PaicosWriter is in amend mode but {} is already ' +
-                   'in the group {} in the hdf5 file {}')
+            msg = ('PaicosWriter is in amend mode but {} is already '
+                   + 'in the group {} in the hdf5 file {}')
             msg = msg.format(name, group, f.filename)
 
             if group is None:
@@ -95,6 +96,7 @@ class PaicosWriter:
 class PaicosTimeSeriesWriter(PaicosWriter):
     """
     """
+
     def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=False, mode='w'):
 

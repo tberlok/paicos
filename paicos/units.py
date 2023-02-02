@@ -29,10 +29,10 @@ u.add_enabled_units(small_h)
 u.add_enabled_equivalencies(u.temperature_energy())
 # Allows conversion to Gauss (potential issues?)
 # https://github.com/astropy/astropy/issues/7396
-gauss_B = (u.g/u.cm)**(0.5)/u.s
+gauss_B = (u.g / u.cm)**(0.5) / u.s
 equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
-scaling = small_a**(-2)*small_h
-equiv_B_comoving = [(u.G*scaling, gauss_B*scaling, lambda x: x, lambda x: x)]
+scaling = small_a**(-2) * small_h
+equiv_B_comoving = [(u.G * scaling, gauss_B * scaling, lambda x: x, lambda x: x)]
 u.add_enabled_equivalencies(equiv_B)
 u.add_enabled_equivalencies(equiv_B_comoving)
 
@@ -163,7 +163,7 @@ class PaicosQuantity(Quantity):
         The redshift.
         """
         if self.comoving_sim:
-            return 1./self._a - 1.
+            return 1. / self._a - 1.
         else:
             raise RuntimeError('Non-comoving object has no redshift')
 
@@ -188,7 +188,7 @@ class PaicosQuantity(Quantity):
             raise RuntimeError(msg)
         else:
             from astropy import units as u
-            return self._a*u.Unit('arepo_time')
+            return self._a * u.Unit('arepo_time')
 
     def __get_unit_dictionaries(self):
         codic = {}
@@ -262,7 +262,7 @@ class PaicosQuantity(Quantity):
 
         value = self.view(np.ndarray)
         new_unit = self._get_new_units([small_h])
-        return self._new_view(value*factor, new_unit)
+        return self._new_view(value * factor, new_unit)
 
     @property
     def cgs(self):
@@ -300,7 +300,7 @@ class PaicosQuantity(Quantity):
             return super().to(unit, equivalencies, copy)
         else:
             _, pu_unit = self.separate_units
-            return super().to(unit*pu_unit, equivalencies, copy)
+            return super().to(unit * pu_unit, equivalencies, copy)
 
     @property
     def arepo(self):
@@ -314,9 +314,9 @@ class PaicosQuantity(Quantity):
         try:
             return self.decompose(bases=arepo_bases)
         except UnitConversionError as inst:
-            err_msg = ('Conversion to arepo_units does not work well for ' +
-                       'Temperature and magnetic field strength in Gauss. ' +
-                       'Astropy throws the following error: ' + str(inst))
+            err_msg = ('Conversion to arepo_units does not work well for '
+                       + 'Temperature and magnetic field strength in Gauss. '
+                       + 'Astropy throws the following error: ' + str(inst))
 
             raise UnitConversionError(err_msg)
 
@@ -409,7 +409,7 @@ class PaicosQuantity(Quantity):
 
         value = self.view(np.ndarray)
         new_unit = self._get_new_units([small_a, small_h])
-        return self._new_view(value*factor, new_unit)
+        return self._new_view(value * factor, new_unit)
 
     def __scaling_and_scaling_str(self, unit):
         """
@@ -455,12 +455,12 @@ class PaicosQuantity(Quantity):
     def _repr_latex_(self):
         number_part = super()._repr_latex_().split('\\;')[0]
         _, pu_units = self.separate_units
-        u_latex = (self.unit/pu_units).to_string(format='latex')[1:-1]
+        u_latex = (self.unit / pu_units).to_string(format='latex')[1:-1]
         pu_latex = pu_units.to_string(format='latex')[1:-1]
 
         if pu_units != u.Unit(''):
             modified = number_part + '\\;' + u_latex + \
-                       '\\times' + pu_latex + '$'
+                '\\times' + pu_latex + '$'
         else:
             modified = number_part + '\\;' + u_latex + '$'
         return modified
@@ -583,8 +583,8 @@ class PaicosTimeSeries(PaicosQuantity):
         """
         err_msg = "Operation requires objects to have same a and h value.\n"
         if isinstance(value, PaicosQuantity):
-            msg = ('operations combining PaicosQuantity and ' +
-                   'PaicosTimeSeries is not allowed.')
+            msg = ('operations combining PaicosQuantity and '
+                   + 'PaicosTimeSeries is not allowed.')
             raise RuntimeError(msg)
         elif isinstance(value, PaicosTimeSeries):
             try:

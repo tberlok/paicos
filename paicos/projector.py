@@ -25,7 +25,6 @@ class Projector(ImageCreator):
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, nvol=8, make_snap_with_selection=True):
-
         """
         Initialize the Projector class.
 
@@ -77,7 +76,7 @@ class Projector(ImageCreator):
             self.snap = self.snap.select(self.index)
 
         # Calculate the smoothing length
-        self.hsml = np.cbrt(nvol*(self.snap["0_Volume"]) / (4.0*np.pi/3.0))
+        self.hsml = np.cbrt(nvol * (self.snap["0_Volume"]) / (4.0 * np.pi / 3.0))
 
         self.pos = self.snap['0_Coordinates']
 
@@ -152,9 +151,9 @@ class Projector(ImageCreator):
 
         # Transpose
         projection = projection.T
-        area_per_pixel = self.area/np.product(projection.shape)
+        area_per_pixel = self.area / np.product(projection.shape)
 
         if isinstance(variable, units.PaicosQuantity):
-            projection = projection*variable.unit_quantity
+            projection = projection * variable.unit_quantity
 
-        return projection/area_per_pixel
+        return projection / area_per_pixel

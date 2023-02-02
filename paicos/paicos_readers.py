@@ -73,7 +73,7 @@ class PaicosReader(dict):
         elif 'ISOTHERMAL' in self.Config:
             self.gamma = 1
         else:
-            self.gamma = 5/3
+            self.gamma = 5 / 3
 
         # Load all data sets
         if load_all:
@@ -94,11 +94,11 @@ class PaicosReader(dict):
 
         unit_length = self.Parameters['UnitLength_in_cm'] * u.cm
         unit_mass = self.Parameters['UnitMass_in_g'] * u.g
-        unit_velocity = self.Parameters['UnitVelocity_in_cm_per_s'] * u.cm/u.s
+        unit_velocity = self.Parameters['UnitVelocity_in_cm_per_s'] * u.cm / u.s
         unit_time = unit_length / unit_velocity
         unit_energy = unit_mass * unit_velocity**2
-        unit_pressure = (unit_mass/unit_length) / unit_time**2
-        unit_density = unit_mass/unit_length**3
+        unit_pressure = (unit_mass / unit_length) / unit_time**2
+        unit_density = unit_mass / unit_length**3
         Omega0 = self.Parameters['Omega0']
         OmegaBaryon = self.Parameters['OmegaBaryon']
         OmegaLambda = self.Parameters['OmegaLambda']
@@ -110,7 +110,7 @@ class PaicosReader(dict):
 
         if self.ComovingIntegrationOn:
             # Set up LambdaCDM cosmology to calculate times, etc
-            self.cosmo = LambdaCDM(H0=100*self.h, Om0=Omega0,
+            self.cosmo = LambdaCDM(H0=100 * self.h, Om0=Omega0,
                                    Ob0=OmegaBaryon, Ode0=OmegaLambda)
             # Current age of the universe and look back time
             self._age = self.get_age(self.z)
@@ -210,10 +210,10 @@ class PaicosReader(dict):
         unit_dict = unit_specifications.unit_dict
         user_unit_dict = util.user_unit_dict
 
-        err_msg = ("\n\nThe user supplied unit for '{}:{}' already exists " +
-                   "in the default Paicos settings. Changing from '{}' to  " +
-                   "'{}' is not allowed. Please make a pull request if you " +
-                   " have found a bug.")
+        err_msg = ("\n\nThe user supplied unit for '{}:{}' already exists "
+                   + "in the default Paicos settings. Changing from '{}' to  "
+                   + "'{}' is not allowed. Please make a pull request if you "
+                   + " have found a bug.")
 
         for field in user_unit_dict.keys():
             for name in user_unit_dict[field].keys():
@@ -295,7 +295,7 @@ class PaicosReader(dict):
 
     def __convert_to_paicos(self, time, z):
         if settings.use_units:
-            a = 1.0/(z + 1.)
+            a = 1.0 / (z + 1.)
             if isinstance(a, np.ndarray):
                 time = pu.PaicosTimeSeries(time, a=a, h=self.h,
                                            comoving_sim=self.comoving_sim)
@@ -408,14 +408,14 @@ class ImageReader(PaicosReader):
                 # are split up
                 start, end = key.split('Times')
                 if (end in keys):
-                    self[start] = self[key]/self[end]
+                    self[start] = self[key] / self[end]
                 elif (start[0:2] + end in keys):
-                    self[start] = self[key]/self[start[0:2] + end]
+                    self[start] = self[key] / self[start[0:2] + end]
 
         # Calculate density if we have both masses and volumes
         for p in ['', '0_']:
             if (p + 'Masses' in keys) and (p + 'Volume' in keys):
-                self[p + 'Density'] = self[p+'Masses']/self[p+'Volume']
+                self[p + 'Density'] = self[p + 'Masses'] / self[p + 'Volume']
 
 
 class Histogram2DReader(PaicosReader):

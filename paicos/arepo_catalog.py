@@ -65,34 +65,34 @@ class Catalog(PaicosReader):
                 self.Group = {}
                 self.Sub = {}
                 for ikey in f["Group"].keys():
-                    if f["Group/"+ikey].shape.__len__() == 1:
+                    if f["Group/" + ikey].shape.__len__() == 1:
                         self.Group[ikey] = np.empty(
-                            self.ngroups, dtype=f["Group/"+ikey].dtype)
-                    elif f["Group/"+ikey].shape.__len__() == 2:
+                            self.ngroups, dtype=f["Group/" + ikey].dtype)
+                    elif f["Group/" + ikey].shape.__len__() == 2:
                         self.Group[ikey] = np.empty(
-                            (self.ngroups, f["Group/"+ikey].shape[1]),
-                            dtype=f["Group/"+ikey].dtype)
+                            (self.ngroups, f["Group/" + ikey].shape[1]),
+                            dtype=f["Group/" + ikey].dtype)
                     else:
                         assert False
 
                 for ikey in f["Subhalo"].keys():
-                    if f["Subhalo/"+ikey].shape.__len__() == 1:
+                    if f["Subhalo/" + ikey].shape.__len__() == 1:
                         self.Sub[ikey] = np.empty(
-                            self.nsubs, dtype=f["Subhalo/"+ikey].dtype)
-                    elif f["Subhalo/"+ikey].shape.__len__() == 2:
+                            self.nsubs, dtype=f["Subhalo/" + ikey].dtype)
+                    elif f["Subhalo/" + ikey].shape.__len__() == 2:
                         self.Sub[ikey] = np.empty(
-                            (self.nsubs, f["Subhalo/"+ikey].shape[1]),
-                            dtype=f["Subhalo/"+ikey].dtype)
+                            (self.nsubs, f["Subhalo/" + ikey].shape[1]),
+                            dtype=f["Subhalo/" + ikey].dtype)
                     else:
                         assert False
 
             # read group data
             for ikey in f["Group"].keys():
-                self.Group[ikey][skip_gr:skip_gr+ng] = f["Group/"+ikey]
+                self.Group[ikey][skip_gr:skip_gr + ng] = f["Group/" + ikey]
 
             # read subhalo data
             for ikey in f["Subhalo"].keys():
-                self.Sub[ikey][skip_sub:skip_sub+ns] = f["Subhalo/"+ikey]
+                self.Sub[ikey][skip_sub:skip_sub + ns] = f["Subhalo/" + ikey]
 
             skip_gr += ng
             skip_sub += ns
@@ -102,14 +102,14 @@ class Catalog(PaicosReader):
         if settings.use_units:
             for key in list(self.Group.keys()):
                 self.Group[key] = self.get_paicos_quantity(
-                                    self.Group[key], key,
-                                    field='groups')
+                    self.Group[key], key,
+                    field='groups')
                 if not hasattr(self.Group[key], 'unit'):
                     del self.Group[key]
 
             for key in list(self.Sub.keys()):
                 self.Sub[key] = self.get_paicos_quantity(
-                                    self.Sub[key], key,
-                                    field='subhalos')
+                    self.Sub[key], key,
+                    field='subhalos')
                 if not hasattr(self.Sub[key], 'unit'):
                     del self.Sub[key]

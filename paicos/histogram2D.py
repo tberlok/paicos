@@ -112,8 +112,8 @@ class Histogram2D:
         from . import settings
         if settings.use_units:
             assert lower.unit == upper.unit
-            edges = np.array(edges)*lower.unit_quantity
-            centers = np.array(centers)*lower.unit_quantity
+            edges = np.array(edges) * lower.unit_quantity
+            centers = np.array(centers) * lower.unit_quantity
         return edges, centers
 
     @util.remove_astro_units
@@ -134,8 +134,8 @@ class Histogram2D:
             lower = np.log10(lower)
             upper = np.log10(upper)
 
-        edges = lower + np.arange(nbins+1)*(upper-lower)/nbins
-        centers = 0.5*(edges[1:] + edges[:-1])
+        edges = lower + np.arange(nbins + 1) * (upper - lower) / nbins
+        centers = 0.5 * (edges[1:] + edges[:-1])
 
         if self.logscale:
             edges = 10**edges
@@ -176,13 +176,13 @@ class Histogram2D:
         unit_label = self.hist2d.label()[1:-1]
 
         if self.logscale:
-            colorlabel = (r'/\left(\mathrm{d}\mathrm{log}_{10} ' + x_symbol +
-                          r'\,\mathrm{d}\mathrm{log}_{10}' +
-                          y_symbol + r'\right)'
+            colorlabel = (r'/\left(\mathrm{d}\mathrm{log}_{10} ' + x_symbol
+                          + r'\,\mathrm{d}\mathrm{log}_{10}'
+                          + y_symbol + r'\right)'
                           + r'\;' + unit_label)
         else:
-            colorlabel = (r'/\left(\mathrm{d}' + x_symbol +
-                          r'\,\mathrm{d}' + y_symbol + r'\right)'
+            colorlabel = (r'/\left(\mathrm{d}' + x_symbol
+                          + r'\,\mathrm{d}' + y_symbol + r'\right)'
                           + r'\;' + unit_label)
 
         if weight_symbol is not None:
@@ -250,7 +250,7 @@ class Histogram2D:
             if self.logscale:
                 hist_units *= u.Unit('dex')**(-2)
             else:
-                hist_units /= x.unit*y.unit
+                hist_units /= x.unit * y.unit
 
             self.hist_units = hist_units
 
@@ -316,8 +316,8 @@ class Histogram2D:
             try:
                 attrs.update({'colorlabel': self.colorlabel})
             except AttributeError:
-                print(("Unable to save colorlabel, please call " +
-                      "the 'get_colorlabel' method before saving."))
+                print(("Unable to save colorlabel, please call "
+                      + "the 'get_colorlabel' method before saving."))
             # Add attributes
             for key in attrs.keys():
                 hdf5file[name].attrs[key] = attrs[key]

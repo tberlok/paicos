@@ -18,8 +18,8 @@ else:
     V = snap['0_Volume']
 
 # Set up bins
-bins_T = [T.min(), T.max()/10, 200]
-bins_rho = [rho.min(), rho.max()*1e-4, 300]
+bins_T = [T.min(), T.max() / 10, 200]
+bins_rho = [rho.min(), rho.max() * 1e-4, 300]
 
 # Create histogram object
 rhoT = pa.Histogram2D(snap, rho, T, weights=M, bins_x=bins_rho,

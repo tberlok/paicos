@@ -162,7 +162,7 @@ class Snapshot(PaicosReader):
                     npart = snap.dic_selection_index[parttype].shape[0]
                 else:
                     npart = snap.npart[parttype]
-                return np.ones(npart)*snap.masstable[parttype]
+                return np.ones(npart) * snap.masstable[parttype]
 
         for parttype in range(self.nspecies):
             if self.masstable[parttype] != 0:
@@ -245,8 +245,8 @@ class Snapshot(PaicosReader):
             if dep > 0:
                 if key in user_functs.keys():
                     import warnings
-                    msg = ('Deleting the user function: {} because its ' +
-                           'dependency: {} is missing')
+                    msg = ('Deleting the user function: {} because its '
+                           + 'dependency: {} is missing')
                     warnings.warn(msg.format(user_functs[key],
                                   dependency_dic[key]))
                 del self._this_snap_funcs[key]
@@ -256,10 +256,10 @@ class Snapshot(PaicosReader):
         assert type(P_key) is str
 
         if not P_key[0].isnumeric() or P_key[1] != '_':
-            msg = ('\n\nKeys are expected to consist of an integer ' +
-                   '(the particle type) and a blockname, separated by a ' +
-                   ' _. For instance 0_Density. You can get the ' +
-                   'available fields like so: snap.info(0)')
+            msg = ('\n\nKeys are expected to consist of an integer '
+                   + '(the particle type) and a blockname, separated by a '
+                   + ' _. For instance 0_Density. You can get the '
+                   + 'available fields like so: snap.info(0)')
             raise RuntimeError(msg)
 
         if not info:
@@ -315,7 +315,7 @@ class Snapshot(PaicosReader):
                         if settings.use_aliases:
                             if key in settings.aliases.keys():
                                 alias = settings.aliases[key]
-                                msg = alias + '\t'*5 + '(an alias of {})'
+                                msg = alias + '\t' * 5 + '(an alias of {})'
                                 print(msg.format(key))
                             else:
                                 print(key)
@@ -329,7 +329,7 @@ class Snapshot(PaicosReader):
                         if settings.use_aliases:
                             if key in settings.aliases.keys():
                                 alias = settings.aliases[key]
-                                msg = alias + '\t'*5 + '(an alias of {})'
+                                msg = alias + '\t' * 5 + '(an alias of {})'
                                 print(msg.format(key))
                             else:
                                 print(key)
@@ -362,7 +362,7 @@ class Snapshot(PaicosReader):
 
         assert particle_type < self.nspecies
 
-        P_key = str(particle_type)+"_"+blockname
+        P_key = str(particle_type) + "_" + blockname
         alias_key = P_key
 
         if settings.use_aliases:
@@ -373,7 +373,7 @@ class Snapshot(PaicosReader):
             msg = 'Unable to load parttype {}, blockname {} as this field is not in the hdf5 file'
             raise RuntimeError(msg.format(particle_type, blockname))
 
-        datname = "PartType"+str(particle_type)+"/"+blockname
+        datname = "PartType" + str(particle_type) + "/" + blockname
         PartType_str = 'PartType{}'.format(particle_type)
         if alias_key in self:
             if self.verbose:
@@ -413,7 +413,7 @@ class Snapshot(PaicosReader):
 
                 self.P_attrs[alias_key] = data_attributes
 
-            self[alias_key][skip_part:skip_part+np_file] = f[datname]
+            self[alias_key][skip_part:skip_part + np_file] = f[datname]
 
             skip_part += np_file
 
@@ -424,9 +424,9 @@ class Snapshot(PaicosReader):
                 self[alias_key] = self[alias_key].astype(np.float64)
         else:
             import warnings
-            warnings.warn('\n\nThe cython routines expect double precision ' +
-                          'and will fail unless settings.double_precision ' +
-                          'is True.\n\n')
+            warnings.warn('\n\nThe cython routines expect double precision '
+                          + 'and will fail unless settings.double_precision '
+                          + 'is True.\n\n')
 
         # Only keep the cells with True in the selection index array
         if particle_type in self.dic_selection_index.keys():
@@ -454,7 +454,7 @@ class Snapshot(PaicosReader):
                 del self[alias_key]
 
         if self.verbose:
-            print("... done! (took", time.time()-start_time, "s)")
+            print("... done! (took", time.time() - start_time, "s)")
 
     def get_derived_data(self, particle_type, blockname, verbose=False):
         """
@@ -469,8 +469,8 @@ class Snapshot(PaicosReader):
 
         P_key = str(particle_type) + "_" + blockname
 
-        msg = ('\n\n{} is in the hdf5 file(s), please use load_data instead ' +
-               'of get_derived_data').format(blockname)
+        msg = ('\n\n{} is in the hdf5 file(s), please use load_data instead '
+               + 'of get_derived_data').format(blockname)
         assert P_key not in self.info(particle_type, False), msg
 
         if verbose:
@@ -532,10 +532,10 @@ class Snapshot(PaicosReader):
 
         if P_key not in self.keys():
             if not P_key[0].isnumeric() or P_key[1] != '_':
-                msg = ('\n\nKeys are expected to consist of an integer ' +
-                       '(the particle type) and a blockname, separated by a ' +
-                       ' _. For instance 0_Density. You can get the ' +
-                       'available fields like so: snap.info(0)')
+                msg = ('\n\nKeys are expected to consist of an integer '
+                       + '(the particle type) and a blockname, separated by a '
+                       + ' _. For instance 0_Density. You can get the '
+                       + 'available fields like so: snap.info(0)')
                 raise RuntimeError(msg)
             parttype = int(P_key[0])
             name = P_key[2:]
@@ -580,7 +580,7 @@ class Snapshot(PaicosReader):
         """
         Remove data from object. Sometimes useful for for large datasets
         """
-        P_key = str(particle_type)+"_"+blockname
+        P_key = str(particle_type) + "_" + blockname
         if P_key in self:
             del self[P_key]
         if P_key in self.P_attrs:
@@ -649,7 +649,7 @@ class Snapshot(PaicosReader):
 
         writer = PaicosWriter(self, self.basedir, basename, 'w')
 
-        new_npart = [0]*self.nspecies
+        new_npart = [0] * self.nspecies
         for key in self.keys():
             for parttype in range(self.nspecies):
                 if key[:2] == '{}_'.format(parttype):

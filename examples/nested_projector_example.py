@@ -13,9 +13,9 @@ else:
     R200c = snap.Cat.Group['Group_R_Crit200'][0]
 
 width_vec = (
-    [2*R200c, 10000, 10000],
-    [10000, 2*R200c, 10000],
-    [10000, 10000, 2*R200c],
+    [2 * R200c, 10000, 10000],
+    [10000, 2 * R200c, 10000],
+    [10000, 10000, 2 * R200c],
 )
 
 plt.rc('image', origin='lower', cmap='RdBu_r', interpolation='None')
@@ -32,14 +32,14 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     Masses = p_nested.project_variable('0_Masses')
     Volume = p_nested.project_variable('0_Volume')
 
-    nested_image = Masses/Volume
+    nested_image = Masses / Volume
 
     p = pa.Projector(snap, center, widths, direction, npix=512)
 
     Masses = p.project_variable('0_Masses')
     Volume = p.project_variable('0_Volume')
 
-    normal_image = Masses/Volume
+    normal_image = Masses / Volume
 
     if pa.settings.use_units:
         if ii == 0:
@@ -55,7 +55,7 @@ for ii, direction in enumerate(['x', 'y', 'z']):
                            extent=p_nested.extent.value,
                            norm=LogNorm(vmin=vmin, vmax=vmax))
 
-        axes[2, ii].imshow(np.abs(normal_image-nested_image).value,
+        axes[2, ii].imshow(np.abs(normal_image - nested_image).value,
                            origin='lower',
                            extent=p_nested.extent.value,
                            norm=LogNorm(vmin=vmin, vmax=vmax))
@@ -73,7 +73,7 @@ for ii, direction in enumerate(['x', 'y', 'z']):
                            extent=p_nested.extent,
                            norm=LogNorm(vmin=vmin, vmax=vmax))
 
-        axes[2, ii].imshow(np.abs(normal_image-nested_image), origin='lower',
+        axes[2, ii].imshow(np.abs(normal_image - nested_image), origin='lower',
                            extent=p_nested.extent,
                            norm=LogNorm(vmin=vmin, vmax=vmax))
 

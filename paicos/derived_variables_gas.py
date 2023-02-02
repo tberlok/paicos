@@ -4,7 +4,7 @@ import numpy as np
 def GFM_MetallicityTimesMasses(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_Masses', '0_GFM_Metallicity']
-    return snap['0_Masses']*snap['0_GFM_Metallicity']
+    return snap['0_Masses'] * snap['0_GFM_Metallicity']
 
 
 def Volume(snap, get_dependencies=False):
@@ -16,7 +16,7 @@ def Volume(snap, get_dependencies=False):
 def MachnumberTimesEnergyDissipation(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_Machnumber', '0_EnergyDissipation']
-    variable = snap['0_Machnumber']*snap['0_EnergyDissipation']
+    variable = snap['0_Machnumber'] * snap['0_EnergyDissipation']
     return variable
 
 
@@ -41,7 +41,7 @@ def VelocityMagnitude(snap, get_dependencies=False):
 def MagneticFieldSquaredTimesVolume(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_Volume', '0_MagneticField']
-    variable = snap["0_Volume"]*np.sum(snap['0_MagneticField']**2, axis=1)
+    variable = snap["0_Volume"] * np.sum(snap['0_MagneticField']**2, axis=1)
     return variable
 
 
@@ -92,12 +92,12 @@ def Temperatures(snap, get_dependencies=False):
     # temperature in Kelvin
     from . import settings
     if settings.use_units:
-        variable = (gm1 * snap["0_InternalEnergy"] *
-                    mmean * mhydrogen).to('K')
+        variable = (gm1 * snap["0_InternalEnergy"]
+                    * mmean * mhydrogen).to('K')
     else:
         u_v = snap.arepo_units['unit_velocity']
-        variable = (gm1 * snap["0_InternalEnergy"] *
-                    u_v**2 * mmean * mhydrogen
+        variable = (gm1 * snap["0_InternalEnergy"]
+                    * u_v**2 * mmean * mhydrogen
                     ).to('K').value
     return variable
 
@@ -106,7 +106,7 @@ def TemperaturesTimesMasses(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_Temperatures', '0_Masses']
 
-    return snap["0_Temperatures"]*snap['0_Masses']
+    return snap["0_Temperatures"] * snap['0_Masses']
 
 
 def Current(snap, get_dependencies=False):
@@ -115,7 +115,7 @@ def Current(snap, get_dependencies=False):
         return ['0_BfieldGradient']
 
     def get_index(ii, jj):
-        return ii*3 + jj
+        return ii * 3 + jj
     gradB = snap['0_BfieldGradient']
     J_x = gradB[:, get_index(2, 1)] - gradB[:, get_index(1, 2)]
     J_y = gradB[:, get_index(0, 2)] - gradB[:, get_index(2, 0)]
@@ -132,7 +132,7 @@ def Enstrophy(snap, get_dependencies=False):
         return ['0_VelocityGradient']
 
     def get_index(ii, jj):
-        return ii*3 + jj
+        return ii * 3 + jj
     gradV = snap['0_VelocityGradient'][()]
     vor_x = gradV[:, get_index(2, 1)] - gradV[:, get_index(1, 2)]
     vor_y = gradV[:, get_index(0, 2)] - gradV[:, get_index(2, 0)]
@@ -160,7 +160,7 @@ def EnstrophyTimesMasses(snap, get_dependencies=False):
         vor_z = gradV[:, 1, 0] - gradV[:, 0, 1]
     else:
         def get_index(ii, jj):
-            return ii*3 + jj
+            return ii * 3 + jj
         gradV = snap['0_VelocityGradient']
         vor_x = gradV[:, get_index(2, 1)] - gradV[:, get_index(1, 2)]
         vor_y = gradV[:, get_index(0, 2)] - gradV[:, get_index(2, 0)]
@@ -169,7 +169,7 @@ def EnstrophyTimesMasses(snap, get_dependencies=False):
     # vorticity = np.stack([vor_x, vor_y, vor_z], axis=1)
 
     enstrophy = 0.5 * (vor_x**2 + vor_y**2 + vor_z**2)
-    variable = enstrophy*snap['0_Masses']
+    variable = enstrophy * snap['0_Masses']
 
     return variable
 
@@ -184,9 +184,9 @@ def MeanMolecularWeight(snap):
     if '0_ElectronAbundance' in snap.info(0, False):
         electron_abundance = snap['0_ElectronAbundance']
         # partially ionized
-        mean_molecular_weight = 4. / (1. + 3. * hydrogen_abundance +
-                                      4. * hydrogen_abundance *
-                                      electron_abundance)
+        mean_molecular_weight = 4. / (1. + 3. * hydrogen_abundance
+                                      + 4. * hydrogen_abundance
+                                      * electron_abundance)
     else:
         # fully ionized
         mean_molecular_weight = 4. / (5. * hydrogen_abundance + 3.)
@@ -235,7 +235,7 @@ def VelocityCurvature(snap, get_dependencies=False):
         return get_curvature(V, gradV)
 
     curva = get_func(snap['0_Velocities'], snap['0_VelocityGradient'])
-    unit_quantity = snap['0_VelocityGradient'].uq/snap['0_Velocities'].uq
+    unit_quantity = snap['0_VelocityGradient'].uq / snap['0_Velocities'].uq
     curva = curva * unit_quantity
     return curva
 

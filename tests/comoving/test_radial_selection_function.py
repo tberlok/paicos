@@ -6,12 +6,12 @@ def test_radial_selection():
 
     snap = pa.Snapshot(pa.root_dir + '/data', 247, basename='reduced_snap',
                        load_catalog=False)
-    center = [398968.4, 211682.6, 629969.9]*snap.length
+    center = [398968.4, 211682.6, 629969.9] * snap.length
 
-    r_max = 300*center.unit_quantity
+    r_max = 300 * center.unit_quantity
 
     # Calculate index in the "slow" but simple way
-    r = np.sqrt(np.sum((snap['0_Coordinates']-center[None, :])**2., axis=1))
+    r = np.sqrt(np.sum((snap['0_Coordinates'] - center[None, :])**2., axis=1))
     index_slow = r < r_max
 
     # Use OpenMP parallel Cython code
