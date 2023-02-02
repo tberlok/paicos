@@ -54,7 +54,7 @@ class PaicosReader(dict):
                 self.no_subdir = True
             else:
                 err_msg = "File: {} not found found"
-                raise FileNotFoundError(err_msg.format(self.file_name))
+                raise FileNotFoundError(err_msg.format(self.filename))
 
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)
