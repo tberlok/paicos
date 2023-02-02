@@ -446,10 +446,10 @@ class PaicosQuantity(Quantity):
         err_msg = "Operation requires objects to have same a and h value."
         if isinstance(value, PaicosQuantity):
             if value._a != self._a:
-                info = ' Obj1._a={}, Obj2._a={}'.format(self._a, value._a)
+                info = f' Obj1._a={self._a}, Obj2._a={value._a}'
                 raise RuntimeError(err_msg + info)
             if value.h != self.h:
-                info = ' Obj1.h={}, Obj2.h={}'.format(self.h, value.h)
+                info = f' Obj1.h={self.h}, Obj2.h={value.h}'
                 raise RuntimeError(err_msg + info)
 
     def _repr_latex_(self):
@@ -588,10 +588,10 @@ class PaicosTimeSeries(PaicosQuantity):
             raise RuntimeError(msg)
         elif isinstance(value, PaicosTimeSeries):
             try:
-                info = '\nObj1.a={}.\n\nObj2.a={}'.format(self._a, value._a)
+                info = f'\nObj1.a={self._a}.\n\nObj2.a={value._a}'
                 np.testing.assert_array_equal(value._a, self._a)
             except AssertionError:
                 raise RuntimeError(err_msg + info)
             if value.h != self.h:
-                info = '\nObj1.h={}.\n\nObj2.h={}'.format(self.h, value.h)
+                info = f'\nObj1.h={self.h}.\n\nObj2.h={value.h}'
                 raise RuntimeError(err_msg + info)

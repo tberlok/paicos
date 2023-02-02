@@ -36,8 +36,7 @@ class NestedProjector(Projector):
             index = i_digit == (ii + 1)
             count += np.sum(index)
             if self.verbose:
-                print('n_grid={} contains {} particles'.format(
-                    n_grid, np.sum(index)))
+                print(f'n_grid={n_grid} contains {np.sum(index)} particles')
 
         assert n_particles == count, 'need to include all cells!'
 

@@ -27,7 +27,7 @@ class PaicosReader(dict):
 
         if snapnum is None:
             self.filename = basedir + basename + '.hdf5'
-            msg = 'File: {} not found found'.format(self.filename)
+            msg = f'File: {self.filename} not found'
             assert os.path.exists(self.filename), msg
         else:
             single_file = basename + "_{:03d}.hdf5"
@@ -307,7 +307,7 @@ class PaicosReader(dict):
     def get_paicos_quantity(self, data, name, field='default'):
 
         if hasattr(data, 'unit'):
-            msg = 'Data already had units! {}'.format(name)
+            msg = f'Data already had units! {name}'
             raise RuntimeError(msg)
 
         unit = self.find_unit(name, field)
@@ -329,7 +329,7 @@ class PaicosReader(dict):
         from . import unit_specifications
 
         if field not in unit_specifications.unit_dict.keys():
-            raise RuntimeError('unknown field: {}'.format(field))
+            raise RuntimeError(f'unknown field: {field}')
 
         if name not in unit_specifications.unit_dict[field].keys():
             unit = False

@@ -70,7 +70,7 @@ def add_user_unit(field, blockname, unit):
                    pass the string only.
     """
     if field not in util.user_unit_dict.keys():
-        raise RuntimeError('unknown field: {}'.format(field))
+        raise RuntimeError(f'unknown field: {field}')
 
     util.user_unit_dict[field][blockname] = unit
 

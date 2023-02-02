@@ -19,7 +19,7 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     slicer = pa.Slicer(snap, center, widths, direction, npix=512)
 
     image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + '/data/',
-                               basename='slice_{}'.format(direction))
+                               basename=f'slice_{direction}')
 
     Density = slicer.slice_variable(snap['0_Density'])
     Temperatures = slicer.slice_variable('0_Temperatures')
@@ -31,7 +31,7 @@ for ii, direction in enumerate(['x', 'y', 'z']):
 
     # Create a new image object in amend mode
     image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + '/data/',
-                               basename='slice_{}'.format(direction),
+                               basename=f'slice_{direction}',
                                mode='a')
 
     # Now add the temperatures as well

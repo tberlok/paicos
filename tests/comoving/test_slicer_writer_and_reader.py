@@ -30,7 +30,7 @@ def test_slicer_writer_and_reader(show=False):
         slicer = pa.Slicer(snap, center, widths, direction, npix=512)
 
         image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + '/data/',
-                                   basename='red_slice_{}'.format(direction))
+                                   basename=f'red_slice_{direction}')
 
         Density = slicer.slice_variable(snap['0_Density'])
         Volume = slicer.slice_variable('0_Volume')
@@ -42,7 +42,7 @@ def test_slicer_writer_and_reader(show=False):
 
         # Create a new image object in amend mode
         image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + '/data/',
-                                   basename='red_slice_{}'.format(direction),
+                                   basename=f'red_slice_{direction}',
                                    mode='a')
 
         # Now add the temperatures as well

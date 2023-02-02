@@ -30,7 +30,7 @@ for use_units in [False, True]:
         projector = pa.Projector(snap, center, widths, direction, npix=512)
 
         image_file = pa.ArepoImage(projector, basedir=root_dir + '/data/',
-                                   basename='projection_{}'.format(direction))
+                                   basename=f'projection_{direction}')
 
         Masses = projector.project_variable('0_Masses')
         print(Masses[0, 0])

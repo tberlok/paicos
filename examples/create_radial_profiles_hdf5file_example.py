@@ -63,7 +63,7 @@ radfile.write_data('center', center)
 # Let us now also add some other parttype profiles
 
 for parttype in range(1, snap.nspecies):
-    pstr = '{}_'.format(parttype)
+    pstr = f'{parttype}_'
     # Re-open the Arepo snapshot
     snap = pa.Snapshot(pa.root_dir + "/data", 247)
 
