@@ -129,7 +129,7 @@ class Snapshot(PaicosReader):
                     import warnings
                     warnings.warn('no catalog found')
 
-        self.P_attrs = dict()  # attributes
+        self.P_attrs = {}  # attributes
 
         self.derived_data_counter = 0
 
@@ -163,22 +163,22 @@ class Snapshot(PaicosReader):
 
         for parttype in range(self.nspecies):
             if self.masstable[parttype] != 0:
-                P_key = str(parttype) + '_Masses'
+                p_key = str(parttype) + '_Masses'
                 obj = Mass(parttype)
-                self._this_snap_funcs[P_key] = obj.get_masses_from_header
+                self._this_snap_funcs[p_key] = obj.get_masses_from_header
 
     def _find_available_for_loading(self):
         self._all_avail_load = []
         self._part_avail_load = {i: [] for i in range(self.nspecies)}
-        for PartType in range(self.nspecies):
-            PartType_str = f'PartType{PartType}'
+        for parttype in range(self.nspecies):
+            PartType_str = f'PartType{parttype}'
             with h5py.File(self.filename, 'r') as file:
                 if PartType_str in list(file.keys()):
                     load_keys = list(file[PartType_str].keys())
                     for key in load_keys:
-                        P_key = str(PartType) + '_' + key
-                        self._all_avail_load.append(P_key)
-                        self._part_avail_load[PartType].append(P_key)
+                        p_key = f'{parttype}_{key}'
+                        self._all_avail_load.append(p_key)
+                        self._part_avail_load[parttype].append(p_key)
 
     def _identify_parttypes(self):
         self._type_info = {0: 'voronoi_cells'}
@@ -248,11 +248,11 @@ class Snapshot(PaicosReader):
                     warnings.warn(msg)
                 del self._this_snap_funcs[key]
 
-    def get_variable_function(self, P_key, info=False):
+    def get_variable_function(self, p_key, info=False):
 
-        assert type(P_key) is str
+        assert type(p_key) is str
 
-        if not P_key[0].isnumeric() or P_key[1] != '_':
+        if not p_key[0].isnumeric() or p_key[1] != '_':
             msg = ('\n\nKeys are expected to consist of an integer '
                    + '(the particle type) and a blockname, separated by a '
                    + ' _. For instance 0_Density. You can get the '
@@ -260,16 +260,16 @@ class Snapshot(PaicosReader):
             raise RuntimeError(msg)
 
         if not info:
-            if P_key in self._this_snap_funcs.keys():
-                return self._this_snap_funcs[P_key]
+            if p_key in self._this_snap_funcs.keys():
+                return self._this_snap_funcs[p_key]
             else:
                 msg = '\n\n{} not found in the functions: {}'
-                msg = msg.format(P_key, self._this_snap_funcs)
+                msg = msg.format(p_key, self._this_snap_funcs)
                 raise RuntimeError(msg)
 
         # Return a list with all available keys for this parttype
         if info:
-            parttype = int(P_key[0])
+            parttype = int(p_key[0])
 
             avail_list = []
             for key in self._this_snap_funcs.keys():
@@ -278,7 +278,7 @@ class Snapshot(PaicosReader):
 
             return avail_list
 
-    def info(self, PartType, verbose=True):
+    def info(self, parttype, verbose=True):
         """
         This function provides information about the keys of a certain
         particle type in a snapshot file.
@@ -301,11 +301,11 @@ class Snapshot(PaicosReader):
         file and determining what data is available for a given particle
         type.
         """
-        PartType_str = f'PartType{PartType}'
+        PartType_str = f'PartType{parttype}'
         with h5py.File(self.filename, 'r') as file:
             if PartType_str in list(file.keys()):
                 load_keys = list(file[PartType_str].keys())
-                load_keys = [str(PartType) + '_' + key for key in load_keys]
+                load_keys = [f'{parttype}_{key}' for key in load_keys]
                 if verbose:
                     print('\nKeys for ' + PartType_str + ' in the hdf5 file:')
                     for key in (sorted(load_keys)):
@@ -320,7 +320,7 @@ class Snapshot(PaicosReader):
                             print(key)
 
                     print('\nPossible derived variables are:')
-                    dkeys = self.get_variable_function(str(PartType) + '_', True)
+                    dkeys = self.get_variable_function(f'{parttype}_', True)
 
                     for key in (sorted(dkeys)):
                         if settings.use_aliases:
@@ -341,7 +341,7 @@ class Snapshot(PaicosReader):
                 else:
                     return []
 
-    def load_data(self, particle_type, blockname, give_units=False):
+    def load_data(self, parttype, blockname, give_units=False):
         """
         Load data from hdf5 file(s). Example usage:
 
@@ -357,30 +357,30 @@ class Snapshot(PaicosReader):
 
         """
 
-        assert particle_type < self.nspecies
+        assert parttype < self.nspecies
 
-        P_key = f'{particle_type}_{blockname}'
-        alias_key = P_key
+        p_key = f'{parttype}_{blockname}'
+        alias_key = p_key
 
         if settings.use_aliases:
-            if P_key in settings.aliases.keys():
-                alias_key = settings.aliases[P_key]
+            if p_key in settings.aliases.keys():
+                alias_key = settings.aliases[p_key]
 
-        if P_key not in self.info(particle_type, False):
-            msg = (f'Unable to load parttype {particle_type}, blockname '
+        if p_key not in self.info(parttype, False):
+            msg = (f'Unable to load parttype {parttype}, blockname '
                    + f'{blockname} as this field is not in the hdf5 file')
             raise RuntimeError(msg)
 
-        datname = f'PartType{particle_type}/{blockname}'
-        PartType_str = f'PartType{particle_type}'
+        datname = f'PartType{parttype}/{blockname}'
+        PartType_str = f'PartType{parttype}'
         if alias_key in self:
             if self.verbose:
                 print(blockname, "for species",
-                      particle_type, "already in memory")
+                      parttype, "already in memory")
             return
         elif self.verbose:
             print("loading block", blockname,
-                  "for species", particle_type, "...")
+                  "for species", parttype, "...")
             start_time = time.time()
 
         skip_part = 0
@@ -396,15 +396,15 @@ class Snapshot(PaicosReader):
 
             f = h5py.File(cur_filename, "r")
 
-            np_file = f["Header"].attrs["NumPart_ThisFile"][particle_type]
+            np_file = f["Header"].attrs["NumPart_ThisFile"][parttype]
 
             if ifile == 0:   # initialize array
                 if f[datname].shape.__len__() == 1:
                     self[alias_key] = np.empty(
-                        self.npart[particle_type], dtype=f[datname].dtype)
+                        self.npart[parttype], dtype=f[datname].dtype)
                 else:
                     self[alias_key] = np.empty(
-                        (self.npart[particle_type], f[datname].shape[1]),
+                        (self.npart[parttype], f[datname].shape[1]),
                         dtype=f[datname].dtype)
                 # Load attributes
                 data_attributes = dict(f[PartType_str][blockname].attrs)
@@ -427,8 +427,8 @@ class Snapshot(PaicosReader):
                           + 'is True.\n\n')
 
         # Only keep the cells with True in the selection index array
-        if particle_type in self.dic_selection_index.keys():
-            selection_index = self.dic_selection_index[particle_type]
+        if parttype in self.dic_selection_index.keys():
+            selection_index = self.dic_selection_index[parttype]
             shape = self[alias_key].shape
             if len(shape) == 1:
                 self[alias_key] = self[alias_key][selection_index]
@@ -438,8 +438,8 @@ class Snapshot(PaicosReader):
                 raise RuntimeError('Data has unexpected shape!')
 
         if settings.use_units or give_units:
-            if particle_type in self._type_info.keys():
-                ptype = self._type_info[particle_type]  # e.g. 'voronoi_cells'
+            if parttype in self._type_info.keys():
+                ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
                 self[alias_key] = self.get_paicos_quantity(self[alias_key],
                                                            blockname,
                                                            field=ptype)
@@ -454,7 +454,7 @@ class Snapshot(PaicosReader):
         if self.verbose:
             print("... done! (took", time.time() - start_time, "s)")
 
-    def get_derived_data(self, particle_type, blockname, verbose=False):
+    def get_derived_data(self, parttype, blockname, verbose=False):
         """
         Get derived quantities. Example usage:
 
@@ -465,34 +465,34 @@ class Snapshot(PaicosReader):
         """
         # from .derived_variables import get_variable_function
 
-        P_key = str(particle_type) + "_" + blockname
+        p_key = str(parttype) + "_" + blockname
 
         msg = (f'\n\n{blockname} is in the hdf5 file(s), please use load_data '
                + 'instead of get_derived_data')
-        assert P_key not in self.info(particle_type, False), msg
+        assert p_key not in self.info(parttype, False), msg
 
         if verbose:
-            msg1 = f'Attempting to get derived variable: {P_key}...'
-            msg2 = f'So we need the variable: {P_key}...'
+            msg1 = f'Attempting to get derived variable: {p_key}...'
+            msg2 = f'So we need the variable: {p_key}...'
             if self.derived_data_counter == 0:
                 print(msg1, end='')
             else:
                 print('\n\t' + msg2, end='')
             self.derived_data_counter += 1
 
-        func = self.get_variable_function(P_key)
+        func = self.get_variable_function(p_key)
 
         if settings.use_aliases:
-            if P_key in settings.aliases.keys():
-                P_key = settings.aliases[P_key]
-        self[P_key] = func(self)
+            if p_key in settings.aliases.keys():
+                p_key = settings.aliases[p_key]
+        self[p_key] = func(self)
 
         if verbose:
             self.derived_data_counter -= 1
             if self.derived_data_counter == 0:
                 print('\t[DONE]\n')
 
-    def __getitem__(self, P_key):
+    def __getitem__(self, p_key):
         """
         This method is a special method in Python classes, known as a "magic
         method" that allows instances of the class to be accessed like a
@@ -501,7 +501,7 @@ class Snapshot(PaicosReader):
         This method is used to access the data stored in the class, it takes a
         single argument:
 
-        P_key : a string that represents the data that is being accessed, it
+        p_key : a string that represents the data that is being accessed, it
         should be in the format of parttype_name, where parttype is an integer
         and name is the name of the data block. It first checks if the key is
         already in the class, if not it checks if the key is in the format of
@@ -525,33 +525,33 @@ class Snapshot(PaicosReader):
 
         if settings.use_aliases:
 
-            if P_key in settings.inverse_aliases.keys():
-                P_key = settings.inverse_aliases[P_key]
+            if p_key in settings.inverse_aliases.keys():
+                p_key = settings.inverse_aliases[p_key]
 
-        if P_key not in self.keys():
-            if not P_key[0].isnumeric() or P_key[1] != '_':
+        if p_key not in self.keys():
+            if not p_key[0].isnumeric() or p_key[1] != '_':
                 msg = ('\n\nKeys are expected to consist of an integer '
                        + '(the particle type) and a blockname, separated by a '
                        + ' _. For instance 0_Density. You can get the '
                        + 'available fields like so: snap.info(0)')
                 raise RuntimeError(msg)
-            parttype = int(P_key[0])
-            name = P_key[2:]
+            parttype = int(p_key[0])
+            name = p_key[2:]
 
             if parttype >= self.nspecies:
                 msg = f'Simulation only has {self.nspecies} species.'
                 raise RuntimeError(msg)
 
-            if P_key in self.info(parttype, False):
+            if p_key in self.info(parttype, False):
                 self.load_data(parttype, name)
             else:
                 verbose = settings.print_info_when_deriving_variables
                 self.get_derived_data(parttype, name, verbose=verbose)
 
         if settings.use_aliases:
-            if P_key in settings.aliases.keys():
-                P_key = settings.aliases[P_key]
-        return super().__getitem__(P_key)
+            if p_key in settings.aliases.keys():
+                p_key = settings.aliases[p_key]
+        return super().__getitem__(p_key)
 
     def __get_auto_comple_list(self):
         self._auto_list = []
@@ -561,9 +561,9 @@ class Snapshot(PaicosReader):
             self._auto_list.append(key)
 
         if settings.use_aliases:
-            for ii, P_key in enumerate(self._auto_list):
-                if P_key in settings.aliases.keys():
-                    self._auto_list[ii] = settings.aliases[P_key]
+            for ii, p_key in enumerate(self._auto_list):
+                if p_key in settings.aliases.keys():
+                    self._auto_list[ii] = settings.aliases[p_key]
 
     def _ipython_key_completions_(self):
         """
@@ -574,15 +574,15 @@ class Snapshot(PaicosReader):
 
         return self._auto_list
 
-    def remove_data(self, particle_type, blockname):
+    def remove_data(self, parttype, blockname):
         """
         Remove data from object. Sometimes useful for for large datasets
         """
-        P_key = str(particle_type) + "_" + blockname
-        if P_key in self:
-            del self[P_key]
-        if P_key in self.P_attrs:
-            del self.P_attrs[P_key]
+        p_key = str(parttype) + "_" + blockname
+        if p_key in self:
+            del self[p_key]
+        if p_key in self.P_attrs:
+            del self.P_attrs[p_key]
 
     def select(self, selection_index, parttype=0):
         """
