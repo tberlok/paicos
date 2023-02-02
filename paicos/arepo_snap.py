@@ -109,10 +109,7 @@ class Snapshot(PaicosReader):
 
         # get subfind catalog?
         if load_catalog is None:
-            if self.ComovingIntegrationOn:
-                load_catalog = True
-            else:
-                load_catalog = False
+            load_catalog = bool(self.ComovingIntegrationOn)
 
         if load_catalog:
             try:

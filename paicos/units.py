@@ -481,6 +481,24 @@ class PaicosQuantity(Quantity):
         self.__sanity_check(value)
         return super().__truediv__(value)
 
+    def dump(self):
+        pass
+
+    def dumps(self):
+        pass
+
+    def tobytes(self):
+        pass
+
+    def tofile(self):
+        pass
+
+    def tolist(self):
+        pass
+
+    def tostring(self):
+        pass
+
 
 class PaicosTimeSeries(PaicosQuantity):
 
