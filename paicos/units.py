@@ -641,8 +641,8 @@ class PaicosTimeSeries(PaicosQuantity):
             raise RuntimeError(msg)
 
         if isinstance(value, PaicosTimeSeries):
+            info = f'\nObj1.a={self._a}.\n\nObj2.a={value._a}'
             try:
-                info = f'\nObj1.a={self._a}.\n\nObj2.a={value._a}'
                 np.testing.assert_array_equal(value._a, self._a)
             except AssertionError as exc:
                 raise RuntimeError(err_msg + info) from exc
