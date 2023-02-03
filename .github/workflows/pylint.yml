@@ -37,5 +37,8 @@ jobs:
           pip install -r requirements.txt
           pip install pylint
 
+      - name: Install paicos
+        run: make
+
       - name: Validate
         run: pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=E0611 paicos
