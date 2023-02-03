@@ -108,7 +108,14 @@ def numthreads(numthreads):
 
     numthreads (int): e.g. 16
     """
-    settings.numthreads = numthreads
+    if numthreads > settings.max_threads:
+        print(f'Your machine only has {settings.max_threads} available threads')
+
+    settings.numthreads = min(numthreads, settings.max_threads)
+    if settings.openMP_has_issues:
+        settings.numthreads_reduction = 1
+    else:
+        settings.numthreads_reduction = settings.numthreads
 
 
 def print_info_when_deriving_variables(option):
