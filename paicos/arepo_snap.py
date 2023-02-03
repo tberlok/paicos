@@ -1,10 +1,13 @@
+"""This defines a reader for Arepo snapshot files"""
 import time
 from inspect import signature
 import numbers
+import warnings
 import numpy as np
 import h5py
 from .arepo_catalog import Catalog
 from .paicos_readers import PaicosReader
+from .paicos_writer import PaicosWriter
 from . import settings
 from . import derived_variables
 
@@ -129,7 +132,6 @@ class Snapshot(PaicosReader):
                         self.basedir, self.snapnum, verbose=self.verbose,
                         subfind_catalog=False)
                 except FileNotFoundError:
-                    import warnings
                     warnings.warn('no catalog found')
 
         self.P_attrs = {}  # attributes
@@ -146,11 +148,23 @@ class Snapshot(PaicosReader):
         self.__get_auto_comple_list()
 
     def _add_mass_to_user_funcs(self):
+        """
+        This functions adds functionality for obtaining the masses
+        of particle types which do not have the Masses blockname stored.
+        These normally instead have their mass in masstable.
+        """
 
         self._this_snap_funcs = {}
 
         class Mass:
+            """
+            This class allows us to get a function which is just a function of
+            one parameter.
+            """
             def __init__(self, parttype):
+                """
+                The parttype, e.g. 1 for DM particles
+                """
                 self.parttype = parttype
 
             def get_masses_from_header(self, snap):
@@ -164,6 +178,7 @@ class Snapshot(PaicosReader):
                     npart = snap.npart[parttype]
                 return np.ones(npart) * snap.masstable[parttype]
 
+        # Add function to the ones available
         for parttype in range(self.nspecies):
             if self.masstable[parttype] != 0:
                 p_key = str(parttype) + '_Masses'
@@ -171,6 +186,10 @@ class Snapshot(PaicosReader):
                 self._this_snap_funcs[p_key] = obj.get_masses_from_header
 
     def _find_available_for_loading(self):
+        """
+        Read the hdf5 file info and find all the blocknames
+        that are available for each particle type.
+        """
         self._all_avail_load = []
         self._part_avail_load = {i: [] for i in range(self.nspecies)}
         for parttype in range(self.nspecies):
@@ -183,6 +202,10 @@ class Snapshot(PaicosReader):
                         self._part_avail_load[parttype].append(p_key)
 
     def _identify_parttypes(self):
+        """
+        Try to figure out which physical variable is stored in each
+        particle type.
+        """
         self._type_info = {0: 'voronoi_cells'}
         for p in range(1, self.nspecies):
             bh = any(['BH_' in key for key in self._part_avail_load[p]])
@@ -193,32 +216,46 @@ class Snapshot(PaicosReader):
                 self._type_info[p] = 'stars'
 
     def _find_available_functions(self):
-        from .settings import use_only_user_functions
+        """
+        This function goes through all the implemented functions
+        for getting derived variables. Checking their dependencies,
+        it then figures out which derived variables are actually possible
+        for this particular snapshot. For instance, you can calculate the
+        magnetic field strength if the magnetic field is not stored in
+        the hdf5 file.
+        """
 
         user_functs = derived_variables.user_functions
 
-        for key in user_functs:
-            self._this_snap_funcs.update({key: user_functs[key]})
+        for func_name, func in user_functs.items():
+            self._this_snap_funcs[func_name] = func
 
-        if not use_only_user_functions:
+        # Add all implemented functions
+        if not settings.use_only_user_functions:
             def_functs = derived_variables.default_functions
-            for key in def_functs:
-                if key not in self._this_snap_funcs:
-                    self._this_snap_funcs.update({key: def_functs[key]})
+            for func_name, func in def_functs.items():
+                if func_name not in self._this_snap_funcs:
+                    self._this_snap_funcs[func_name] = func
 
+        # Build a dependency dictionary by asking each function for its
+        # dependencies
         self._dependency_dic = {}
-        for key in self._this_snap_funcs:
-            func = self._this_snap_funcs[key]
+        for func_name, func in self._this_snap_funcs.items():
             sig = signature(func)
+            # If the function has two input arguments, then we assume
+            # that passing True to the second argument will return its
+            # dependencies
             if len(sig.parameters) == 2:
-                self._dependency_dic[key] = func(self, True)
+                self._dependency_dic[func_name] = func(self, True)
             else:
-                self._dependency_dic[key] = []
+                self._dependency_dic[func_name] = []
 
         dependency_dic = dict(self._dependency_dic)
 
+        # We then trim the dependency dictionary
+
         # This will fail for very nested dependencies.
-        for jj in range(3):
+        for _ in range(3):
             # First substitute all dependencies that are
             # at the top level of the dictionary
             for key in dependency_dic:
@@ -241,7 +278,6 @@ class Snapshot(PaicosReader):
             dep = len(dependency_dic[key])
             if dep > 0:
                 if key in user_functs:
-                    import warnings
                     msg = (f'Deleting the user function: {user_functs[key]} '
                            + f'because its dependency: {dependency_dic[key]} '
                            + 'is missing')
@@ -249,6 +285,11 @@ class Snapshot(PaicosReader):
                 del self._this_snap_funcs[key]
 
     def get_variable_function(self, p_key, info=False):
+        """
+        This is a helper function for 'get_derived_data'. It returns a
+        function if info is False, and a list of all available
+        functions for parttype = p_key[0] if info is True.
+        """
 
         assert type(p_key) is str
 
@@ -262,10 +303,9 @@ class Snapshot(PaicosReader):
         if not info:
             if p_key in self._this_snap_funcs:
                 return self._this_snap_funcs[p_key]
-            else:
-                msg = '\n\n{} not found in the functions: {}'
-                msg = msg.format(p_key, self._this_snap_funcs)
-                raise RuntimeError(msg)
+            msg = '\n\n{} not found in the functions: {}'
+            msg = msg.format(p_key, self._this_snap_funcs)
+            raise RuntimeError(msg)
 
         # Return a list with all available keys for this parttype
         if info:
@@ -419,7 +459,6 @@ class Snapshot(PaicosReader):
             if not issubclass(self[alias_key].dtype.type, numbers.Integral):
                 self[alias_key] = self[alias_key].astype(np.float64)
         else:
-            import warnings
             warnings.warn('\n\nThe cython routines expect double precision '
                           + 'and will fail unless settings.double_precision '
                           + 'is True.\n\n')
@@ -552,6 +591,9 @@ class Snapshot(PaicosReader):
         return super().__getitem__(p_key)
 
     def __get_auto_comple_list(self):
+        """
+        Pre-compute a list for auto-completion.
+        """
         self._auto_list = []
 
         self._auto_list = self._all_avail_load
@@ -640,8 +682,6 @@ class Snapshot(PaicosReader):
         Save a new snapshot containing the currently loaded (derived)
         variables. Useful for reducing datasets to smaller sizes.
         """
-        from .paicos_writer import PaicosWriter
-
         writer = PaicosWriter(self, self.basedir, basename, 'w')
 
         new_npart = [0] * self.nspecies

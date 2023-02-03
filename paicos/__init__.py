@@ -6,6 +6,7 @@ handling of units, derived variables, loading of data upon request.
 The module includes a way of writing and reading data with units.
 The code is parallel with an OpenMP Cython implementation.
 """
+import os
 from . import util
 from . import settings
 from .util import root_dir
@@ -145,7 +146,6 @@ def user_settings_exists():
     """
     Checks if user settings exist in the root directory of Paicos.
     """
-    import os
     if os.path.exists(root_dir + 'user_settings.py'):
         return True
     return False

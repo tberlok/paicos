@@ -1,3 +1,8 @@
+"""
+This defines a base class for image creators (such as Projector and Slicer)
+and a class for saving images as hdf5 files in a systematic way.
+"""
+
 import h5py
 import numpy as np
 from .import util

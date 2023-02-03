@@ -1,3 +1,4 @@
+"""This defines a reader for Arepo Friends-of-Friends (FoF) and subhalo catalog files"""
 import numpy as np
 import h5py
 from .paicos_readers import PaicosReader
