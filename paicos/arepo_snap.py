@@ -55,8 +55,7 @@ class Snapshot(PaicosReader):
     """
 
     def __init__(self, basedir, snapnum, basename="snap", load_all=False,
-                 to_physical=False, load_catalog=None, verbose=False,
-                 dic_selection_index={}):
+                 to_physical=False, load_catalog=None, verbose=False):
         """
         Initialize the Snapshot class.
 
@@ -87,7 +86,8 @@ class Snapshot(PaicosReader):
 
         self.load_catalog = load_catalog
 
-        self.dic_selection_index = dic_selection_index
+        if not hasattr(self, "dic_selection_index"):
+            self.dic_selection_index = {}
 
         self.nfiles = self.Header["NumFilesPerSnapshot"]
         self.npart = self.Header["NumPart_Total"]
@@ -655,8 +655,9 @@ class Snapshot(PaicosReader):
                                basename=self.basename,
                                verbose=self.verbose,
                                to_physical=self.to_physical,
-                               load_catalog=self.load_catalog,
-                               dic_selection_index=dic_selection_index)
+                               load_catalog=self.load_catalog)
+
+        select_snap.dic_selection_index = dic_selection_index
 
         for key in self:
             if key[0] == str(parttype):
