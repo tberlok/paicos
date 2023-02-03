@@ -42,22 +42,10 @@ class PaicosWriter:
         self.tmp_filename = basedir + 'tmp_' + name
 
         if mode == 'w':
-            self.copy_over_snapshot_information()
+            util.copy_over_snapshot_information(self.org_filename,
+                                                self.tmp_filename, 'w')
         else:
             self.perform_consistency_checks()
-
-    def copy_over_snapshot_information(self):
-        """
-        Copy over attributes from the original arepo snapshot.
-        In this way we will have access to units used, redshift etc
-        """
-        g = h5py.File(self.org_filename, 'r')
-        with h5py.File(self.tmp_filename, 'w') as f:
-            for group in ['Header', 'Parameters', 'Config']:
-                f.create_group(group)
-                for key in g[group].attrs.keys():
-                    f[group].attrs[key] = g[group].attrs[key]
-        g.close()
 
     def write_data(self, name, data, data_attrs={}, group=None, group_attrs={}):
         """

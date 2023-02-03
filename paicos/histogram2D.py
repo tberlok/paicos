@@ -279,19 +279,6 @@ class Histogram2D:
                                        comoving_sim=self.x.comoving_sim)
         return hist2d
 
-    def copy_over_snapshot_information(self, filename):
-        """
-        Copy over attributes from the original arepo snapshot.
-        In this way we will have access to units used, redshift etc
-        """
-        g = h5py.File(self.snap.filename, 'r')
-        with h5py.File(filename, 'r+') as f:
-            for group in ['Header', 'Parameters', 'Config']:
-                f.create_group(group)
-                for key in g[group].attrs.keys():
-                    f[group].attrs[key] = g[group].attrs[key]
-        g.close()
-
     def save(self, basedir, basename="2d_histogram"):
         """
         Saves the 2D histogram in the basedir directory.
@@ -327,4 +314,4 @@ class Histogram2D:
             for key, attr in attrs.items():
                 hdf5file[name].attrs[key] = attr
 
-        self.copy_over_snapshot_information(filename)
+        util.copy_over_snapshot_information(self.snap.filename, filename)

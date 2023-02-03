@@ -259,3 +259,17 @@ def check_if_omp_has_issues(verbose=True):
     if verbose:
         warnings.warn(msg)
     return True
+
+
+def copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
+    """
+    Copy over attributes from the original arepo snapshot.
+    In this way we will have access to units used, redshift etc
+    """
+    g = h5py.File(org_filename, 'r')
+    with h5py.File(new_filename, mode) as f:
+        for group in ['Header', 'Parameters', 'Config']:
+            f.create_group(group)
+            for key in g[group].attrs.keys():
+                f[group].attrs[key] = g[group].attrs[key]
+    g.close()
