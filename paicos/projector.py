@@ -7,7 +7,6 @@ from . import ImageCreator
 from . import util
 from . import settings
 from . import units
-from .cython.sph_projectors import project_image, project_image_omp
 
 
 class Projector(ImageCreator):
@@ -65,14 +64,6 @@ class Projector(ImageCreator):
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
-        # check if OpenMP has any issues with the number of threads
-        if util.check_if_omp_has_issues():
-            self.use_omp = False
-            self.numthreads = 1
-        else:
-            self.use_omp = True
-            self.numthreads = settings.numthreads
-
         # get the index of the region of projection
         self.index = util.get_index_of_cubic_region(self.snap["0_Coordinates"],
                                                     center, widths, snap.box)
@@ -92,10 +83,13 @@ class Projector(ImageCreator):
 
     @util.remove_astro_units
     def _cython_project(self, center, widths, variable):
-        if self.use_omp:
-            project = project_image_omp
+        """
+        Private method for projecting using cython
+        """
+        if settings.openMP_has_issues:
+            from .cython.sph_projectors import project_image as project
         else:
-            project = project_image
+            from .cython.sph_projectors import project_image_omp as project
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -107,21 +101,21 @@ class Projector(ImageCreator):
                                  variable,
                                  self.hsml, self.npix,
                                  y_c, z_c, width_y, width_z,
-                                 boxsize, self.numthreads)
+                                 boxsize, settings.numthreads_reduction)
         elif self.direction == 'y':
             projection = project(self.pos[:, 0],
                                  self.pos[:, 2],
                                  variable,
                                  self.hsml, self.npix,
                                  x_c, z_c, width_x, width_z,
-                                 boxsize, self.numthreads)
+                                 boxsize, settings.numthreads_reduction)
         elif self.direction == 'z':
             projection = project(self.pos[:, 0],
                                  self.pos[:, 1],
                                  variable,
                                  self.hsml, self.npix,
                                  x_c, y_c, width_x, width_y,
-                                 boxsize, self.numthreads)
+                                 boxsize, settings.numthreads_reduction)
 
         return projection
 

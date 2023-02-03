@@ -3,6 +3,7 @@ Defines a class that creates an image of a given variable by projecting it
 onto a 2D plane using nested grids.
 """
 import numpy as np
+from . import settings
 from .projector import Projector
 from .util import remove_astro_units
 from .cython.sph_projectors import project_image, project_image_omp
@@ -106,10 +107,10 @@ class NestedProjector(Projector):
 
     @remove_astro_units
     def _cython_project(self, center, widths, variable):
-        if self.use_omp:
-            project = project_image_omp
+        if settings.openMP_has_issues:
+            from .cython.sph_projectors import project_image as project
         else:
-            project = project_image
+            from .cython.sph_projectors import project_image_omp as project
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -128,21 +129,21 @@ class NestedProjector(Projector):
                                  variable_n,
                                  hsml_n, n_grid,
                                  y_c, z_c, width_y, width_z,
-                                 boxsize, self.numthreads)
+                                 boxsize, settings.numthreads_reduction)
             elif self.direction == 'y':
                 proj_n = project(pos_n[:, 0],
                                  pos_n[:, 2],
                                  variable_n,
                                  hsml_n, n_grid,
                                  x_c, z_c, width_x, width_z,
-                                 boxsize, self.numthreads)
+                                 boxsize, settings.numthreads_reduction)
             elif self.direction == 'z':
                 proj_n = project(pos_n[:, 0],
                                  pos_n[:, 1],
                                  variable_n,
                                  hsml_n, n_grid,
                                  x_c, y_c, width_x, width_y,
-                                 boxsize, self.numthreads)
+                                 boxsize, settings.numthreads_reduction)
             images.append(proj_n)
 
         projection = self.sum_contributions(images)

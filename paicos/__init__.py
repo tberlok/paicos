@@ -156,3 +156,6 @@ def user_settings_exists():
 if user_settings_exists():
     # pylint: disable=E0401
     import user_settings
+
+# Do this at start up
+util.check_if_omp_has_issues()

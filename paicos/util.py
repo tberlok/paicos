@@ -13,9 +13,6 @@ from .cython.get_index_of_region import get_cube, get_radial_range
 from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
 from .cython.openmp_info import simple_reduction, get_openmp_settings
 
-# This will be modified by a checker
-openMP_has_issues = None
-
 # These will be set by the user using the add_user_unit function
 user_unit_dict = {'default': {},
                   'voronoi_cells': {},
@@ -230,9 +227,6 @@ def check_if_omp_has_issues(verbose=True):
         Number of threads used in parallelization
     """
 
-    if openMP_has_issues is not None:
-        return openMP_has_issues
-
     if settings.give_openMP_warnings is False:
         verbose = False
 
@@ -248,17 +242,21 @@ def check_if_omp_has_issues(verbose=True):
 
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
-        return False
+        settings.numthreads_reduction = settings.numthreads
+        settings.openMP_has_issues = False
+    else:
+        # We have issues...
+        settings.openMP_has_issues = True
+        settings.numthreads_reduction = 1
 
-    msg = ("OpenMP seems to have issues with reduction operators "
-           + "on your system, so we'll turn it off for those use cases. "
-           + "If you're on Mac then the issue is likely a "
-           + "compiler problem, discussed here:\n"
-           + "https://stackoverflow.com/questions/54776301/"
-           + "cython-prange-is-repeating-not-parallelizing.\n\n")
-    if verbose:
-        warnings.warn(msg)
-    return True
+        msg = ("OpenMP seems to have issues with reduction operators "
+               + "on your system, so we'll turn it off for those use cases. "
+               + "If you're on Mac then the issue is likely a "
+               + "compiler problem, discussed here:\n"
+               + "https://stackoverflow.com/questions/54776301/"
+               + "cython-prange-is-repeating-not-parallelizing.\n\n")
+        if verbose:
+            warnings.warn(msg)
 
 
 def copy_over_snapshot_information(org_filename, new_filename, mode='r+'):

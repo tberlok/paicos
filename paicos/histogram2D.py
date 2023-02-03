@@ -8,8 +8,6 @@ from . import units as pu
 from . import util
 from . import settings
 from .cython.histogram import find_normalizing_norm_of_2d_hist
-from .cython.histogram import get_hist2d_from_weights
-from .cython.histogram import get_hist2d_from_weights_omp
 
 
 class Histogram2D:
@@ -91,14 +89,6 @@ class Histogram2D:
         self.upper_y = self.edges_y[-1]
 
         self.extent = [self.lower_x, self.upper_x, self.lower_y, self.upper_y]
-
-        # check if OpenMP has any issues with the number of threads
-        if util.check_if_omp_has_issues():
-            self.use_omp = False
-            self.numthreads = 1
-        else:
-            self.use_omp = True
-            self.numthreads = settings.numthreads
 
         # Make the histogram
         self.hist2d = self._make_histogram()
@@ -210,11 +200,14 @@ class Histogram2D:
 
     @util.remove_astro_units
     def _cython_make_histogram(self, x, y, edges_x, edges_y, weights):
+        """
+        Private method for making the 2D histogram using cython code
+        """
 
-        if self.use_omp:
-            get_hist2d = get_hist2d_from_weights_omp
+        if settings.openMP_has_issues:
+            from .cython.histogram import get_hist2d_from_weights as get_hist2d
         else:
-            get_hist2d = get_hist2d_from_weights
+            from .cython.histogram import get_hist2d_from_weights_omp as get_hist2d
 
         nbins_x = edges_x.shape[0] - 1
         nbins_y = edges_y.shape[0] - 1
