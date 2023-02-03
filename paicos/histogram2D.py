@@ -1,6 +1,15 @@
+"""
+This module defines a class for 2D histograms.
+"""
 import numpy as np
+import h5py
+from astropy import units as u
+from . import units as pu
 from . import util
 from . import settings
+from .cython.histogram import find_normalizing_norm_of_2d_hist
+from .cython.histogram import get_hist2d_from_weights
+from .cython.histogram import get_hist2d_from_weights_omp
 
 
 class Histogram2D:
@@ -94,6 +103,8 @@ class Histogram2D:
         # Make the histogram
         self.hist2d = self._make_histogram()
 
+        self.colorlabel = None
+
     def _make_bins(self, bins):
         """
         Private method to calculate the edges and centers of the bins
@@ -109,7 +120,7 @@ class Histogram2D:
 
         lower, upper, nbins = bins
         edges, centers = self.__make_bins(lower, upper, nbins)
-        from . import settings
+
         if settings.use_units:
             assert lower.unit == upper.unit
             edges = np.array(edges) * lower.unit_quantity
@@ -152,9 +163,7 @@ class Histogram2D:
         Returns:
             norm (float): The normalizing constant
         """
-        from .cython.histogram import find_normalizing_norm_of_2d_hist
-        norm = find_normalizing_norm_of_2d_hist(hist2d, self.edges_x,
-                                                self.edges_y)
+        norm = find_normalizing_norm_of_2d_hist(hist2d, self.edges_x, self.edges_y)
         return norm
 
     def get_colorlabel(self, x_symbol, y_symbol, weight_symbol=None):
@@ -169,7 +178,6 @@ class Histogram2D:
             colorlabel (string): The color label for the histogram with
                                  units
         """
-        from . import settings
 
         assert settings.use_units
 
@@ -197,17 +205,16 @@ class Histogram2D:
                 colorlabel = r'\mathrm{pixel count}/\mathrm{total count}' + colorlabel
             else:
                 colorlabel = r'\mathrm{pixel count}' + colorlabel
-        self.colorlabel = (r'$' + colorlabel + r'$')
+        self.colorlabel = r'$' + colorlabel + r'$'
         return self.colorlabel
 
     @util.remove_astro_units
     def _cython_make_histogram(self, x, y, edges_x, edges_y, weights):
 
         if self.use_omp:
-            from .cython.histogram import get_hist2d_from_weights_omp
-            get_hist2d_from_weights = get_hist2d_from_weights_omp
+            get_hist2d = get_hist2d_from_weights_omp
         else:
-            from .cython.histogram import get_hist2d_from_weights
+            get_hist2d = get_hist2d_from_weights
 
         nbins_x = edges_x.shape[0] - 1
         nbins_y = edges_y.shape[0] - 1
@@ -217,7 +224,7 @@ class Histogram2D:
         lower_y = edges_y[0]
         upper_y = edges_y[-1]
 
-        hist2d = get_hist2d_from_weights(
+        hist2d = get_hist2d(
             x, y, weights,
             lower_x, upper_x, nbins_x,
             lower_y, upper_y, nbins_y,
@@ -233,8 +240,6 @@ class Histogram2D:
         Returns:
             hist2d (2D array): The 2D histogram
         """
-        from . import settings
-        from astropy import units as u
 
         x = self.x
         y = self.y
@@ -269,7 +274,6 @@ class Histogram2D:
         hist2d = hist2d.T
 
         if settings.use_units:
-            from . import units as pu
             hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x.a,
                                        h=self.x.h,
                                        comoving_sim=self.x.comoving_sim)
@@ -280,7 +284,6 @@ class Histogram2D:
         Copy over attributes from the original arepo snapshot.
         In this way we will have access to units used, redshift etc
         """
-        import h5py
         g = h5py.File(self.snap.filename, 'r')
         with h5py.File(filename, 'r+') as f:
             for group in ['Header', 'Parameters', 'Config']:
@@ -290,13 +293,15 @@ class Histogram2D:
         g.close()
 
     def save(self, basedir, basename="2d_histogram"):
-        import h5py
+        """
+        Saves the 2D histogram in the basedir directory.
+        """
 
         if basedir[-1] != '/':
             basedir += '/'
 
         snapnum = self.snap.snapnum
-        filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
+        filename = basedir + basename + f'_{snapnum:03d}.hdf5'
         with h5py.File(filename, 'w') as hdf5file:
             #
             hdf5file.create_group('hist_info')
@@ -313,13 +318,13 @@ class Histogram2D:
                 attrs.update({'unit': self.hist2d.unit.to_string()})
             else:
                 hdf5file.create_dataset(name, data=data)
-            try:
+            if self.colorlabel is not None:
                 attrs.update({'colorlabel': self.colorlabel})
-            except AttributeError:
+            else:
                 print(("Unable to save colorlabel, please call "
                       + "the 'get_colorlabel' method before saving."))
             # Add attributes
-            for key in attrs.keys():
-                hdf5file[name].attrs[key] = attrs[key]
+            for key, attr in attrs.items():
+                hdf5file[name].attrs[key] = attr
 
         self.copy_over_snapshot_information(filename)
