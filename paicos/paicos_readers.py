@@ -460,9 +460,9 @@ class PaicosReader(dict):
         """
 
         with h5py.File(self.filename, 'r') as f:
-            if isinstance(f[name], h5py._hl.dataset.Dataset):
+            if isinstance(f[name], h5py.Dataset):
                 self[name] = util.load_dataset(f, name, group=group)
-            elif isinstance(f[name], h5py._hl.group.Group):
+            elif isinstance(f[name], h5py.Group):
                 for data_name in f[name].keys():
                     data = util.load_dataset(f, data_name, group=name)
                     if name not in self:

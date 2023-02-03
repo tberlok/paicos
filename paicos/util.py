@@ -73,7 +73,7 @@ def load_dataset(hdf5file, name, group=None):
     contain units and units are enabled.
     """
 
-    if not isinstance(hdf5file, h5py._hl.files.File):
+    if not isinstance(hdf5file, h5py.File):
         if isinstance(hdf5file, str):
             hdf5file = h5py.File(hdf5file, 'r')
         else:
