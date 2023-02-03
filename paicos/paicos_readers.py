@@ -11,12 +11,36 @@ from . import settings
 class PaicosReader(dict):
 
     def __init__(self, basedir='.', snapnum=None, basename="snap",
-                 load_all=True, to_physical=False,
-                 basesubdir='snapdir', verbose=False):
+                 basesubdir='snapdir', load_all=True, to_physical=False,
+                 verbose=False):
+
+        """
+        Initialize the PaicosReader class.
+
+        Parameters:
+
+        basedir (str): path of the directory containing the hdf5 files
+                       (e.g. the 'output' folder)
+
+        snapnum (int): e.g. snapshot number
+
+        basename (str): name of the file, default is "snap"
+
+        basesubdir (str): name of the subfolder, default is "snapdir"
+
+        load_all (bool): whether to simply load all data, default is True
+
+        to_physical (bool): whether to convert from comoving to physical
+                            variables upon load, not yet implemented!
+
+        verbose (bool): whether to print information, default is False
+        """
 
         self.basedir = basedir
         self.snapnum = snapnum
         self.basename = basename
+
+        assert to_physical is False, 'to_physical not yet implemented!'
 
         self.to_physical = to_physical
         self.basesubdir = basesubdir

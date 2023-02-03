@@ -5,6 +5,39 @@ from . import settings
 
 
 class Catalog(PaicosReader):
+    """
+    This is a Python class for reading Arepo group and subhalo catalogs.
+    The class is based on a script originally written by Ewald Puchwein,
+    which has since then been modified and included in Paicos.
+
+    The class takes in the path of the directory containing the catalog, the
+    catalog number, and an optional basename parameter, and uses this
+    information to locate and open the catalog files. The class also loads
+    the catalog's header, parameters, and configuration.
+    The class also includes methods to extract the redshift, scale
+    factor, and other properties of the catalog.
+
+    Important methods and attributes.
+
+    cat = Catalog()
+
+    cat.Parameters (dict): Contains information from the parameter
+                            file used in the simulation (e.g. param.txt).
+
+    cat.Config (dict): Contains information from the Config
+                        file used in the simulation (e.g. Config.txt).
+
+    cat.Header (dict): Contains information about this particular catalog
+                        such as its time (e.g scale factor).
+
+    cat.z (float): redshift
+
+    cat.h (float): reduced Hubble param (e.g. 0.67)
+
+    cat.age: the age of the Universe (only for cosmological runs)
+    cat.lookback_time: the age of the Universe (only for cosmological runs)
+
+    """
     def __init__(self, basedir='.', snapnum=None,
                  to_physical=False, subfind_catalog=True, verbose=False):
 
