@@ -82,9 +82,9 @@ def load_dataset(hdf5file, name, group=None):
 
     comoving_sim = bool(hdf5file['Parameters'].attrs['ComovingIntegrationOn'])
     time = hdf5file['Header'].attrs['Time']
-    h = hdf5file['Parameters'].attrs['HubbleParam']
-    if h == 0. or h == 1.0:
-        h = 1.0
+    hubble_param = hdf5file['Parameters'].attrs['HubbleParam']
+    if hubble_param == 0.:
+        hubble_param = 1.0
 
     # Allow for loading data sets in groups or nested groups
     if group is None:
@@ -105,13 +105,13 @@ def load_dataset(hdf5file, name, group=None):
                         time = path['scale_factor'][...]
                     else:
                         time = path['time'][...]
-                    data = pu.PaicosTimeSeries(data, unit, a=time, h=h,
+                    data = pu.PaicosTimeSeries(data, unit, a=time, h=hubble_param,
                                                comoving_sim=comoving_sim)
                 elif path[name].attrs['Paicos'] == 'PaicosQuantity':
-                    data = pu.PaicosQuantity(data, unit, a=time, h=h,
+                    data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
                                              comoving_sim=comoving_sim)
             else:
-                data = pu.PaicosQuantity(data, unit, a=time, h=h,
+                data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
                                          comoving_sim=comoving_sim)
     return data
 
@@ -148,10 +148,10 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
     Get a boolean array of positions, pos, which are inside the spherical
     shell with inner radius r_min and outer radius r_max, centered at center.
     """
-    from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
+    from .cython.get_index_of_region_functions import get_index_of_radial_range
     x_c, y_c, z_c = center[0], center[1], center[2]
-    index = get_index_of_radial_range_cython(pos, x_c, y_c, z_c, r_min, r_max,
-                                             settings.numthreads)
+    index = get_index_of_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
+                                      settings.numthreads)
     return index
 
 
@@ -166,12 +166,12 @@ def get_index_of_region(pos, center, widths, box):
     widths (array with length 3): the widths of the box
     box: the box size of the simulation (e.g. snap.box)
     """
-    from .cython.get_index_of_region_functions import get_index_of_region as get_index_of_region_cython
+    from .cython.get_index_of_region_functions import get_index_of_region
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    index = get_index_of_region_cython(pos, x_c, y_c, z_c,
-                                       width_x, width_y, width_z, box,
-                                       settings.numthreads)
+    index = get_index_of_region(pos, x_c, y_c, z_c,
+                                width_x, width_y, width_z, box,
+                                settings.numthreads)
     return index
 
 

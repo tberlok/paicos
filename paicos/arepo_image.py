@@ -121,12 +121,12 @@ class ArepoImage(PaicosWriter):
 
         # Create image file and write information about image
         if self.mode == 'w':
-            with h5py.File(self.tmp_filename, 'r+') as f:
-                util.save_dataset(f, 'center', self.center, group='image_info')
-                util.save_dataset(f, 'widths', self.widths, group='image_info')
-                util.save_dataset(f, 'extent', self.extent, group='image_info')
-                f['image_info'].attrs['direction'] = self.direction
-                f['image_info'].attrs['image_creator'] = str(image_creator)
+            with h5py.File(self.tmp_filename, 'r+') as file:
+                util.save_dataset(file, 'center', self.center, group='image_info')
+                util.save_dataset(file, 'widths', self.widths, group='image_info')
+                util.save_dataset(file, 'extent', self.extent, group='image_info')
+                file['image_info'].attrs['direction'] = self.direction
+                file['image_info'].attrs['image_creator'] = str(image_creator)
 
     def save_image(self, name, data):
         """

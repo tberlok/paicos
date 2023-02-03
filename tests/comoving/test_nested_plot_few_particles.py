@@ -44,7 +44,8 @@ def test_nested_particles(show=False):
         Volume_nested = p_nested.project_variable('0_Volume')
 
         nested_image = np.zeros_like(Masses_nested)
-        nested_image[Masses_nested > 0] = Masses_nested[Masses_nested > 0] / Volume_nested[Masses_nested > 0]
+        nested_image[Masses_nested > 0] = (Masses_nested[Masses_nested > 0]
+                                           / Volume_nested[Masses_nested > 0])
 
         p = pa.Projector(snap, center, widths, direction, npix=512)
 
@@ -70,4 +71,4 @@ def test_nested_particles(show=False):
 
 
 if __name__ == '__main__':
-    test_nested_particles(False)
+    test_nested_particles(True)

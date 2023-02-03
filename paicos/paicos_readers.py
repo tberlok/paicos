@@ -396,9 +396,9 @@ class ImageReader(PaicosReader):
                 # Keys of the form 'MagneticFieldSquaredTimesVolume'
                 # are split up
                 start, end = key.split('Times')
-                if (end in keys):
+                if end in keys:
                     self[start] = self[key] / self[end]
-                elif (start[0:2] + end in keys):
+                elif start[0:2] + end in keys:
                     self[start] = self[key] / self[start[0:2] + end]
 
         # Calculate density if we have both masses and volumes
