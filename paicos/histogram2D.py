@@ -7,10 +7,11 @@ from astropy import units as u
 from . import units as pu
 from . import util
 from . import settings
+from .histogram import Histogram
 from .cython.histogram import find_normalizing_norm_of_2d_hist
 
 
-class Histogram2D:
+class Histogram2D(Histogram):
     """
     This code defines a Histogram2D class which can be used to create 2D
     histograms. The class takes in the bin edges for the x and y axes, and an
@@ -94,55 +95,6 @@ class Histogram2D:
         self.hist2d = self._make_histogram()
 
         self.colorlabel = None
-
-    def _make_bins(self, bins):
-        """
-        Private method to calculate the edges and centers of the bins
-        given lower, upper and number of bins.
-
-        Parameters:
-            bins (tuple): Tuple of lower edge, upper edge and number of
-                          bins for the axis
-        Returns:
-            edges (array): Edges of the bins
-            centers (array): Centers of the bins
-        """
-
-        lower, upper, nbins = bins
-        edges, centers = self.__make_bins(lower, upper, nbins)
-
-        if settings.use_units:
-            assert lower.unit == upper.unit
-            edges = np.array(edges) * lower.unit_quantity
-            centers = np.array(centers) * lower.unit_quantity
-        return edges, centers
-
-    @util.remove_astro_units
-    def __make_bins(self, lower, upper, nbins):
-        """
-        Private method to calculate the edges and centers of the bins
-        in logscale or linear scale based on the class variable logscale
-        Parameters:
-            lower (float): Lower edge of the bin
-            upper (float): Upper edge of the bin
-            nbins (int): Number of bins for the axis
-        Returns:
-            edges (array): Edges of the bins
-            centers (array): Centers of the bins
-        """
-
-        if self.logscale:
-            lower = np.log10(lower)
-            upper = np.log10(upper)
-
-        edges = lower + np.arange(nbins + 1) * (upper - lower) / nbins
-        centers = 0.5 * (edges[1:] + edges[:-1])
-
-        if self.logscale:
-            edges = 10**edges
-            centers = 10**centers
-
-        return edges, centers
 
     def _find_norm(self, hist2d):
         """
