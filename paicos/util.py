@@ -41,7 +41,7 @@ def save_dataset(hdf5file, name, data=None, data_attrs={},
     else:
         if group not in hdf5file:
             hdf5file.create_group(group)
-            for key in group_attrs.keys():
+            for key in group_attrs:
                 hdf5file[group].attrs[key] = group_attrs[key]
         path = hdf5file[group]
 

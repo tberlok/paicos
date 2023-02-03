@@ -49,30 +49,30 @@ class PaicosWriter:
                     f[group].attrs[key] = g[group].attrs[key]
         g.close()
 
-    def write_data(self, name, data, group=None, group_attrs=None):
+    def write_data(self, name, data, data_attrs={}, group=None, group_attrs={}):
 
         if self.mode == 'w':
             filename = self.tmp_filename
         else:
             filename = self.filename
 
-        f = h5py.File(filename, 'r+')
+        file = h5py.File(filename, 'r+')
 
         if self.mode == 'a':
             msg = ('PaicosWriter is in amend mode but {} is already '
                    + 'in the group {} in the hdf5 file {}')
-            msg = msg.format(name, group, f.filename)
+            msg = msg.format(name, group, file.filename)
 
             if group is None:
-                if name in f:
+                if name in file:
                     raise RuntimeError(msg)
             else:
-                if group in f:
-                    if name in f[group]:
+                if group in file:
+                    if name in file[group]:
                         raise RuntimeError(msg)
 
         # Save the data
-        util.save_dataset(f, name, data=data,
+        util.save_dataset(file, name, data=data, data_attrs=data_attrs,
                           group=group, group_attrs=group_attrs)
 
     def perform_extra_consistency_checks(self):
