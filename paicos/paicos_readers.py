@@ -13,6 +13,15 @@ from . import settings
 
 
 class PaicosReader(dict):
+    """
+    The PaicosReader can read any hdf5 file that contains the three
+    groups: Header, Config and Parameters.
+
+    It uses these to automatically construct a variety quantities
+    which become accessible as properties.
+
+    This class is subclassed by the Snapshot and Catalog classes.
+    """
 
     def __init__(self, basedir='.', snapnum=None, basename="snap",
                  basesubdir='snapdir', load_all=True, to_physical=False,
@@ -105,7 +114,7 @@ class PaicosReader(dict):
 
     def get_units_and_other_parameters(self):
         """
-        Initialize arepo units, scale factor (a) and h (HubbleParam).
+        Define arepo units, scale factor (a) and h (HubbleParam).
 
         The input required is a hdf5 file with the Parameters and Header
         groups found in arepo snapshots.
@@ -214,7 +223,9 @@ class PaicosReader(dict):
                             'unit_density': arepo_density}
 
     def enable_units(self):
-        # Enable arepo units globally
+        """
+        Enables arepo units globally
+        """
         for unit_name, unit in self.arepo_units.items():
             u.add_enabled_units(unit)
             phys_type = unit_name.split('_')[1]
@@ -228,6 +239,7 @@ class PaicosReader(dict):
         """
         Add all user supplied units
         """
+        # pylint: disable=import-outside-toplevel, consider-using-dict-items
         from . import unit_specifications
 
         unit_dict = unit_specifications.unit_dict
@@ -294,32 +306,51 @@ class PaicosReader(dict):
 
     @property
     def lookback_time(self):
+        """ The lookback time. """
         if self.comoving_sim:
             return self._lookback_time
         raise RuntimeError('Non-comoving object has no lookback_time')
 
     @property
     def age(self):
+        """ The age of the universe in the simulation. """
         if self.comoving_sim:
             return self._age
         raise RuntimeError('Non-comoving object has no lookback_time')
 
     @property
     def time(self):
+        """
+        The time elapsed since the beginning of the simulation.
+
+        Only defined for non-comoving simulations.
+        """
         if self.comoving_sim:
-            return self.age
+            msg = 'time not defined for comoving sim'
+            raise RuntimeError(msg)
         return self._Time * self.arepo_units['unit_time']
 
     def get_lookback_time(self, z):
+        """
+        Returns the lookback time for a given redshift, z.
+        """
         lookback_time = self.cosmo.lookback_time(z)
         return self.__convert_to_paicos(lookback_time, z)
 
     def get_age(self, z):
+        """
+        Returns the age of the universe for a given redshift, z.
+        """
         age = self.cosmo.lookback_time(1e100) - self.cosmo.lookback_time(z)
 
         return self.__convert_to_paicos(age, z)
 
     def __convert_to_paicos(self, time, z):
+        """
+        Helper function to convert astropy quantities in to PaicosQuantities.
+
+        Really just to still have access to the .label() method.
+        """
         if settings.use_units:
             a = 1.0 / (z + 1.)
             if isinstance(a, np.ndarray):
@@ -331,6 +362,24 @@ class PaicosReader(dict):
         return time
 
     def get_paicos_quantity(self, data, name, field='default'):
+        """
+        Convert some data to a PaicosQuantity.
+
+        Parameters:
+
+            data: typically some numpy array, integer or float
+
+            name: corresponds to a block name in Arepo snapshots,
+                  i.e., a key in one of the dictionaries defined
+                  in unit_specifications.py
+
+            field: the name of of one of the dictionaries defined in the
+                   unit specifications, e.g,:
+                    ['default', 'voronoi_cells', 'dark_matter',
+                    'stars', 'black_holes', 'groups', 'subhalos']
+
+        Returns: A PaicosQuantity
+        """
 
         if hasattr(data, 'unit'):
             msg = f'Data already had units! {name}'
@@ -357,10 +406,10 @@ class PaicosReader(dict):
         # been globally enabled
         from . import unit_specifications
 
-        if field not in unit_specifications.unit_dict.keys():
+        if field not in unit_specifications.unit_dict:
             raise RuntimeError(f'unknown field: {field}')
 
-        if name not in unit_specifications.unit_dict[field].keys():
+        if name not in unit_specifications.unit_dict[field]:
             unit = False
         else:
             unit = unit_specifications.unit_dict[field][name]
@@ -400,6 +449,15 @@ class PaicosReader(dict):
         return np.product(unit_list)
 
     def load_data(self, name, group=None):
+        """
+        Load data from a generic Paicos hdf5 file (written by a PaicosWriter
+        instance).
+
+        The method requires that the data sets have a 'unit' attribute
+        and hence does work for Arepo hdf5 files.
+        For this reason, the method is overloaded in the Snapshot and Catalog
+        classes.
+        """
 
         with h5py.File(self.filename, 'r') as f:
             if isinstance(f[name], h5py._hl.dataset.Dataset):
@@ -413,8 +471,27 @@ class PaicosReader(dict):
 
 
 class ImageReader(PaicosReader):
+    """
+    This is a subclass of the PaicosReader.
+
+    It reads the additional information stored in image files and makes
+    them accessible as attributes, i.e., extent, widths, center, direction
+    and image_creator.
+
+    For projection files, it also tries to automatically get derived
+    variables, e.g., if the hdf5 file contains
+
+    'MagneticFieldSquaredTimesVolume' and 'Volume'
+
+    then it will automatically divide them to obtain the MagneticFieldSquared.
+    """
 
     def __init__(self, basedir, snapnum, basename="projection", load_all=True):
+        """
+        See documentation for the PaicosReader.
+
+        Returns a dictionary with additional attributes.
+        """
 
         # The PaicosReader class takes care of most of the loading
         super().__init__(basedir, snapnum, basename=basename,
@@ -447,8 +524,20 @@ class ImageReader(PaicosReader):
 
 
 class Histogram2DReader(PaicosReader):
+    """
+    This is a subclass of the PaicosReader.
+
+    It reads the additional information stored by a Histogram2D instance
+    and makes them accessible as attributes, i.e., colorlabel, normalize,
+    logscale, hist2d, centers_x, centers_y.
+    """
 
     def __init__(self, basedir, snapnum, basename='2d_histogram'):
+        """
+        See documentation for the PaicosReader.
+
+        Returns a dictionary with additional attributes.
+        """
 
         # The PaicosReader class takes care of most of the loading
         super().__init__(basedir, snapnum, basename=basename,
