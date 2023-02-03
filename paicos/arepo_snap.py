@@ -54,6 +54,8 @@ class Snapshot(PaicosReader):
 
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, basedir, snapnum, basename="snap", load_all=False,
                  to_physical=False, load_catalog=None, verbose=False):
         """
@@ -208,8 +210,8 @@ class Snapshot(PaicosReader):
         """
         self._type_info = {0: 'voronoi_cells'}
         for p in range(1, self.nspecies):
-            bh = any(['BH_' in key for key in self._part_avail_load[p]])
-            star = any(['GFM_' in key for key in self._part_avail_load[p]])
+            bh = any('BH_' in key for key in self._part_avail_load[p])
+            star = any('GFM_' in key for key in self._part_avail_load[p])
             if bh:
                 self._type_info[p] = 'black_holes'
             if star:
