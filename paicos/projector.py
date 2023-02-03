@@ -1,7 +1,12 @@
+"""
+Defines a class that creates an image of a given variable by projecting it
+onto a 2D plane.
+"""
 import numpy as np
 from . import ImageCreator
 from . import util
 from . import settings
+from . import units
 
 
 class Projector(ImageCreator):
@@ -35,7 +40,7 @@ class Projector(ImageCreator):
 
         center : numpy array
             Center of the region on which projection is to be done, e.g.
-            center = [xc, yc, zc].
+            center = [x_c, y_c, z_c].
 
         widths : numpy array
             Widths of the region on which projection is to be done,
@@ -59,17 +64,9 @@ class Projector(ImageCreator):
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
-        # check if OpenMP has any issues with the number of threads
-        if util.check_if_omp_has_issues():
-            self.use_omp = False
-            self.numthreads = 1
-        else:
-            self.use_omp = True
-            self.numthreads = settings.numthreads
-
         # get the index of the region of projection
-        self.index = util.get_index_of_region(self.snap["0_Coordinates"],
-                                              center, widths, snap.box)
+        self.index = util.get_index_of_cubic_region(self.snap["0_Coordinates"],
+                                                    center, widths, snap.box)
 
         # Reduce the snapshot to only contain region of interest
         if make_snap_with_selection:
@@ -86,37 +83,39 @@ class Projector(ImageCreator):
 
     @util.remove_astro_units
     def _cython_project(self, center, widths, variable):
-        if self.use_omp:
-            from .cython.sph_projectors import project_image_omp
-            project_image = project_image_omp
+        """
+        Private method for projecting using cython
+        """
+        if settings.openMP_has_issues:
+            from .cython.sph_projectors import project_image as project
         else:
-            from .cython.sph_projectors import project_image
+            from .cython.sph_projectors import project_image_omp as project
 
-        xc, yc, zc = center[0], center[1], center[2]
+        x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
 
         boxsize = self.snap.box
         if self.direction == 'x':
-            projection = project_image(self.pos[:, 1],
-                                       self.pos[:, 2],
-                                       variable,
-                                       self.hsml, self.npix,
-                                       yc, zc, width_y, width_z,
-                                       boxsize, self.numthreads)
+            projection = project(self.pos[:, 1],
+                                 self.pos[:, 2],
+                                 variable,
+                                 self.hsml, self.npix,
+                                 y_c, z_c, width_y, width_z,
+                                 boxsize, settings.numthreads_reduction)
         elif self.direction == 'y':
-            projection = project_image(self.pos[:, 0],
-                                       self.pos[:, 2],
-                                       variable,
-                                       self.hsml, self.npix,
-                                       xc, zc, width_x, width_z,
-                                       boxsize, self.numthreads)
+            projection = project(self.pos[:, 0],
+                                 self.pos[:, 2],
+                                 variable,
+                                 self.hsml, self.npix,
+                                 x_c, z_c, width_x, width_z,
+                                 boxsize, settings.numthreads_reduction)
         elif self.direction == 'z':
-            projection = project_image(self.pos[:, 0],
-                                       self.pos[:, 1],
-                                       variable,
-                                       self.hsml, self.npix,
-                                       xc, yc, width_x, width_y,
-                                       boxsize, self.numthreads)
+            projection = project(self.pos[:, 0],
+                                 self.pos[:, 1],
+                                 variable,
+                                 self.hsml, self.npix,
+                                 x_c, y_c, width_x, width_y,
+                                 boxsize, settings.numthreads_reduction)
 
         return projection
 
@@ -134,8 +133,6 @@ class Projector(ImageCreator):
         numpy array
             The image of the projected variable
         """
-
-        from . import units
 
         if isinstance(variable, str):
             variable = self.snap[variable]

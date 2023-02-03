@@ -1,4 +1,12 @@
-# The main classes
+"""
+Paicos is an object-oriented Python package for analysis of (cosmological)
+simulations performed with Arepo. Its main feature is that it includes
+handling of units, derived variables, loading of data upon request.
+
+The module includes a way of writing and reading data with units.
+The code is parallel with an OpenMP Cython implementation.
+"""
+import os
 from . import util
 from . import settings
 from .util import root_dir
@@ -12,9 +20,12 @@ from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
 from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader
 from .histogram import Histogram
 from .histogram2D import Histogram2D
+from . import derived_variables
 
 # Cython functions
 from . import cython
+
+# pylint: disable=W0621
 
 
 def use_units(use_units):
@@ -28,11 +39,27 @@ def use_units(use_units):
 
 
 def add_user_function(variable_string, function):
-    from . import derived_variables
+    """
+    This functions allows to enable user functions for obtaining
+    deriving variables. An example could be the following:
+
+    def TemperaturesTimesMassesSquared(snap, get_depencies=False):
+        if get_depencies:
+            return ['0_Temperatures', '0_Masses']
+        return snap['0_Temperatures'] * snap['0_Masses']**2
+
+
+    pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
+
+    """
     derived_variables.user_functions.update({variable_string: function})
 
 
 def use_only_user_functions(use_only_user_functions):
+    """
+    Passing 'True' to this functions disables automatic derivation of
+    variables except for the ones you have added via 'add_user_function'.
+    """
     settings.use_only_user_functions = use_only_user_functions
 
 
@@ -69,14 +96,26 @@ def add_user_unit(field, blockname, unit):
                    actually load a hdf5 file. This is the reason that you can
                    pass the string only.
     """
-    if field not in util.user_unit_dict.keys():
+    if field not in util.user_unit_dict:
         raise RuntimeError(f'unknown field: {field}')
 
     util.user_unit_dict[field][blockname] = unit
 
 
 def numthreads(numthreads):
-    settings.numthreads = numthreads
+    """
+    Pass the number of threads you would like to use for parallel execution.
+
+    numthreads (int): e.g. 16
+    """
+    if numthreads > settings.max_threads:
+        print(f'Your machine only has {settings.max_threads} available threads')
+
+    settings.numthreads = min(numthreads, settings.max_threads)
+    if settings.openMP_has_issues:
+        settings.numthreads_reduction = 1
+    else:
+        settings.numthreads_reduction = settings.numthreads
 
 
 def print_info_when_deriving_variables(option):
@@ -87,6 +126,9 @@ def print_info_when_deriving_variables(option):
 
 
 def give_openMP_warnings(option):
+    """
+    Turns of warnings that will otherwise appear on a mac computer.
+    """
     settings.give_openMP_warnings = option
 
 
@@ -110,12 +152,17 @@ def set_aliases(aliases):
 
 
 def user_settings_exists():
-    import os
+    """
+    Checks if user settings exist in the root directory of Paicos.
+    """
     if os.path.exists(root_dir + 'user_settings.py'):
         return True
-    else:
-        return False
+    return False
 
 
 if user_settings_exists():
+    # pylint: disable=E0401
     import user_settings
+
+# Do this at start up
+util.check_if_omp_has_issues()

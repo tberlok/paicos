@@ -1,8 +1,14 @@
+"""
+This defines a base class for image creators (such as Projector and Slicer)
+and a class for saving images as hdf5 files in a systematic way.
+"""
+
 import h5py
 import numpy as np
 from .import util
 from .paicos_writer import PaicosWriter
 from . import settings
+from . import units
 
 
 class ImageCreator:
@@ -31,8 +37,6 @@ class ImageCreator:
 
         self.snap = snap
 
-        from paicos import settings
-
         code_length = self.snap.length
 
         if hasattr(center, 'unit'):
@@ -51,9 +55,9 @@ class ImageCreator:
         else:
             self.widths = np.array(widths)
 
-        self.xc = self.center[0]
-        self.yc = self.center[1]
-        self.zc = self.center[2]
+        self.x_c = self.center[0]
+        self.y_c = self.center[1]
+        self.z_c = self.center[2]
         self.width_x = self.widths[0]
         self.width_y = self.widths[1]
         self.width_z = self.widths[2]
@@ -63,19 +67,18 @@ class ImageCreator:
         self.npix = npix
 
         if direction == 'x':
-            self.extent = [self.yc - self.width_y / 2, self.yc + self.width_y / 2,
-                           self.zc - self.width_z / 2, self.zc + self.width_z / 2]
+            self.extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
+                           self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
         elif direction == 'y':
-            self.extent = [self.xc - self.width_x / 2, self.xc + self.width_x / 2,
-                           self.zc - self.width_z / 2, self.zc + self.width_z / 2]
+            self.extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
+                           self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
         elif direction == 'z':
-            self.extent = [self.xc - self.width_x / 2, self.xc + self.width_x / 2,
-                           self.yc - self.width_y / 2, self.yc + self.width_y / 2]
+            self.extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
+                           self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
 
         if settings.use_units:
-            from paicos import units
             self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h,
                                                comoving_sim=snap.comoving_sim)
         else:
@@ -123,12 +126,12 @@ class ArepoImage(PaicosWriter):
 
         # Create image file and write information about image
         if self.mode == 'w':
-            with h5py.File(self.tmp_filename, 'r+') as f:
-                util.save_dataset(f, 'center', self.center, group='image_info')
-                util.save_dataset(f, 'widths', self.widths, group='image_info')
-                util.save_dataset(f, 'extent', self.extent, group='image_info')
-                f['image_info'].attrs['direction'] = self.direction
-                f['image_info'].attrs['image_creator'] = str(image_creator)
+            with h5py.File(self.tmp_filename, 'r+') as file:
+                util.save_dataset(file, 'center', self.center, group='image_info')
+                util.save_dataset(file, 'widths', self.widths, group='image_info')
+                util.save_dataset(file, 'extent', self.extent, group='image_info')
+                file['image_info'].attrs['direction'] = self.direction
+                file['image_info'].attrs['image_creator'] = str(image_creator)
 
     def save_image(self, name, data):
         """

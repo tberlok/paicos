@@ -1,6 +1,14 @@
+"""
+This module defines a class for 2D histograms.
+"""
 import numpy as np
+import h5py
+from astropy import units as u
+from . import units as pu
 from . import util
 from . import settings
+from .histogram import make_bins
+from .cython.histogram import find_normalizing_norm_of_2d_hist
 
 
 class Histogram2D:
@@ -74,8 +82,8 @@ class Histogram2D:
 
         self.logscale = logscale
 
-        self.edges_x, self.centers_x = self._make_bins(bins_x)
-        self.edges_y, self.centers_y = self._make_bins(bins_y)
+        self.edges_x, self.centers_x = make_bins(bins_x, self.logscale)
+        self.edges_y, self.centers_y = make_bins(bins_y, self.logscale)
         self.lower_x = self.edges_x[0]
         self.lower_y = self.edges_y[0]
         self.upper_x = self.edges_x[-1]
@@ -83,65 +91,10 @@ class Histogram2D:
 
         self.extent = [self.lower_x, self.upper_x, self.lower_y, self.upper_y]
 
-        # check if OpenMP has any issues with the number of threads
-        if util.check_if_omp_has_issues():
-            self.use_omp = False
-            self.numthreads = 1
-        else:
-            self.use_omp = True
-            self.numthreads = settings.numthreads
-
         # Make the histogram
         self.hist2d = self._make_histogram()
 
-    def _make_bins(self, bins):
-        """
-        Private method to calculate the edges and centers of the bins
-        given lower, upper and number of bins.
-
-        Parameters:
-            bins (tuple): Tuple of lower edge, upper edge and number of
-                          bins for the axis
-        Returns:
-            edges (array): Edges of the bins
-            centers (array): Centers of the bins
-        """
-
-        lower, upper, nbins = bins
-        edges, centers = self.__make_bins(lower, upper, nbins)
-        from . import settings
-        if settings.use_units:
-            assert lower.unit == upper.unit
-            edges = np.array(edges) * lower.unit_quantity
-            centers = np.array(centers) * lower.unit_quantity
-        return edges, centers
-
-    @util.remove_astro_units
-    def __make_bins(self, lower, upper, nbins):
-        """
-        Private method to calculate the edges and centers of the bins
-        in logscale or linear scale based on the class variable logscale
-        Parameters:
-            lower (float): Lower edge of the bin
-            upper (float): Upper edge of the bin
-            nbins (int): Number of bins for the axis
-        Returns:
-            edges (array): Edges of the bins
-            centers (array): Centers of the bins
-        """
-
-        if self.logscale:
-            lower = np.log10(lower)
-            upper = np.log10(upper)
-
-        edges = lower + np.arange(nbins + 1) * (upper - lower) / nbins
-        centers = 0.5 * (edges[1:] + edges[:-1])
-
-        if self.logscale:
-            edges = 10**edges
-            centers = 10**centers
-
-        return edges, centers
+        self.colorlabel = None
 
     def _find_norm(self, hist2d):
         """
@@ -152,9 +105,7 @@ class Histogram2D:
         Returns:
             norm (float): The normalizing constant
         """
-        from .cython.histogram import find_normalizing_norm_of_2d_hist
-        norm = find_normalizing_norm_of_2d_hist(hist2d, self.edges_x,
-                                                self.edges_y)
+        norm = find_normalizing_norm_of_2d_hist(hist2d, self.edges_x, self.edges_y)
         return norm
 
     def get_colorlabel(self, x_symbol, y_symbol, weight_symbol=None):
@@ -169,7 +120,6 @@ class Histogram2D:
             colorlabel (string): The color label for the histogram with
                                  units
         """
-        from . import settings
 
         assert settings.use_units
 
@@ -197,17 +147,19 @@ class Histogram2D:
                 colorlabel = r'\mathrm{pixel count}/\mathrm{total count}' + colorlabel
             else:
                 colorlabel = r'\mathrm{pixel count}' + colorlabel
-        self.colorlabel = (r'$' + colorlabel + r'$')
+        self.colorlabel = r'$' + colorlabel + r'$'
         return self.colorlabel
 
     @util.remove_astro_units
     def _cython_make_histogram(self, x, y, edges_x, edges_y, weights):
+        """
+        Private method for making the 2D histogram using cython code
+        """
 
-        if self.use_omp:
-            from .cython.histogram import get_hist2d_from_weights_omp
-            get_hist2d_from_weights = get_hist2d_from_weights_omp
+        if settings.openMP_has_issues:
+            from .cython.histogram import get_hist2d_from_weights as get_hist2d
         else:
-            from .cython.histogram import get_hist2d_from_weights
+            from .cython.histogram import get_hist2d_from_weights_omp as get_hist2d
 
         nbins_x = edges_x.shape[0] - 1
         nbins_y = edges_y.shape[0] - 1
@@ -217,7 +169,7 @@ class Histogram2D:
         lower_y = edges_y[0]
         upper_y = edges_y[-1]
 
-        hist2d = get_hist2d_from_weights(
+        hist2d = get_hist2d(
             x, y, weights,
             lower_x, upper_x, nbins_x,
             lower_y, upper_y, nbins_y,
@@ -233,8 +185,6 @@ class Histogram2D:
         Returns:
             hist2d (2D array): The 2D histogram
         """
-        from . import settings
-        from astropy import units as u
 
         x = self.x
         y = self.y
@@ -269,34 +219,21 @@ class Histogram2D:
         hist2d = hist2d.T
 
         if settings.use_units:
-            from . import units as pu
             hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x.a,
                                        h=self.x.h,
                                        comoving_sim=self.x.comoving_sim)
         return hist2d
 
-    def copy_over_snapshot_information(self, filename):
-        """
-        Copy over attributes from the original arepo snapshot.
-        In this way we will have access to units used, redshift etc
-        """
-        import h5py
-        g = h5py.File(self.snap.filename, 'r')
-        with h5py.File(filename, 'r+') as f:
-            for group in ['Header', 'Parameters', 'Config']:
-                f.create_group(group)
-                for key in g[group].attrs.keys():
-                    f[group].attrs[key] = g[group].attrs[key]
-        g.close()
-
     def save(self, basedir, basename="2d_histogram"):
-        import h5py
+        """
+        Saves the 2D histogram in the basedir directory.
+        """
 
         if basedir[-1] != '/':
             basedir += '/'
 
         snapnum = self.snap.snapnum
-        filename = basedir + basename + '_{:03d}.hdf5'.format(snapnum)
+        filename = basedir + basename + f'_{snapnum:03d}.hdf5'
         with h5py.File(filename, 'w') as hdf5file:
             #
             hdf5file.create_group('hist_info')
@@ -313,13 +250,13 @@ class Histogram2D:
                 attrs.update({'unit': self.hist2d.unit.to_string()})
             else:
                 hdf5file.create_dataset(name, data=data)
-            try:
+            if self.colorlabel is not None:
                 attrs.update({'colorlabel': self.colorlabel})
-            except AttributeError:
+            else:
                 print(("Unable to save colorlabel, please call "
                       + "the 'get_colorlabel' method before saving."))
             # Add attributes
-            for key in attrs.keys():
-                hdf5file[name].attrs[key] = attrs[key]
+            for key, attr in attrs.items():
+                hdf5file[name].attrs[key] = attr
 
-        self.copy_over_snapshot_information(filename)
+        util.copy_over_snapshot_information(self.snap.filename, filename)

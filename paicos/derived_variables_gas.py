@@ -1,19 +1,27 @@
+"""
+Functions for getting derived variables of gas
+"""
 import numpy as np
+
+# pylint: disable=import-outside-toplevel
 
 
 def GFM_MetallicityTimesMasses(snap, get_dependencies=False):
+    """Returns the metallicity times the mass"""
     if get_dependencies:
         return ['0_Masses', '0_GFM_Metallicity']
     return snap['0_Masses'] * snap['0_GFM_Metallicity']
 
 
 def Volume(snap, get_dependencies=False):
+    """Returns the volume of the Voronoi cells"""
     if get_dependencies:
         return ['0_Masses', '0_Density']
     return snap["0_Masses"] / snap["0_Density"]
 
 
 def MachnumberTimesEnergyDissipation(snap, get_dependencies=False):
+    """Returns the Mach number times the energy dissipation"""
     if get_dependencies:
         return ['0_Machnumber', '0_EnergyDissipation']
     variable = snap['0_Machnumber'] * snap['0_EnergyDissipation']
@@ -21,24 +29,28 @@ def MachnumberTimesEnergyDissipation(snap, get_dependencies=False):
 
 
 def MagneticFieldSquared(snap, get_dependencies=False):
+    """Returns the magnetic field strength squared"""
     if get_dependencies:
         return ['0_MagneticField']
     return np.sum(snap['0_MagneticField']**2, axis=1)
 
 
 def MagneticFieldStrength(snap, get_dependencies=False):
+    """Returns the magnetic field strength"""
     if get_dependencies:
         return ['0_MagneticField']
     return np.sqrt(np.sum(snap['0_MagneticField']**2, axis=1))
 
 
 def VelocityMagnitude(snap, get_dependencies=False):
+    """Returns the magnitude of the gas velocity"""
     if get_dependencies:
         return ['0_Velocities']
     return np.sqrt(np.sum(snap['0_Velocities']**2, axis=1))
 
 
 def MagneticFieldSquaredTimesVolume(snap, get_dependencies=False):
+    """Returns B² × V """
     if get_dependencies:
         return ['0_Volume', '0_MagneticField']
     variable = snap["0_Volume"] * np.sum(snap['0_MagneticField']**2, axis=1)
@@ -46,6 +58,7 @@ def MagneticFieldSquaredTimesVolume(snap, get_dependencies=False):
 
 
 def Pressure(snap, get_dependencies=False):
+    """Returns the gas pressure"""
     if get_dependencies:
         return ['0_InternalEnergy', '0_Density']
 
@@ -58,22 +71,24 @@ def Pressure(snap, get_dependencies=False):
 
 
 def PressureTimesVolume(snap, get_dependencies=False):
+    """Returns the gas pressure times the volume"""
     if get_dependencies:
         return ['0_Pressure', '0_Volume']
 
-    if '0_Pressure' in snap.keys():
+    if '0_Pressure' in snap:
         return snap['0_Pressure'] * snap['0_Volume']
+
+    if snap.gamma != 1:
+        gm1 = snap.gamma - 1
+        variable = snap["0_Masses"] * snap["0_InternalEnergy"] * gm1
     else:
-        if snap.gamma != 1:
-            gm1 = snap.gamma - 1
-            variable = snap["0_Masses"] * snap["0_InternalEnergy"] * gm1
-        else:
-            variable = snap['0_Volume'] * snap['0_Pressure']
+        variable = snap['0_Volume'] * snap['0_Pressure']
 
     return variable
 
 
 def Temperatures(snap, get_dependencies=False):
+    """Returns the temperature in Kelvin"""
 
     if get_dependencies:
         return ['0_InternalEnergy', '0_MeanMolecularWeight']
@@ -103,6 +118,7 @@ def Temperatures(snap, get_dependencies=False):
 
 
 def TemperaturesTimesMasses(snap, get_dependencies=False):
+    """Returns the temperature times masses"""
     if get_dependencies:
         return ['0_Temperatures', '0_Masses']
 
@@ -110,6 +126,7 @@ def TemperaturesTimesMasses(snap, get_dependencies=False):
 
 
 def Current(snap, get_dependencies=False):
+    """Returns the magnitude of the current, i.e., |∇×B|"""
 
     if get_dependencies:
         return ['0_BfieldGradient']
@@ -126,7 +143,7 @@ def Current(snap, get_dependencies=False):
 
 
 def Enstrophy(snap, get_dependencies=False):
-    # absolute vorticity squared times one half ("enstrophy")
+    """Returns the enstrophy, i.e., 1/2|∇×v|²"""
 
     if get_dependencies:
         return ['0_VelocityGradient']
@@ -143,7 +160,7 @@ def Enstrophy(snap, get_dependencies=False):
 
 
 def EnstrophyTimesMasses(snap, get_dependencies=False):
-    # absolute vorticity squared times one half ("enstrophy")
+    """ Returns the enstrophy times masses"""
 
     if get_dependencies:
         return ['0_VelocityGradient']
@@ -175,6 +192,7 @@ def EnstrophyTimesMasses(snap, get_dependencies=False):
 
 
 def MeanMolecularWeight(snap):
+    """Returns the mean molecular weight, μ"""
 
     if '0_GFM_Metals' in snap.info(0, False):
         hydrogen_abundance = snap['0_GFM_Metals'][:, 0]
@@ -206,6 +224,7 @@ def NumberDensity(snap):
 
 
 def MagneticCurvature(snap, get_dependencies=False):
+    """Returns the length of the magnetic curvature vector"""
 
     if get_dependencies:
         return ['0_MagneticField', '0_BfieldGradient']
@@ -224,6 +243,7 @@ def MagneticCurvature(snap, get_dependencies=False):
 
 
 def VelocityCurvature(snap, get_dependencies=False):
+    """Returns the length of the velocity curvature vector"""
     if get_dependencies:
         return ['0_Velocities', '0_VelocityGradient']
 

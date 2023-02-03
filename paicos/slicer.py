@@ -1,4 +1,9 @@
+"""
+Defines a class that creates an image of a given variable by finding
+the Voronoi cells closest to the image plane.
+"""
 import numpy as np
+from scipy.spatial import KDTree
 from .arepo_image import ImageCreator
 from . import util
 from . import settings
@@ -11,10 +16,9 @@ class Slicer(ImageCreator):
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, make_snap_with_selection=False):
-        from scipy.spatial import KDTree
 
         if make_snap_with_selection:
-            raise ('make_snap_with_selection not yet implemented!')
+            raise RuntimeError('make_snap_with_selection not yet implemented!')
 
         super().__init__(snap, center, widths, direction, npix=npix)
 
@@ -71,14 +75,6 @@ class Slicer(ImageCreator):
 
         self.index = unflatten(np.arange(pos.shape[0])[self.slice][i])
         self.distance_to_nearest_cell = unflatten(d)
-
-    def get_image(self, variable):
-        from warnings import warn
-        warn('This method will be soon deprecated. in favor of the '
-             + ' method with name: slice_variable',
-             DeprecationWarning, stacklevel=2)
-
-        return self.slice_variable(variable)
 
     def slice_variable(self, variable):
 
