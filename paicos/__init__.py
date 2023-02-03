@@ -25,6 +25,8 @@ from . import derived_variables
 # Cython functions
 from . import cython
 
+# pylint: disable=W0621
+
 
 def use_units(use_units):
     """
@@ -94,7 +96,7 @@ def add_user_unit(field, blockname, unit):
                    actually load a hdf5 file. This is the reason that you can
                    pass the string only.
     """
-    if field not in util.user_unit_dict.keys():
+    if field not in util.user_unit_dict:
         raise RuntimeError(f'unknown field: {field}')
 
     util.user_unit_dict[field][blockname] = unit
@@ -152,4 +154,5 @@ def user_settings_exists():
 
 
 if user_settings_exists():
+    # pylint: disable=E0401
     import user_settings

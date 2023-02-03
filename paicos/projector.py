@@ -1,8 +1,13 @@
+"""
+Defines a class that creates an image of a given variable by projecting it
+onto a 2D plane.
+"""
 import numpy as np
 from . import ImageCreator
 from . import util
 from . import settings
 from . import units
+from .cython.sph_projectors import project_image, project_image_omp
 
 
 class Projector(ImageCreator):
@@ -88,36 +93,35 @@ class Projector(ImageCreator):
     @util.remove_astro_units
     def _cython_project(self, center, widths, variable):
         if self.use_omp:
-            from .cython.sph_projectors import project_image_omp
-            project_image = project_image_omp
+            project = project_image_omp
         else:
-            from .cython.sph_projectors import project_image
+            project = project_image
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
 
         boxsize = self.snap.box
         if self.direction == 'x':
-            projection = project_image(self.pos[:, 1],
-                                       self.pos[:, 2],
-                                       variable,
-                                       self.hsml, self.npix,
-                                       y_c, z_c, width_y, width_z,
-                                       boxsize, self.numthreads)
+            projection = project(self.pos[:, 1],
+                                 self.pos[:, 2],
+                                 variable,
+                                 self.hsml, self.npix,
+                                 y_c, z_c, width_y, width_z,
+                                 boxsize, self.numthreads)
         elif self.direction == 'y':
-            projection = project_image(self.pos[:, 0],
-                                       self.pos[:, 2],
-                                       variable,
-                                       self.hsml, self.npix,
-                                       x_c, z_c, width_x, width_z,
-                                       boxsize, self.numthreads)
+            projection = project(self.pos[:, 0],
+                                 self.pos[:, 2],
+                                 variable,
+                                 self.hsml, self.npix,
+                                 x_c, z_c, width_x, width_z,
+                                 boxsize, self.numthreads)
         elif self.direction == 'z':
-            projection = project_image(self.pos[:, 0],
-                                       self.pos[:, 1],
-                                       variable,
-                                       self.hsml, self.npix,
-                                       x_c, y_c, width_x, width_y,
-                                       boxsize, self.numthreads)
+            projection = project(self.pos[:, 0],
+                                 self.pos[:, 1],
+                                 variable,
+                                 self.hsml, self.npix,
+                                 x_c, y_c, width_x, width_y,
+                                 boxsize, self.numthreads)
 
         return projection
 

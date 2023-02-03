@@ -1,13 +1,23 @@
+"""
+Defines hdf5 file writers that can be read with a PaicosReader instance.
+"""
+import os
 import h5py
 from . import util
 
 
 class PaicosWriter:
     """
+    This class writes data to self-documenting hdf5 files.
+
+    It is the base class for the ArepoImage writer.
     """
 
     def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=True, mode='w'):
+        """
+
+        """
 
         self.reader_object = reader_object
         self.org_filename = reader_object.filename
@@ -25,7 +35,7 @@ class PaicosWriter:
         name = basename
 
         if add_snapnum:
-            name += '_{:03d}.hdf5'.format(snapnum)
+            name += f'_{snapnum:03d}.hdf5'
         else:
             name += '.hdf5'
         self.filename = basedir + name
@@ -50,6 +60,13 @@ class PaicosWriter:
         g.close()
 
     def write_data(self, name, data, data_attrs={}, group=None, group_attrs={}):
+        """
+        Write a data set to the hdf5 file.
+
+        Parameters:
+        """
+
+        # pylint: disable= dangerous-default-value
 
         if self.mode == 'w':
             filename = self.tmp_filename
@@ -76,9 +93,18 @@ class PaicosWriter:
                           group=group, group_attrs=group_attrs)
 
     def perform_extra_consistency_checks(self):
+        """
+        Perform extra consistency checks. This can be overloaded by
+        subclasses.
+        """
+        # pylint: disable=unnecessary-pass
         pass
 
     def perform_consistency_checks(self):
+        """
+        Perform consistency checks when trying to amend a file (to avoid
+        saving data at different times, for instance)
+        """
         with h5py.File(self.filename, 'r') as f:
             org_time = self.reader_object.Header['Time']
             assert f['Header'].attrs['Time'] == org_time
@@ -87,20 +113,22 @@ class PaicosWriter:
 
     def finalize(self):
         """
+        Move from a temporary to the final filename.
         """
-        import os
         if self.mode == 'w':
             os.rename(self.tmp_filename, self.filename)
 
 
 class PaicosTimeSeriesWriter(PaicosWriter):
     """
+    Similar to the standard PaicosWriter but here we ensure that
+    the snapnum is not part of the resulting filename for the hdf5 file.
     """
 
     def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=False, mode='w'):
 
         super().__init__(reader_object, basedir,
-                         basename="paicos_time_series",
+                         basename=basename,
                          add_snapnum=add_snapnum,
                          mode=mode)

@@ -1,6 +1,10 @@
+"""
+Defines the PaicosReader, Histogram2DReader and ImageReader which
+can be used to load derived variables.
+"""
+import os
 import h5py
 import numpy as np
-import os
 from astropy import units as u
 from astropy.cosmology import LambdaCDM
 from . import util
@@ -92,12 +96,7 @@ class PaicosReader(dict):
         self.add_user_units()
 
         # Find the adiabatic index
-        if 'GAMMA' in self.Config:
-            self.gamma = self.Config['GAMMA']
-        elif 'ISOTHERMAL' in self.Config:
-            self.gamma = 1
-        else:
-            self.gamma = 5 / 3
+        self.gamma = self.get_adiabiatic_index()
 
         # Load all data sets
         if load_all:
@@ -216,10 +215,10 @@ class PaicosReader(dict):
 
     def enable_units(self):
         # Enable arepo units globally
-        for key in self.arepo_units:
-            u.add_enabled_units(self.arepo_units[key])
-            phys_type = key.split('_')[1]
-            u.def_physical_type(self.arepo_units[key], phys_type)
+        for unit_name, unit in self.arepo_units.items():
+            u.add_enabled_units(unit)
+            phys_type = unit_name.split('_')[1]
+            u.def_physical_type(unit, phys_type)
 
         self.length = self.get_paicos_quantity(1, 'Coordinates')
         self.mass = self.get_paicos_quantity(1, 'Masses')
@@ -239,11 +238,11 @@ class PaicosReader(dict):
                    + "'{}' is not allowed. Please make a pull request if you "
                    + " have found a bug.")
 
-        for field in user_unit_dict.keys():
-            for name in user_unit_dict[field].keys():
+        for field in user_unit_dict:
+            for name in user_unit_dict[field]:
 
                 # Check for overwriting and changing of defaults
-                if name in unit_dict[field].keys():
+                if name in unit_dict[field]:
                     def_unit = unit_dict[field][name]
                     user_unit = user_unit_dict[field][name]
                     if user_unit != def_unit:
@@ -253,6 +252,18 @@ class PaicosReader(dict):
 
                 # Set the new units
                 unit_dict[field][name] = user_unit_dict[field][name]
+
+    def get_adiabiatic_index(self):
+        """
+        Returns the adiabatic index
+        """
+        if 'GAMMA' in self.Config:
+            gamma = self.Config['GAMMA']
+        elif 'ISOTHERMAL' in self.Config:
+            gamma = 1
+        else:
+            gamma = 5 / 3
+        return gamma
 
     @property
     def a(self):
@@ -340,6 +351,10 @@ class PaicosReader(dict):
         """
         Find unit for a given quantity
         """
+        # pylint: disable=import-outside-toplevel
+
+        # This import statement can only be done after arepo units have
+        # been globally enabled
         from . import unit_specifications
 
         if field not in unit_specifications.unit_dict.keys():
