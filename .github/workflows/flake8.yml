@@ -37,8 +37,5 @@ jobs:
           pip install -r requirements.txt
           pip install flake8
 
-      - name: Install paicos
-        run: make
-
       - name: Run flake8
         run: flake8 paicos
