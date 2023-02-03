@@ -13,7 +13,7 @@ snap['0_Masses']
 # snap['0_Velocities']
 
 
-index = pa.util.get_index_of_region(pos, center, widths, snap.box)
+index = pa.util.get_index_of_cubic_region(pos, center, widths, snap.box)
 
 snap = snap.select(index)
 

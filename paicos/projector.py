@@ -74,8 +74,8 @@ class Projector(ImageCreator):
             self.numthreads = settings.numthreads
 
         # get the index of the region of projection
-        self.index = util.get_index_of_region(self.snap["0_Coordinates"],
-                                              center, widths, snap.box)
+        self.index = util.get_index_of_cubic_region(self.snap["0_Coordinates"],
+                                                    center, widths, snap.box)
 
         # Reduce the snapshot to only contain region of interest
         if make_snap_with_selection:

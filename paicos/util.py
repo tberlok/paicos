@@ -1,10 +1,19 @@
+"""
+Defines a few useful functions and most importantly, the low level
+hdf5 reader and writer. It also serves as a placeholder for variables
+that can be changed via user functions.
+"""
 import numpy as np
 import h5py
 from . import settings
 from . import units as pu
+from .cython.get_index_of_region import get_cube, get_radial_range
+from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
 
+# This will be modified by a checker
 openMP_has_issues = None
 
+# These will be set by the user using the add_user_unit function
 user_unit_dict = {'default': {},
                   'voronoi_cells': {},
                   'dark_matter': {},
@@ -15,6 +24,9 @@ user_unit_dict = {'default': {},
 
 
 def get_project_root_dir():
+    """
+    Returns the root directory of the local Paicos copy.
+    """
     import os
     path = os.path.dirname(os.path.abspath(__file__))
     root_dir = ''
@@ -25,6 +37,7 @@ def get_project_root_dir():
     return root_dir + '/'
 
 
+# Set the root_dir for Paicos
 root_dir = get_project_root_dir()
 
 
@@ -148,15 +161,14 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
     Get a boolean array of positions, pos, which are inside the spherical
     shell with inner radius r_min and outer radius r_max, centered at center.
     """
-    from .cython.get_index_of_region_functions import get_index_of_radial_range
     x_c, y_c, z_c = center[0], center[1], center[2]
-    index = get_index_of_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
-                                      settings.numthreads)
+    index = get_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
+                             settings.numthreads)
     return index
 
 
 @remove_astro_units
-def get_index_of_region(pos, center, widths, box):
+def get_index_of_cubic_region(pos, center, widths, box):
     """
     Get a boolean array to the position array, pos, which are inside a cubic
     region.
@@ -166,12 +178,10 @@ def get_index_of_region(pos, center, widths, box):
     widths (array with length 3): the widths of the box
     box: the box size of the simulation (e.g. snap.box)
     """
-    from .cython.get_index_of_region_functions import get_index_of_region
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    index = get_index_of_region(pos, x_c, y_c, z_c,
-                                width_x, width_y, width_z, box,
-                                settings.numthreads)
+    index = get_cube(pos, x_c, y_c, z_c, width_x, width_y, width_z, box,
+                     settings.numthreads)
     return index
 
 
@@ -191,24 +201,17 @@ def get_index_of_slice_region(pos, center, widths, thickness, box):
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
+    numthreads = settings.numthreads
+
     if widths[0] == 0.:
-        from .cython.get_index_of_region_functions import get_index_of_x_slice_region
-        index = get_index_of_x_slice_region(pos, x_c, y_c, z_c,
-                                            width_y, width_z,
-                                            thickness, box,
-                                            settings.numthreads)
+        index = get_x_slice(pos, x_c, y_c, z_c, width_y, width_z, thickness,
+                            box, numthreads)
     elif widths[1] == 0.:
-        from .cython.get_index_of_region_functions import get_index_of_y_slice_region
-        index = get_index_of_y_slice_region(pos, x_c, y_c, z_c,
-                                            width_x, width_z,
-                                            thickness, box,
-                                            settings.numthreads)
+        index = get_y_slice(pos, x_c, y_c, z_c, width_x, width_z, thickness,
+                            box, numthreads)
     elif widths[2] == 0.:
-        from .cython.get_index_of_region_functions import get_index_of_z_slice_region
-        index = get_index_of_z_slice_region(pos, x_c, y_c, z_c,
-                                            width_x, width_y,
-                                            thickness, box,
-                                            settings.numthreads)
+        index = get_z_slice(pos, x_c, y_c, z_c, width_x, width_y, thickness,
+                            box, numthreads)
     else:
         raise RuntimeError('width={} should have length 3 and contain a zero!')
 
