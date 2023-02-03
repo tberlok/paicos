@@ -1,10 +1,8 @@
-import cython
 import numpy as np
 cimport numpy as np
 from libc.math cimport log10
 
 from cython.parallel import prange, parallel
-from libc.stdlib cimport abort, malloc, free
 cimport openmp
 
 
@@ -13,6 +11,7 @@ ctypedef fused real_t:
     double
     np.float32_t
     np.float64_t
+
 
 def get_hist_from_weights_and_idigit(int num_bins, real_t[:] weights,
                                      long[:] i_digit):
@@ -45,8 +44,8 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
     cdef int Np = xvec.shape[0]
 
     # Create hist2d array
-    cdef real_t[:,:] hist2d = np.zeros((nbins_x+1, nbins_y+1),
-                                       dtype=np.float64)
+    cdef real_t[:, :] hist2d = np.zeros((nbins_x+1, nbins_y+1),
+                                        dtype=np.float64)
 
     # Loop integers and other variables
     cdef int ip, ix=0, iy=0
@@ -82,28 +81,27 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
 
     return tmp
 
+
 def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
-                            real_t [:] weights,
-                            real_t lower_x, real_t upper_x, int nbins_x,
-                            real_t lower_y, real_t upper_y, int nbins_y,
-                            bint logspace,
-                            int numthreads=1):
+                                real_t [:] weights,
+                                real_t lower_x, real_t upper_x, int nbins_x,
+                                real_t lower_y, real_t upper_y, int nbins_y,
+                                bint logspace,
+                                int numthreads=1):
 
     # Number of particles
     cdef int Np = xvec.shape[0]
 
-    cdef int threadnum, maxthreads
-
-    maxthreads = openmp.omp_get_max_threads()
+    cdef int threadnum
 
     cdef int nx = nbins_x + 1
     cdef int ny = nbins_y + 1
 
     # Create hist2d array
-    cdef real_t[:,:] hist2d = np.zeros((nx, ny),
-                                       dtype=np.float64)
-    cdef real_t[:,:, :] tmp_variable = np.zeros((nx, ny, numthreads),
-                                                dtype=np.float64)
+    cdef real_t[:, :] hist2d = np.zeros((nx, ny),
+                                        dtype=np.float64)
+    cdef real_t[:, :, :] tmp_variable = np.zeros((nx, ny, numthreads),
+                                                 dtype=np.float64)
 
     # Loop integers and other variables
     cdef int ip, ix=0, iy=0
@@ -148,6 +146,7 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
 
     return tmp
 
+
 def find_normalizing_norm_of_2d_hist(real_t [:, :] hist2d, real_t[:] edges_x,
                                      real_t[:] edges_y):
 
@@ -164,6 +163,3 @@ def find_normalizing_norm_of_2d_hist(real_t [:, :] hist2d, real_t[:] edges_x,
             cell_area = dx*dy
             norm += hist2d[ix, iy]*cell_area
     return norm
-
-
-

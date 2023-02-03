@@ -1,7 +1,5 @@
-from cython.parallel import prange, parallel
-from libc.stdlib cimport abort, malloc, free
+from cython.parallel import prange
 cimport openmp
-import cython
 import numpy as np
 cimport numpy as np
 
@@ -10,6 +8,7 @@ ctypedef fused real_t:
     double
     np.float32_t
     np.float64_t
+
 
 def get_index_of_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                         real_t sidelength_x, real_t sidelength_y,
@@ -57,10 +56,11 @@ def get_index_of_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
     tmp[:] = index[:]
     return tmp
 
+
 def get_index_of_region_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
-                        real_t sidelength_x, real_t sidelength_y,
-                        real_t sidelength_z, real_t [:] thickness,
-                        real_t boxsize, int numthreads):
+                                        real_t sidelength_x, real_t sidelength_y,
+                                        real_t sidelength_z, real_t [:] thickness,
+                                        real_t boxsize, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -137,9 +137,10 @@ def get_index_of_radial_range(real_t [:, :] pos, real_t xc, real_t yc,
     tmp[:] = index[:]
     return tmp
 
+
 def get_index_of_x_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
-                        real_t sidelength_y, real_t sidelength_z,
-                        real_t [:] thickness, real_t boxsize, int numthreads):
+                                real_t sidelength_y, real_t sidelength_z,
+                                real_t [:] thickness, real_t boxsize, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -183,9 +184,10 @@ def get_index_of_x_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t 
     tmp[:] = index[:]
     return tmp
 
+
 def get_index_of_y_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
-                        real_t sidelength_x, real_t sidelength_z,
-                        real_t [:] thickness, real_t boxsize, int numthreads):
+                                real_t sidelength_x, real_t sidelength_z,
+                                real_t [:] thickness, real_t boxsize, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -229,9 +231,10 @@ def get_index_of_y_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t 
     tmp[:] = index[:]
     return tmp
 
+
 def get_index_of_z_slice_region(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
-                        real_t sidelength_x, real_t sidelength_y,
-                        real_t [:] thickness, real_t boxsize, int numthreads):
+                                real_t sidelength_x, real_t sidelength_y,
+                                real_t [:] thickness, real_t boxsize, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
