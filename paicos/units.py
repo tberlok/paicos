@@ -424,16 +424,16 @@ class PaicosQuantity(Quantity):
         from fractions import Fraction
         codic, dic = self.__get_unit_dictionaries()
         # print(unit, dic, codic)
-        if unit in codic.keys():
+        if unit in codic:
             scaling = codic[unit]
-        elif unit in dic.keys():
+        elif unit in dic:
             scaling = dic[unit]
         else:
             raise RuntimeError('should not happen')
 
-        if unit in codic.keys():
+        if unit in codic:
             base_string = unit.to_string(format='unicode')
-        elif unit in dic.keys():
+        elif unit in dic:
             base_string = unit.to_string(format='latex')[1:-1]
         scaling_str = str(Fraction(scaling).limit_denominator(10000))
         if scaling_str == '0':

@@ -1,5 +1,6 @@
-import numpy as np
 import time
+import numbers
+import numpy as np
 import h5py
 from .arepo_catalog import Catalog
 from .paicos_readers import PaicosReader
@@ -155,7 +156,7 @@ class Snapshot(PaicosReader):
                 Get mass of particle type from the mass table
                 """
                 parttype = self.parttype
-                if parttype in snap.dic_selection_index.keys():
+                if parttype in snap.dic_selection_index:
                     npart = snap.dic_selection_index[parttype].shape[0]
                 else:
                     npart = snap.npart[parttype]
@@ -173,9 +174,8 @@ class Snapshot(PaicosReader):
         for parttype in range(self.nspecies):
             parttype_str = f'PartType{parttype}'
             with h5py.File(self.filename, 'r') as file:
-                if parttype_str in list(file.keys()):
-                    load_keys = list(file[parttype_str].keys())
-                    for key in load_keys:
+                if parttype_str in file:
+                    for key in file[parttype_str]:
                         p_key = f'{parttype}_{key}'
                         self._all_avail_load.append(p_key)
                         self._part_avail_load[parttype].append(p_key)
@@ -197,17 +197,17 @@ class Snapshot(PaicosReader):
 
         user_functs = derived_variables.user_functions
 
-        for key in user_functs.keys():
+        for key in user_functs:
             self._this_snap_funcs.update({key: user_functs[key]})
 
         if not use_only_user_functions:
             def_functs = derived_variables.default_functions
-            for key in def_functs.keys():
-                if key not in self._this_snap_funcs.keys():
+            for key in def_functs:
+                if key not in self._this_snap_funcs:
                     self._this_snap_funcs.update({key: def_functs[key]})
 
         self._dependency_dic = {}
-        for key in self._this_snap_funcs.keys():
+        for key in self._this_snap_funcs:
             func = self._this_snap_funcs[key]
             sig = signature(func)
             if len(sig.parameters) == 2:
@@ -221,26 +221,26 @@ class Snapshot(PaicosReader):
         for jj in range(3):
             # First substitute all dependencies that are
             # at the top level of the dictionary
-            for key in dependency_dic.keys():
+            for key in dependency_dic:
                 deps = dependency_dic[key]
                 for dep in list(deps):
-                    if dep in dependency_dic.keys():
+                    if dep in dependency_dic:
                         deps.remove(dep)
                         for subdep in dependency_dic[dep]:
                             deps.append(subdep)
 
             # Then remove all the dependencies that can be loaded
-            for key in dependency_dic.keys():
+            for key in dependency_dic:
                 deps = dependency_dic[key]
                 for dep in list(deps):
                     if dep in self._all_avail_load:
                         deps.remove(dep)
 
         # Delete the entries where we do not have the requirements
-        for key in dependency_dic.keys():
+        for key in dependency_dic:
             dep = len(dependency_dic[key])
             if dep > 0:
-                if key in user_functs.keys():
+                if key in user_functs:
                     import warnings
                     msg = (f'Deleting the user function: {user_functs[key]} '
                            + f'because its dependency: {dependency_dic[key]} '
@@ -260,7 +260,7 @@ class Snapshot(PaicosReader):
             raise RuntimeError(msg)
 
         if not info:
-            if p_key in self._this_snap_funcs.keys():
+            if p_key in self._this_snap_funcs:
                 return self._this_snap_funcs[p_key]
             else:
                 msg = '\n\n{} not found in the functions: {}'
@@ -272,7 +272,7 @@ class Snapshot(PaicosReader):
             parttype = int(p_key[0])
 
             avail_list = []
-            for key in self._this_snap_funcs.keys():
+            for key in self._this_snap_funcs:
                 if int(key[0]) == parttype:
                     avail_list.append(key)
 
@@ -303,14 +303,13 @@ class Snapshot(PaicosReader):
         """
         parttype_str = f'PartType{parttype}'
         with h5py.File(self.filename, 'r') as file:
-            if parttype_str in list(file.keys()):
-                load_keys = list(file[parttype_str].keys())
-                load_keys = [f'{parttype}_{key}' for key in load_keys]
+            if parttype_str in file:
+                load_keys = [f'{parttype}_{key}' for key in file[parttype_str]]
                 if verbose:
                     print('\nKeys for ' + parttype_str + ' in the hdf5 file:')
                     for key in (sorted(load_keys)):
                         if settings.use_aliases:
-                            if key in settings.aliases.keys():
+                            if key in settings.aliases:
                                 alias = settings.aliases[key]
                                 msg = alias + '\t' * 5 + '(an alias of {})'
                                 print(msg.format(key))
@@ -324,7 +323,7 @@ class Snapshot(PaicosReader):
 
                     for key in (sorted(dkeys)):
                         if settings.use_aliases:
-                            if key in settings.aliases.keys():
+                            if key in settings.aliases:
                                 alias = settings.aliases[key]
                                 msg = alias + '\t' * 5 + '(an alias of {})'
                                 print(msg.format(key))
@@ -363,7 +362,7 @@ class Snapshot(PaicosReader):
         alias_key = p_key
 
         if settings.use_aliases:
-            if p_key in settings.aliases.keys():
+            if p_key in settings.aliases:
                 alias_key = settings.aliases[p_key]
 
         if p_key not in self.info(parttype, False):
@@ -417,7 +416,6 @@ class Snapshot(PaicosReader):
 
         if settings.double_precision:
             # Load all variables with double precision
-            import numbers
             if not issubclass(self[alias_key].dtype.type, numbers.Integral):
                 self[alias_key] = self[alias_key].astype(np.float64)
         else:
@@ -427,7 +425,7 @@ class Snapshot(PaicosReader):
                           + 'is True.\n\n')
 
         # Only keep the cells with True in the selection index array
-        if parttype in self.dic_selection_index.keys():
+        if parttype in self.dic_selection_index:
             selection_index = self.dic_selection_index[parttype]
             shape = self[alias_key].shape
             if len(shape) == 1:
@@ -438,7 +436,7 @@ class Snapshot(PaicosReader):
                 raise RuntimeError('Data has unexpected shape!')
 
         if settings.use_units or give_units:
-            if parttype in self._type_info.keys():
+            if parttype in self._type_info:
                 ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
                 self[alias_key] = self.get_paicos_quantity(self[alias_key],
                                                            blockname,
@@ -483,7 +481,7 @@ class Snapshot(PaicosReader):
         func = self.get_variable_function(p_key)
 
         if settings.use_aliases:
-            if p_key in settings.aliases.keys():
+            if p_key in settings.aliases:
                 p_key = settings.aliases[p_key]
         self[p_key] = func(self)
 
@@ -525,10 +523,10 @@ class Snapshot(PaicosReader):
 
         if settings.use_aliases:
 
-            if p_key in settings.inverse_aliases.keys():
+            if p_key in settings.inverse_aliases:
                 p_key = settings.inverse_aliases[p_key]
 
-        if p_key not in self.keys():
+        if p_key not in self:
             if not p_key[0].isnumeric() or p_key[1] != '_':
                 msg = ('\n\nKeys are expected to consist of an integer '
                        + '(the particle type) and a blockname, separated by a '
@@ -549,7 +547,7 @@ class Snapshot(PaicosReader):
                 self.get_derived_data(parttype, name, verbose=verbose)
 
         if settings.use_aliases:
-            if p_key in settings.aliases.keys():
+            if p_key in settings.aliases:
                 p_key = settings.aliases[p_key]
         return super().__getitem__(p_key)
 
@@ -557,12 +555,12 @@ class Snapshot(PaicosReader):
         self._auto_list = []
 
         self._auto_list = self._all_avail_load
-        for key in self._this_snap_funcs.keys():
+        for key in self._this_snap_funcs:
             self._auto_list.append(key)
 
         if settings.use_aliases:
             for ii, p_key in enumerate(self._auto_list):
-                if p_key in settings.aliases.keys():
+                if p_key in settings.aliases:
                     self._auto_list[ii] = settings.aliases[p_key]
 
     def _ipython_key_completions_(self):
@@ -597,7 +595,7 @@ class Snapshot(PaicosReader):
 
         s_index = selection_index
 
-        if parttype in self.dic_selection_index.keys():
+        if parttype in self.dic_selection_index:
             # This snap object is already a selection, combine the criteria!
             previous_selection = self.dic_selection_index[parttype]
             new_index = previous_selection[s_index]
@@ -618,7 +616,7 @@ class Snapshot(PaicosReader):
                                load_catalog=self.load_catalog,
                                dic_selection_index=dic_selection_index)
 
-        for key in self.keys():
+        for key in self:
             if key[0] == str(parttype):
                 shape = self[key].shape
                 if shape[0] == 1 and s_index.shape[0] != 1:
@@ -647,7 +645,7 @@ class Snapshot(PaicosReader):
         writer = PaicosWriter(self, self.basedir, basename, 'w')
 
         new_npart = [0] * self.nspecies
-        for key in self.keys():
+        for key in self:
             for parttype in range(self.nspecies):
                 if key[:2] == f'{parttype}_':
                     new_npart[parttype] = self[key].shape[0]
