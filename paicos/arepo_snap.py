@@ -1,10 +1,12 @@
 import time
+from inspect import signature
 import numbers
 import numpy as np
 import h5py
 from .arepo_catalog import Catalog
 from .paicos_readers import PaicosReader
 from . import settings
+from . import derived_variables
 
 
 class Snapshot(PaicosReader):
@@ -192,8 +194,6 @@ class Snapshot(PaicosReader):
 
     def _find_available_functions(self):
         from .settings import use_only_user_functions
-        from . import derived_variables
-        from inspect import signature
 
         user_functs = derived_variables.user_functions
 
