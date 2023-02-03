@@ -260,8 +260,7 @@ class Snapshot(PaicosReader):
         for _ in range(3):
             # First substitute all dependencies that are
             # at the top level of the dictionary
-            for key in dependency_dic:
-                deps = dependency_dic[key]
+            for func_name, deps in dependency_dic.items():
                 for dep in list(deps):
                     if dep in dependency_dic:
                         deps.remove(dep)
@@ -269,22 +268,20 @@ class Snapshot(PaicosReader):
                             deps.append(subdep)
 
             # Then remove all the dependencies that can be loaded
-            for key in dependency_dic:
-                deps = dependency_dic[key]
+            for func_name, deps in dependency_dic.items():
                 for dep in list(deps):
                     if dep in self._all_avail_load:
                         deps.remove(dep)
 
         # Delete the entries where we do not have the requirements
-        for key in dependency_dic:
-            dep = len(dependency_dic[key])
-            if dep > 0:
-                if key in user_functs:
-                    msg = (f'Deleting the user function: {user_functs[key]} '
-                           + f'because its dependency: {dependency_dic[key]} '
+        for func_name, deps in dependency_dic.items():
+            if len(deps) > 0:
+                if func_name in user_functs:
+                    msg = (f'Deleting the user function: {user_functs[func_name]} '
+                           + f'because its dependency: {deps} '
                            + 'is missing')
                     warnings.warn(msg)
-                del self._this_snap_funcs[key]
+                del self._this_snap_funcs[func_name]
 
     def get_variable_function(self, p_key, info=False):
         """
@@ -293,7 +290,7 @@ class Snapshot(PaicosReader):
         functions for parttype = p_key[0] if info is True.
         """
 
-        assert type(p_key) is str
+        assert isinstance(p_key, str)
 
         if not p_key[0].isnumeric() or p_key[1] != '_':
             msg = ('\n\nKeys are expected to consist of an integer '
@@ -302,23 +299,22 @@ class Snapshot(PaicosReader):
                    + 'available fields like so: snap.info(0)')
             raise RuntimeError(msg)
 
-        if not info:
-            if p_key in self._this_snap_funcs:
-                return self._this_snap_funcs[p_key]
-            msg = '\n\n{} not found in the functions: {}'
-            msg = msg.format(p_key, self._this_snap_funcs)
-            raise RuntimeError(msg)
-
         # Return a list with all available keys for this parttype
         if info:
             parttype = int(p_key[0])
-
             avail_list = []
             for key in self._this_snap_funcs:
                 if int(key[0]) == parttype:
                     avail_list.append(key)
 
             return avail_list
+
+        # Return a function
+        if p_key in self._this_snap_funcs:
+            return self._this_snap_funcs[p_key]
+        msg = '\n\n{} not found in the functions: {}'
+        msg = msg.format(p_key, self._this_snap_funcs)
+        raise RuntimeError(msg)
 
     def info(self, parttype, verbose=True):
         """
@@ -382,7 +378,7 @@ class Snapshot(PaicosReader):
                 else:
                     return []
 
-    def load_data(self, parttype, blockname, give_units=False):
+    def load_data(self, parttype, blockname):
         """
         Load data from hdf5 file(s). Example usage:
 
@@ -419,7 +415,8 @@ class Snapshot(PaicosReader):
                 print(blockname, "for species",
                       parttype, "already in memory")
             return
-        elif self.verbose:
+
+        if self.verbose:
             print("loading block", blockname,
                   "for species", parttype, "...")
             start_time = time.time()
@@ -476,7 +473,7 @@ class Snapshot(PaicosReader):
             else:
                 raise RuntimeError('Data has unexpected shape!')
 
-        if settings.use_units or give_units:
+        if settings.use_units:
             if parttype in self._type_info:
                 ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
                 self[alias_key] = self.get_paicos_quantity(self[alias_key],
