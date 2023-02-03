@@ -1,4 +1,9 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/tberlok/paicos/tree/main.svg?style=svg&circle-token=dbdb37aa907d919a167a8ef5ccf197c0d358c300)](https://dl.circleci.com/status-badge/redirect/gh/tberlok/paicos/tree/main)
+[![pylint](https://github.com/tberlok/paicos/actions/workflows/pylint.yml/badge.svg)](
+https://github.com/tberlok/paicos/actions/workflows/pylint.yml)
+[![flake8](https://github.com/tberlok/paicos/actions/workflows/flake8.yml/badge.svg)](
+https://github.com/tberlok/paicos/actions/workflows/flake8.yml)
+
 
 # Paicos
 
