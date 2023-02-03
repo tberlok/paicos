@@ -7,11 +7,11 @@ from astropy import units as u
 from . import units as pu
 from . import util
 from . import settings
-from .histogram import Histogram
+from .histogram import make_bins
 from .cython.histogram import find_normalizing_norm_of_2d_hist
 
 
-class Histogram2D(Histogram):
+class Histogram2D:
     """
     This code defines a Histogram2D class which can be used to create 2D
     histograms. The class takes in the bin edges for the x and y axes, and an
@@ -82,8 +82,8 @@ class Histogram2D(Histogram):
 
         self.logscale = logscale
 
-        self.edges_x, self.centers_x = self._make_bins(bins_x)
-        self.edges_y, self.centers_y = self._make_bins(bins_y)
+        self.edges_x, self.centers_x = make_bins(bins_x, self.logscale)
+        self.edges_y, self.centers_y = make_bins(bins_y, self.logscale)
         self.lower_x = self.edges_x[0]
         self.lower_y = self.edges_y[0]
         self.upper_x = self.edges_x[-1]
