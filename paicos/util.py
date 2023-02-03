@@ -28,7 +28,8 @@ def get_project_root_dir():
 root_dir = get_project_root_dir()
 
 
-def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
+def save_dataset(hdf5file, name, data=None, data_attrs={},
+                 group=None, group_attrs={}):
     """
     Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'w') )
     If the data has units then they are saved as an attribute.
@@ -40,22 +41,23 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     else:
         if group not in hdf5file:
             hdf5file.create_group(group)
-            if isinstance(group_attrs, dict):
-                for key in group_attrs.keys():
-                    hdf5file[group].attrs[key] = group_attrs[key]
+            for key in group_attrs.keys():
+                hdf5file[group].attrs[key] = group_attrs[key]
         path = hdf5file[group]
 
     # Save data set
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
-        if isinstance(data, pu.PaicosTimeSeries):
-            attrs = data.hdf5_attrs
-        else:
-            attrs = {'unit': data.unit.to_string()}
-        for key in attrs.keys():
-            path[name].attrs[key] = attrs[key]
     else:
         path.create_dataset(name, data=data)
+
+    # Write attributes
+    if isinstance(data, pu.PaicosTimeSeries):
+        data_attrs.update(data.hdf5_attrs)
+    elif hasattr(data, 'unit'):
+        data_attrs['unit'] = data.unit.to_string()
+    for key in data_attrs.keys():
+        path[name].attrs[key] = data_attrs[key]
 
     # Check if scale_factors are already saved
     if isinstance(data, pu.PaicosTimeSeries):
