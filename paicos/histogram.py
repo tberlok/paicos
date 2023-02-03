@@ -1,6 +1,11 @@
+"""
+This module defines a class for 1D histograms.
+"""
+import time
 import numpy as np
 from . import util
 from . import settings
+from .cython.histogram import get_hist_from_weights_and_idigit as func
 
 
 class Histogram:
@@ -35,13 +40,12 @@ class Histogram:
         self.bin_edges = self.edges
 
         if self.verbose:
-            import time
             t = time.time()
             print('Digitize for histogram begun')
 
         self.idigit = np.digitize(x, self.edges)
         if self.verbose:
-            print('This took {:1.2f} seconds'.format(time.time() - t))
+            print(f'This took {time.time() - t:1.2f} seconds')
 
     def _make_bins(self, bins):
         """
@@ -58,7 +62,6 @@ class Histogram:
 
         lower, upper, nbins = bins
         edges, centers = self.__make_bins(lower, upper, nbins)
-        from . import settings
         if settings.use_units:
             assert lower.unit == upper.unit
             edges = np.array(edges) * lower.unit_quantity
@@ -102,7 +105,6 @@ class Histogram:
         Returns:
             array: Histogram of the data.
         """
-        from .cython.histogram import get_hist_from_weights_and_idigit as func
 
         get_hist_from_weights_and_idigit = util.remove_astro_units(func)
 
