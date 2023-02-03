@@ -70,6 +70,12 @@ class Catalog(PaicosReader):
         pass
 
     def load_all_data(self):
+        """
+        Calling method simply loads all the data in the catalog.
+
+        For large catalogs it might be useful to implement on-demand
+        access in a similar way to what we have for snapshots.
+        """
 
         skip_gr = 0
         skip_sub = 0
