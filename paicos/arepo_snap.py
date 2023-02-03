@@ -1,8 +1,8 @@
-from .arepo_catalog import Catalog
-from .paicos_readers import PaicosReader
 import numpy as np
 import time
 import h5py
+from .arepo_catalog import Catalog
+from .paicos_readers import PaicosReader
 from . import settings
 
 
@@ -171,10 +171,10 @@ class Snapshot(PaicosReader):
         self._all_avail_load = []
         self._part_avail_load = {i: [] for i in range(self.nspecies)}
         for parttype in range(self.nspecies):
-            PartType_str = f'PartType{parttype}'
+            parttype_str = f'PartType{parttype}'
             with h5py.File(self.filename, 'r') as file:
-                if PartType_str in list(file.keys()):
-                    load_keys = list(file[PartType_str].keys())
+                if parttype_str in list(file.keys()):
+                    load_keys = list(file[parttype_str].keys())
                     for key in load_keys:
                         p_key = f'{parttype}_{key}'
                         self._all_avail_load.append(p_key)
@@ -301,13 +301,13 @@ class Snapshot(PaicosReader):
         file and determining what data is available for a given particle
         type.
         """
-        PartType_str = f'PartType{parttype}'
+        parttype_str = f'PartType{parttype}'
         with h5py.File(self.filename, 'r') as file:
-            if PartType_str in list(file.keys()):
-                load_keys = list(file[PartType_str].keys())
+            if parttype_str in list(file.keys()):
+                load_keys = list(file[parttype_str].keys())
                 load_keys = [f'{parttype}_{key}' for key in load_keys]
                 if verbose:
-                    print('\nKeys for ' + PartType_str + ' in the hdf5 file:')
+                    print('\nKeys for ' + parttype_str + ' in the hdf5 file:')
                     for key in (sorted(load_keys)):
                         if settings.use_aliases:
                             if key in settings.aliases.keys():
@@ -372,7 +372,7 @@ class Snapshot(PaicosReader):
             raise RuntimeError(msg)
 
         datname = f'PartType{parttype}/{blockname}'
-        PartType_str = f'PartType{parttype}'
+        parttype_str = f'PartType{parttype}'
         if alias_key in self:
             if self.verbose:
                 print(blockname, "for species",
@@ -399,7 +399,7 @@ class Snapshot(PaicosReader):
             np_file = f["Header"].attrs["NumPart_ThisFile"][parttype]
 
             if ifile == 0:   # initialize array
-                if f[datname].shape.__len__() == 1:
+                if len(f[datname].shape) == 1:
                     self[alias_key] = np.empty(
                         self.npart[parttype], dtype=f[datname].dtype)
                 else:
@@ -407,7 +407,7 @@ class Snapshot(PaicosReader):
                         (self.npart[parttype], f[datname].shape[1]),
                         dtype=f[datname].dtype)
                 # Load attributes
-                data_attributes = dict(f[PartType_str][blockname].attrs)
+                data_attributes = dict(f[parttype_str][blockname].attrs)
 
                 self.P_attrs[alias_key] = data_attributes
 
@@ -643,7 +643,6 @@ class Snapshot(PaicosReader):
         variables. Useful for reducing datasets to smaller sizes.
         """
         from .paicos_writer import PaicosWriter
-        import h5py
 
         writer = PaicosWriter(self, self.basedir, basename, 'w')
 
@@ -652,13 +651,13 @@ class Snapshot(PaicosReader):
             for parttype in range(self.nspecies):
                 if key[:2] == f'{parttype}_':
                     new_npart[parttype] = self[key].shape[0]
-                    PartType_str = f'PartType{parttype}'
+                    parttype_str = f'PartType{parttype}'
 
                     if single_precision:
                         data = self[key].astype(np.float32)
                     else:
                         data = self[key]
-                    writer.write_data(key[2:], data, group=PartType_str)
+                    writer.write_data(key[2:], data, group=parttype_str)
 
         with h5py.File(writer.tmp_filename, 'r+') as f:
             f['Header'].attrs["NumFilesPerSnapshot"] = 1

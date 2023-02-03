@@ -51,53 +51,53 @@ class Catalog(PaicosReader):
             if self.verbose:
                 print("reading file", cur_filename)
 
-            f = h5py.File(cur_filename, "r")
+            file = h5py.File(cur_filename, "r")
 
-            ng = int(f["Header"].attrs["Ngroups_ThisFile"])
+            ng = int(file["Header"].attrs["Ngroups_ThisFile"])
 
-            if "Nsubgroups_ThisFile" in f["Header"].attrs.keys():
-                ns = int(f["Header"].attrs["Nsubgroups_ThisFile"])
+            if "Nsubgroups_ThisFile" in file["Header"].attrs.keys():
+                ns = int(file["Header"].attrs["Nsubgroups_ThisFile"])
             else:
-                ns = int(f["Header"].attrs["Nsubhalos_ThisFile"])
+                ns = int(file["Header"].attrs["Nsubhalos_ThisFile"])
 
             # initialze arrays
             if ifile == 0:
                 self.Group = {}
                 self.Sub = {}
-                for ikey in f["Group"].keys():
-                    if f["Group/" + ikey].shape.__len__() == 1:
+                for ikey in file["Group"].keys():
+                    if len(file["Group/" + ikey].shape) == 1:
                         self.Group[ikey] = np.empty(
-                            self.ngroups, dtype=f["Group/" + ikey].dtype)
-                    elif f["Group/" + ikey].shape.__len__() == 2:
+                            self.ngroups, dtype=file["Group/" + ikey].dtype)
+                    elif len(file["Group/" + ikey].shape) == 2:
                         self.Group[ikey] = np.empty(
-                            (self.ngroups, f["Group/" + ikey].shape[1]),
-                            dtype=f["Group/" + ikey].dtype)
+                            (self.ngroups, file["Group/" + ikey].shape[1]),
+                            dtype=file["Group/" + ikey].dtype)
                     else:
                         assert False
 
-                for ikey in f["Subhalo"].keys():
-                    if f["Subhalo/" + ikey].shape.__len__() == 1:
+                for ikey in file["Subhalo"].keys():
+                    if len(file["Subhalo/" + ikey].shape) == 1:
                         self.Sub[ikey] = np.empty(
-                            self.nsubs, dtype=f["Subhalo/" + ikey].dtype)
-                    elif f["Subhalo/" + ikey].shape.__len__() == 2:
+                            self.nsubs, dtype=file["Subhalo/" + ikey].dtype)
+                    elif len(file["Subhalo/" + ikey].shape) == 2:
                         self.Sub[ikey] = np.empty(
-                            (self.nsubs, f["Subhalo/" + ikey].shape[1]),
-                            dtype=f["Subhalo/" + ikey].dtype)
+                            (self.nsubs, file["Subhalo/" + ikey].shape[1]),
+                            dtype=file["Subhalo/" + ikey].dtype)
                     else:
                         assert False
 
             # read group data
-            for ikey in f["Group"].keys():
-                self.Group[ikey][skip_gr:skip_gr + ng] = f["Group/" + ikey]
+            for ikey in file["Group"].keys():
+                self.Group[ikey][skip_gr:skip_gr + ng] = file["Group/" + ikey]
 
             # read subhalo data
-            for ikey in f["Subhalo"].keys():
-                self.Sub[ikey][skip_sub:skip_sub + ns] = f["Subhalo/" + ikey]
+            for ikey in file["Subhalo"].keys():
+                self.Sub[ikey][skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
 
             skip_gr += ng
             skip_sub += ns
 
-            f.close()
+            file.close()
 
         if settings.use_units:
             for key in list(self.Group.keys()):

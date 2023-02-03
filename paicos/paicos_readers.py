@@ -1,10 +1,10 @@
-from . import util
 import h5py
 import numpy as np
 import os
 from astropy import units as u
-from . import units as pu
 from astropy.cosmology import LambdaCDM
+from . import util
+from . import units as pu
 from . import settings
 
 
@@ -237,9 +237,7 @@ class PaicosReader(dict):
         """
         if self.comoving_sim:
             return self._Time
-        else:
-            raise RuntimeError('Non-comoving object has no scale factor')
-            # return 1.
+        raise RuntimeError('Non-comoving object has no scale factor')
 
     @property
     def h(self):
@@ -248,8 +246,7 @@ class PaicosReader(dict):
         """
         if self._HubbleParam == 0:
             return 1.0
-        else:
-            return self._HubbleParam
+        return self._HubbleParam
 
     @property
     def z(self):
@@ -258,34 +255,28 @@ class PaicosReader(dict):
         """
         if self.comoving_sim:
             return self._Redshift
-        else:
-            raise RuntimeError('Non-comoving object has no redshift')
-            # return 0.
+        raise RuntimeError('Non-comoving object has no redshift')
 
     @property
     def lookback_time(self):
         if self.comoving_sim:
             return self._lookback_time
-        else:
-            raise RuntimeError('Non-comoving object has no lookback_time')
+        raise RuntimeError('Non-comoving object has no lookback_time')
 
     @property
     def age(self):
         if self.comoving_sim:
             return self._age
-        else:
-            raise RuntimeError('Non-comoving object has no lookback_time')
+        raise RuntimeError('Non-comoving object has no lookback_time')
 
     @property
     def time(self):
         if self.comoving_sim:
             return self.age
-        else:
-            return self._Time * self.arepo_units['unit_time']
+        return self._Time * self.arepo_units['unit_time']
 
     def get_lookback_time(self, z):
         lookback_time = self.cosmo.lookback_time(z)
-
         return self.__convert_to_paicos(lookback_time, z)
 
     def get_age(self, z):
@@ -319,8 +310,7 @@ class PaicosReader(dict):
             return pu.PaicosQuantity(data, unit, a=self._Time, h=self.h,
                                      comoving_sim=self.comoving_sim,
                                      dtype=data.dtype)
-        else:
-            return data
+        return data
 
     def find_unit(self, name, field):
         """
@@ -343,11 +333,10 @@ class PaicosReader(dict):
         if unit is False:
             msg = '\n\nUnit for {}, {} not implemented!'
             msg += '\nPlease add it to unit_specifications'
-            from . import settings
+
             if settings.strict_units:
                 raise RuntimeError(msg.format(field, name))
-            else:
-                return False
+            return False
 
         return self._sanitize_unit(unit)
 

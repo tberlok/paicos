@@ -110,7 +110,7 @@ class NestedProjector(Projector):
         else:
             from .cython.sph_projectors import project_image
 
-        xc, yc, zc = center[0], center[1], center[2]
+        x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
 
         boxsize = self.snap.box
@@ -126,21 +126,21 @@ class NestedProjector(Projector):
                                        pos_n[:, 2],
                                        variable_n,
                                        hsml_n, n_grid,
-                                       yc, zc, width_y, width_z,
+                                       y_c, z_c, width_y, width_z,
                                        boxsize, self.numthreads)
             elif self.direction == 'y':
                 proj_n = project_image(pos_n[:, 0],
                                        pos_n[:, 2],
                                        variable_n,
                                        hsml_n, n_grid,
-                                       xc, zc, width_x, width_z,
+                                       x_c, z_c, width_x, width_z,
                                        boxsize, self.numthreads)
             elif self.direction == 'z':
                 proj_n = project_image(pos_n[:, 0],
                                        pos_n[:, 1],
                                        variable_n,
                                        hsml_n, n_grid,
-                                       xc, yc, width_x, width_y,
+                                       x_c, y_c, width_x, width_y,
                                        boxsize, self.numthreads)
             images.append(proj_n)
 

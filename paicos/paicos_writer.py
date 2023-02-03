@@ -1,5 +1,5 @@
-from . import util
 import h5py
+from . import util
 
 
 class PaicosWriter:

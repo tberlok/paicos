@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial import KDTree
 from .arepo_image import ImageCreator
 from . import util
 from . import settings
@@ -11,7 +12,6 @@ class Slicer(ImageCreator):
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, make_snap_with_selection=False):
-        from scipy.spatial import KDTree
 
         if make_snap_with_selection:
             raise ('make_snap_with_selection not yet implemented!')

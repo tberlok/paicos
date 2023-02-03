@@ -3,6 +3,7 @@ import numpy as np
 from .import util
 from .paicos_writer import PaicosWriter
 from . import settings
+from . import units
 
 
 class ImageCreator:
@@ -31,8 +32,6 @@ class ImageCreator:
 
         self.snap = snap
 
-        from paicos import settings
-
         code_length = self.snap.length
 
         if hasattr(center, 'unit'):
@@ -51,9 +50,9 @@ class ImageCreator:
         else:
             self.widths = np.array(widths)
 
-        self.xc = self.center[0]
-        self.yc = self.center[1]
-        self.zc = self.center[2]
+        self.x_c = self.center[0]
+        self.y_c = self.center[1]
+        self.z_c = self.center[2]
         self.width_x = self.widths[0]
         self.width_y = self.widths[1]
         self.width_z = self.widths[2]
@@ -63,19 +62,18 @@ class ImageCreator:
         self.npix = npix
 
         if direction == 'x':
-            self.extent = [self.yc - self.width_y / 2, self.yc + self.width_y / 2,
-                           self.zc - self.width_z / 2, self.zc + self.width_z / 2]
+            self.extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
+                           self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
         elif direction == 'y':
-            self.extent = [self.xc - self.width_x / 2, self.xc + self.width_x / 2,
-                           self.zc - self.width_z / 2, self.zc + self.width_z / 2]
+            self.extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
+                           self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
         elif direction == 'z':
-            self.extent = [self.xc - self.width_x / 2, self.xc + self.width_x / 2,
-                           self.yc - self.width_y / 2, self.yc + self.width_y / 2]
+            self.extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
+                           self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
 
         if settings.use_units:
-            from paicos import units
             self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h,
                                                comoving_sim=snap.comoving_sim)
         else:

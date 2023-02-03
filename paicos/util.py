@@ -1,6 +1,7 @@
-from . import settings
-from . import units
 import numpy as np
+import h5py
+from . import settings
+from . import units as pu
 
 openMP_has_issues = None
 
@@ -47,7 +48,7 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     # Save data set
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
-        if isinstance(data, units.PaicosTimeSeries):
+        if isinstance(data, pu.PaicosTimeSeries):
             attrs = data.hdf5_attrs
         else:
             attrs = {'unit': data.unit.to_string()}
@@ -57,7 +58,7 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
         path.create_dataset(name, data=data)
 
     # Check if scale_factors are already saved
-    if isinstance(data, units.PaicosTimeSeries):
+    if isinstance(data, pu.PaicosTimeSeries):
         if 'scale_factor' not in path.keys():
             path.create_dataset('scale_factor', data=data.a)
         else:
@@ -69,7 +70,6 @@ def load_dataset(hdf5file, name, group=None):
     Load dataset, returning a paicos quantity if the attributes
     contain units and units are enabled.
     """
-    import h5py
 
     if not isinstance(hdf5file, h5py._hl.files.File):
         if isinstance(hdf5file, str):
@@ -79,7 +79,7 @@ def load_dataset(hdf5file, name, group=None):
             raise RuntimeError(msg)
 
     comoving_sim = bool(hdf5file['Parameters'].attrs['ComovingIntegrationOn'])
-    Time = hdf5file['Header'].attrs['Time']
+    time = hdf5file['Header'].attrs['Time']
     h = hdf5file['Parameters'].attrs['HubbleParam']
     if h == 0. or h == 1.0:
         h = 1.0
@@ -96,21 +96,20 @@ def load_dataset(hdf5file, name, group=None):
 
     if settings.use_units:
         if 'unit' in path[name].attrs.keys():
-            from . import units as pu
             unit = path[name].attrs['unit']
             if 'Paicos' in path[name].attrs.keys():
                 if path[name].attrs['Paicos'] == 'PaicosTimeSeries':
                     if comoving_sim:
-                        Time = path['scale_factor'][...]
+                        time = path['scale_factor'][...]
                     else:
-                        Time = path['time'][...]
-                    data = pu.PaicosTimeSeries(data, unit, a=Time, h=h,
+                        time = path['time'][...]
+                    data = pu.PaicosTimeSeries(data, unit, a=time, h=h,
                                                comoving_sim=comoving_sim)
                 elif path[name].attrs['Paicos'] == 'PaicosQuantity':
-                    data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                    data = pu.PaicosQuantity(data, unit, a=time, h=h,
                                              comoving_sim=comoving_sim)
             else:
-                data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                data = pu.PaicosQuantity(data, unit, a=time, h=h,
                                          comoving_sim=comoving_sim)
     return data
 
@@ -143,19 +142,32 @@ def remove_astro_units(func):
 
 @remove_astro_units
 def get_index_of_radial_range(pos, center, r_min, r_max):
+    """
+    Get a boolean array of positions, pos, which are inside the spherical
+    shell with inner radius r_min and outer radius r_max, centered at center.
+    """
     from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
-    xc, yc, zc = center[0], center[1], center[2]
-    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max,
+    x_c, y_c, z_c = center[0], center[1], center[2]
+    index = get_index_of_radial_range_cython(pos, x_c, y_c, z_c, r_min, r_max,
                                              settings.numthreads)
     return index
 
 
 @remove_astro_units
 def get_index_of_region(pos, center, widths, box):
+    """
+    Get a boolean array to the position array, pos, which are inside a cubic
+    region.
+
+    pos (array): position array with dimensions = (n, 3)
+    center (array with length 3): the center of the box (x, y, z)
+    widths (array with length 3): the widths of the box
+    box: the box size of the simulation (e.g. snap.box)
+    """
     from .cython.get_index_of_region_functions import get_index_of_region as get_index_of_region_cython
-    xc, yc, zc = center[0], center[1], center[2]
+    x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    index = get_index_of_region_cython(pos, xc, yc, zc,
+    index = get_index_of_region_cython(pos, x_c, y_c, z_c,
                                        width_x, width_y, width_z, box,
                                        settings.numthreads)
     return index
@@ -163,23 +175,35 @@ def get_index_of_region(pos, center, widths, box):
 
 @remove_astro_units
 def get_index_of_slice_region(pos, center, widths, thickness, box):
-    xc, yc, zc = center[0], center[1], center[2]
+    """
+    Get a boolean array to the position array, pos, which are inside a thin
+    slice region with width thickness.
+
+    pos (array): position array with dimensions = (n, 3)
+    center (array with length 3): the center of the box (x, y, z)
+    widths (array with length 3): the widths of the box (one of which should
+                                  contain a zero, the selection will be
+                                  perpendicular to the corresponding direction)
+    thickness: (array): array with same length as the position array
+    box: the box size of the simulation (e.g. snap.box)
+    """
+    x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
     if widths[0] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_x_slice_region
-        index = get_index_of_x_slice_region(pos, xc, yc, zc,
+        index = get_index_of_x_slice_region(pos, x_c, y_c, z_c,
                                             width_y, width_z,
                                             thickness, box,
                                             settings.numthreads)
     elif widths[1] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_y_slice_region
-        index = get_index_of_y_slice_region(pos, xc, yc, zc,
+        index = get_index_of_y_slice_region(pos, x_c, y_c, z_c,
                                             width_x, width_z,
                                             thickness, box,
                                             settings.numthreads)
     elif widths[2] == 0.:
         from .cython.get_index_of_region_functions import get_index_of_z_slice_region
-        index = get_index_of_z_slice_region(pos, xc, yc, zc,
+        index = get_index_of_z_slice_region(pos, x_c, y_c, z_c,
                                             width_x, width_y,
                                             thickness, box,
                                             settings.numthreads)
@@ -219,14 +243,14 @@ def check_if_omp_has_issues(verbose=True):
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
         return False
-    else:
-        import warnings
-        msg = ("OpenMP seems to have issues with reduction operators "
-               + "on your system, so we'll turn it off for those use cases. "
-               + "If you're on Mac then the issue is likely a "
-               + "compiler problem, discussed here:\n"
-               + "https://stackoverflow.com/questions/54776301/"
-               + "cython-prange-is-repeating-not-parallelizing.\n\n")
-        if verbose:
-            warnings.warn(msg)
-        return True
+
+    import warnings
+    msg = ("OpenMP seems to have issues with reduction operators "
+           + "on your system, so we'll turn it off for those use cases. "
+           + "If you're on Mac then the issue is likely a "
+           + "compiler problem, discussed here:\n"
+           + "https://stackoverflow.com/questions/54776301/"
+           + "cython-prange-is-repeating-not-parallelizing.\n\n")
+    if verbose:
+        warnings.warn(msg)
+    return True

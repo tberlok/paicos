@@ -98,6 +98,14 @@ class PaicosQuantity(Quantity):
 
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
                 subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
+        """
+        Here we initialize the Paicos Quantity. The three additional
+        input arguments (compared to a standard astropy quantity) are
+
+        h
+        a
+        comoving_sim
+        """
 
         assert h is not None, 'Paicos quantity is missing a value for h'
         assert a is not None, 'Paicos quantity is missing a value for a'
@@ -140,8 +148,7 @@ class PaicosQuantity(Quantity):
         """
         if self.comoving_sim:
             return self._a
-        else:
-            raise RuntimeError('Non-comoving object has no scale factor')
+        raise RuntimeError('Non-comoving object has no scale factor')
 
     @property
     def h(self):
@@ -164,31 +171,26 @@ class PaicosQuantity(Quantity):
         """
         if self.comoving_sim:
             return 1. / self._a - 1.
-        else:
-            raise RuntimeError('Non-comoving object has no redshift')
+        raise RuntimeError('Non-comoving object has no redshift')
 
     def lookback_time(self, reader_object):
         if self.comoving_sim:
             return reader_object.get_lookback_time(self.z)
-        else:
-            msg = 'lookback_time not defined for non-comoving sim'
-            raise RuntimeError(msg)
+        msg = 'lookback_time not defined for non-comoving sim'
+        raise RuntimeError(msg)
 
     def age(self, reader_object):
         if self.comoving_sim:
             return reader_object.get_age(self.z)
-        else:
-            msg = 'age not defined for non-comoving sim'
-            raise RuntimeError(msg)
+        msg = 'age not defined for non-comoving sim'
+        raise RuntimeError(msg)
 
     @property
     def time(self):
         if self.comoving_sim:
             msg = 'time not defined for comoving sim'
             raise RuntimeError(msg)
-        else:
-            from astropy import units as u
-            return self._a * u.Unit('arepo_time')
+        return self._a * u.Unit('arepo_time')
 
     def __get_unit_dictionaries(self):
         codic = {}
@@ -240,6 +242,10 @@ class PaicosQuantity(Quantity):
 
     @property
     def separate_units(self):
+        """
+        Separate the standard physical units (u_unit) from the units involving
+        a and h (pu_unit).
+        """
         codic, dic = self.__get_unit_dictionaries()
         u_unit = self._construct_unit_from_dic(dic)
         pu_unit = self._construct_unit_from_dic(codic)
@@ -337,16 +343,16 @@ class PaicosQuantity(Quantity):
 
         small_a and small_h are automatically included in the bases.
         """
-        u_unit, pu_unit = self.separate_units
+        _, pu_unit = self.separate_units
         if len(bases) == 0 or pu_unit == u.Unit(''):
             return super().decompose(bases)
-        else:
-            if isinstance(bases, set):
-                bases = list(bases)
-            bases.append(small_a)
-            bases.append(small_h)
-            bases = set(bases)
-            return super().decompose(bases)
+
+        if isinstance(bases, set):
+            bases = list(bases)
+        bases.append(small_a)
+        bases.append(small_h)
+        bases = set(bases)
+        return super().decompose(bases)
 
     def label(self, variable=''):
         """

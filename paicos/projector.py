@@ -2,6 +2,7 @@ import numpy as np
 from . import ImageCreator
 from . import util
 from . import settings
+from . import units
 
 
 class Projector(ImageCreator):
@@ -35,7 +36,7 @@ class Projector(ImageCreator):
 
         center : numpy array
             Center of the region on which projection is to be done, e.g.
-            center = [xc, yc, zc].
+            center = [x_c, y_c, z_c].
 
         widths : numpy array
             Widths of the region on which projection is to be done,
@@ -92,7 +93,7 @@ class Projector(ImageCreator):
         else:
             from .cython.sph_projectors import project_image
 
-        xc, yc, zc = center[0], center[1], center[2]
+        x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
 
         boxsize = self.snap.box
@@ -101,21 +102,21 @@ class Projector(ImageCreator):
                                        self.pos[:, 2],
                                        variable,
                                        self.hsml, self.npix,
-                                       yc, zc, width_y, width_z,
+                                       y_c, z_c, width_y, width_z,
                                        boxsize, self.numthreads)
         elif self.direction == 'y':
             projection = project_image(self.pos[:, 0],
                                        self.pos[:, 2],
                                        variable,
                                        self.hsml, self.npix,
-                                       xc, zc, width_x, width_z,
+                                       x_c, z_c, width_x, width_z,
                                        boxsize, self.numthreads)
         elif self.direction == 'z':
             projection = project_image(self.pos[:, 0],
                                        self.pos[:, 1],
                                        variable,
                                        self.hsml, self.npix,
-                                       xc, yc, width_x, width_y,
+                                       x_c, y_c, width_x, width_y,
                                        boxsize, self.numthreads)
 
         return projection
@@ -134,8 +135,6 @@ class Projector(ImageCreator):
         numpy array
             The image of the projected variable
         """
-
-        from . import units
 
         if isinstance(variable, str):
             variable = self.snap[variable]
