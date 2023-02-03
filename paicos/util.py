@@ -3,12 +3,15 @@ Defines a few useful functions and most importantly, the low level
 hdf5 reader and writer. It also serves as a placeholder for variables
 that can be changed via user functions.
 """
+import os
+import warnings
 import numpy as np
 import h5py
 from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
 from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
+from .cython.openmp_info import simple_reduction, get_openmp_settings
 
 # This will be modified by a checker
 openMP_has_issues = None
@@ -27,14 +30,13 @@ def get_project_root_dir():
     """
     Returns the root directory of the local Paicos copy.
     """
-    import os
     path = os.path.dirname(os.path.abspath(__file__))
-    root_dir = ''
+    r_dir = ''
     path_split = path.split('/')
     for ii in range(1, len(path_split) - 1):
-        root_dir += '/' + path_split[ii]
+        r_dir += '/' + path_split[ii]
 
-    return root_dir + '/'
+    return r_dir + '/'
 
 
 # Set the root_dir for Paicos
@@ -141,15 +143,15 @@ def remove_astro_units(func):
     def inner(*args, **kwargs):
         # Create new args
         new_args = list(args)
-        for ii in range(len(new_args)):
-            if hasattr(new_args[ii], 'unit'):
-                new_args[ii] = new_args[ii].value
+        for ii, new_arg in enumerate(new_args):
+            if hasattr(new_arg, 'unit'):
+                new_args[ii] = new_arg.value
 
         # Create new kwargs
         new_kwargs = kwargs  # dict(kwargs)
-        for key in kwargs.keys():
-            if hasattr(kwargs[key], 'unit'):
-                new_kwargs[key] = kwargs[key].value
+        for key, kwarg in kwargs.items():
+            if hasattr(kwarg, 'unit'):
+                new_kwargs[key] = kwarg.value
 
         return func(*new_args, **new_kwargs)
     return inner
@@ -227,7 +229,6 @@ def check_if_omp_has_issues(verbose=True):
     numthreads : int
         Number of threads used in parallelization
     """
-    from .cython.openmp_info import simple_reduction, get_openmp_settings
 
     if openMP_has_issues is not None:
         return openMP_has_issues
@@ -249,7 +250,6 @@ def check_if_omp_has_issues(verbose=True):
     if n == 1000:
         return False
 
-    import warnings
     msg = ("OpenMP seems to have issues with reduction operators "
            + "on your system, so we'll turn it off for those use cases. "
            + "If you're on Mac then the issue is likely a "
