@@ -17,6 +17,35 @@ class Slicer(ImageCreator):
     def __init__(self, snap, center, widths, direction,
                  npix=512, make_snap_with_selection=False):
 
+        """
+        Initialize the Slicer object.
+
+        Parameters
+        ----------
+        snap : Snapshot
+            A snapshot object of Snapshot class from paicos package.
+
+        center :
+            Center of the region on which projection is to be done, e.g.
+            center = [x_c, y_c, z_c].
+
+        widths :
+            Widths of the region on which projection is to be done,
+            e.g.m widths=[width_x, width_y, width_z].
+
+        direction : str
+            Direction of the projection, e.g. 'x', 'y' or 'z'.
+
+        npix : int, optional
+            Number of pixels in the horizontal direction of the image,
+            by default 512.
+
+        make_snap_with_selection : bool
+            a boolean indicating if a new snapshot object should be made with
+            the selected region, defaults to False
+
+        """
+
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
@@ -77,6 +106,18 @@ class Slicer(ImageCreator):
         self.distance_to_nearest_cell = unflatten(d)
 
     def slice_variable(self, variable):
+        """
+        Slice a gas variable based on the Voronoi cells closest to the image
+        plane.
+
+        Parameters
+        ----------
+        variable: a string or an array of shape (N, )
+                  representing the gas variable to slice
+
+        Returns:
+        An array of shape (npix, npix) representing the sliced gas variable
+        """
 
         if isinstance(variable, str):
             variable = self.snap[variable]

@@ -37,9 +37,10 @@ class PaicosReader(dict):
 
         snapnum (int): e.g. snapshot number
 
-        basename (str): name of the file, default is "snap"
+        basename (str): name of the file takes the form 'basename_{:03d}.hdf5'
+                        or 'basename_{:03d}.{}.hdf5'. Default is 'snap'.
 
-        basesubdir (str): name of the subfolder, default is "snapdir"
+        basesubdir (str): name of the subfolder. Default is "snapdir".
 
         load_all (bool): whether to simply load all data, default is True
 
@@ -59,23 +60,26 @@ class PaicosReader(dict):
         self.basesubdir = basesubdir
         self.verbose = verbose
 
+        # Add a forward slash at the end of basedir if not already present
         if basedir[-1] != '/':
             basedir += '/'
 
+        # If snapnum is None, filename is basedir + basename + '.hdf5'
         if snapnum is None:
             self.filename = basedir + basename + '.hdf5'
             msg = f'File: {self.filename} not found'
             assert os.path.exists(self.filename), msg
         else:
+            # Set filenames for single_file and multi_file cases
             single_file = basename + "_{:03d}.hdf5"
             multi_file = basesubdir + '_{:03d}/' + basename + '_{:03d}.{}.hdf5'
             multi_wo_dir = basename + '_{:03d}.{}.hdf5'
-            #
 
             single_file = basedir + single_file.format(snapnum)
             multi_file = basedir + multi_file.format(snapnum, snapnum, '{}')
             multi_wo_dir = basedir + multi_wo_dir.format(snapnum, '{}')
 
+            # Check if single_file exists
             if os.path.exists(single_file):
                 self.multi_file = False
                 self.filename = single_file

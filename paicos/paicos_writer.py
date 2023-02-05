@@ -16,6 +16,25 @@ class PaicosWriter:
     def __init__(self, reader_object, basedir,
                  basename="paicos_file", add_snapnum=True, mode='w'):
         """
+        The constructor for the `PaicosWriter` class.
+
+        Parameters
+        ----------
+
+        reader_object (obj): A PaicosReader object (or Snaphot or Catalog object).
+
+        basedir (file path): The folder where the HDF5 file will be saved.
+
+        basename (str, optional): Base name of the HDF5 file. Defaults
+                                  to "paicos_file".
+
+        add_snapnum (bool): Whether to add the snapnum to the HDF5 filename.
+                            When True, the filename will be "basename_{:03d}.hdf5",
+                            when False it will simply be "basename.hdf5"
+                            Defaults to True.
+
+        mode (string): The mode to open the file in, either 'w' for write mode
+        or 'r' for read mode. (default: 'w')
 
         """
 
@@ -51,7 +70,25 @@ class PaicosWriter:
         """
         Write a data set to the hdf5 file.
 
-        Parameters:
+        Parameters
+        ----------
+
+        name (str): Name of the data to be written.
+
+        data (obj): The data to be written (e.g. PaicosQuantity, PaicosTimeSeries,
+                    Astropy Quantity, numpy array).
+
+        data_attrs (dict): Dictionary of attributes for the data. E.g.
+                           {'info': 'Here I have written some extra information
+                                    about the data set'}. Defaults to an empty
+                                    dictionary.
+
+        group (str, optional): Group in the HDF5 file where the data should
+                               be saved. Defaults to None in which case the
+                               data set is saved at the top level of the hdf5 file).
+
+        group_attrs (dict, optional): Dictionary of attributes for the group.
+                                      Defaults to an empty dictionary.
         """
 
         # pylint: disable= dangerous-default-value

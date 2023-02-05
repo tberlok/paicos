@@ -31,8 +31,6 @@ class ImageCreator:
             direction (str): Direction of the image ('x', 'y', 'z')
 
             npix (int): Number of pixels in the image (default is 512)
-
-            numthreads (int): Number of threads to use (default is 1)
         """
 
         self.snap = snap
@@ -97,24 +95,39 @@ class ArepoImage(PaicosWriter):
     can be time-consuming for high-resolution simulations with large
     snapshots. The purpose of this class is to define a derived data format
     which can be used to store images for later plotting with matplotlib.
-
     """
 
-    def __init__(self, image_creator, basedir, basename="projection",
-                 mode='w'):
+    def __init__(self, image_creator, basedir, basename="projection", mode='w'):
         """
-        If your image was created using a Paicos Projector or Slicer object,
-        then you can pass such an object using the image_creator input
-        argument.
+        Initialize an HDF5 file for storing an image.
 
-        basedir (file path): folder where you would like to save the image
-                             file.
+        This class is intended to be used with images created using a Paicos
+        Projector or Slicer object, which can be passed as the `image_creator`
+        input argument.
 
-        basename (string): the file will have a name like "projection_{:03d}"
-                           where {:03d} is automatically replaced with the
-                           snapnum.
+        The image data, including 'center', 'widths', 'extent', and
+        'direction', will be extracted from the `image_creator` object and
+        stored in the HDF5 file. The HDF5 file is created in the `basedir`
+        folder, with the name `basename_{:03d}`.
 
+        The `mode` argument controls whether the file is opened in write mode
+        ('w') or amend mode ('a'). If `mode` is 'w', the file will be created
+        at `self.tmp_filename` and the image information will be written to
+        the file. Setting the mode to amend mode, 'a', allows to add new images
+        to an already existing file.
+
+        Parameters: image_creator (object): A Paicos Projector or Slicer
+        object used to create the image.
+
+        basedir (file path): The folder where the image file should be saved.
+
+        basename (string): The base name for the image file, which will be in
+        the format `basename_{:03d}`. (default: "projection")
+
+        mode (string): The mode to open the file in, either 'w' for write mode
+        or 'r' for read mode. (default: 'w')
         """
+
         self.center = image_creator.center
         self.widths = image_creator.widths
         self.extent = image_creator.extent
@@ -140,6 +153,16 @@ class ArepoImage(PaicosWriter):
         self.write_data(name, data)
 
     def perform_extra_consistency_checks(self):
+        """
+        Perform extra consistency checks on the HDF5 file to ensure the
+        current values match the values stored in the HDF5 file that we intend
+        to amend.
+
+        The function opens the HDF5 file, loads the 'center' and 'widths'
+        datasets from the 'image_info' group, and compares them to the
+        corresponding values stored in memory. The 'direction' attribute of
+        the 'image_info' group is also checked for consistency.
+        """
         with h5py.File(self.filename, 'r') as f:
             center = util.load_dataset(f, 'center', group='image_info')
             if settings.use_units:

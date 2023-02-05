@@ -11,13 +11,61 @@ from .cython.sph_projectors import project_image, project_image_omp
 
 class NestedProjector(Projector):
     """
-    This implements an SPH-like projection of gas variables using nested grids.
+    This class implements an SPH-like projection of gas variables using nested
+    grids. It is a subclass of the Projector class, and inherits its
+    properties. It has additional attributes for handling the nested grid
+    projections, and additional methods for dealing with resolution,
+    digitizing particles, and summing up the different resolutions of the
+    images.
     """
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, nvol=8, factor=3, npix_min=128,
                  verbose=False, make_snap_with_selection=True,
                  store_subimages=False):
+
+        """
+        This is the constructor for the NestedProjector class. It initializes
+        the properties inherited from the Projector class, as well as the
+        properties specific to nested projections.
+
+        Parameters
+        ----------
+        snap : Snapshot
+            A snapshot object of Snapshot class from paicos package.
+
+        center : numpy array
+            Center of the region on which projection is to be done, e.g.
+            center = [x_c, y_c, z_c].
+
+        widths : numpy array
+            Widths of the region on which projection is to be done,
+            e.g.m widths=[width_x, width_y, width_z].
+
+        direction : str
+            Direction of the projection, e.g. 'x', 'y' or 'z'.
+
+        npix : int, optional
+            Number of pixels in the horizontal direction of the image,
+            by default 512.
+
+        nvol : int, optional
+            Integer used to determine the smoothing length, by default 8
+
+        factor (int, optional): Multiplicative factor in digitizing, defaults to 3.
+
+        npix_min (int, optional): Minimum number of pixels, defaults to 128.
+
+        verbose (bool, optional): Flag for verbosity, defaults to False.
+
+        make_snap_with_selection (bool, optional):
+            a boolean indicating if a new snapshot object should be made with
+            the selected region, defaults to False
+
+        store_subimages (bool, optional): Flag for storing sub-images, which
+        is useful mainly for testing purposes. Defaults to False.
+
+        """
 
         super().__init__(snap, center, widths, direction,
                          npix=npix, nvol=nvol,
@@ -51,6 +99,19 @@ class NestedProjector(Projector):
 
     @remove_astro_units
     def _get_bins(self, width):
+        """
+        This helper method finds the required grid resolutions and the
+        binning in smoothing (hsml) for the nested grids.
+
+        Parameters:
+        width (float): The width of the projection.
+
+        Returns:
+        bins (list): A list of float values representing the binned intervals
+                     in smoothing (hsml).
+
+        n_grids (list): A list of integers representing the grid resolutions.
+        """
 
         @remove_astro_units
         def nearest_power_of_two(x):
@@ -107,6 +168,10 @@ class NestedProjector(Projector):
 
     @remove_astro_units
     def _cython_project(self, center, widths, variable):
+        """
+        This method performs the projection of a given variable onto a 2D
+        plane using nested grids and a cython implementation.
+        """
         if settings.openMP_has_issues:
             from .cython.sph_projectors import project_image as project
         else:
