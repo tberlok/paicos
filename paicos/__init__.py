@@ -6,6 +6,11 @@ handling of units, derived variables, loading of data upon request.
 The module includes a way of writing and reading data with units.
 The code is parallel with an OpenMP Cython implementation.
 """
+
+__version__ = "0.1.0"
+__author__ = 'Thomas Berlok'
+__credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
+
 import os
 from . import util
 from . import settings
