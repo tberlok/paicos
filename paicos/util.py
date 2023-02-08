@@ -7,6 +7,7 @@ import os
 import warnings
 import numpy as np
 import h5py
+from functools import wraps
 from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
@@ -137,6 +138,7 @@ def remove_astro_units(func):
     so, replaces it with its 'value' attribute. This is useful for functions
     that do not support astro units or need to work with raw values.
     """
+    @wraps(func)
     def inner(*args, **kwargs):
         # Create new args
         new_args = list(args)

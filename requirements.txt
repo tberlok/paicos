@@ -1,9 +1,9 @@
-scipy >= 1.9.3
-numpy >= 1.19.4
-cython >= 0.29.21
+scipy
+numpy
+cython
 matplotlib
 h5py
-astropy >= 4.3
+astropy
 
 # For testing
 pytest

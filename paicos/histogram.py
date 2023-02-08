@@ -75,6 +75,9 @@ class Histogram:
 
             bins (array): Bin edges for the histogram.
 
+            logscale (bool): Indicates whether to use logscale for the
+                             histogram, default is True.
+
             verbose (bool, optional): If True, prints the time taken to
                                       digitize the x-coordinates.
         """
