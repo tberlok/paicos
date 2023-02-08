@@ -33,5 +33,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         twine check dist/*
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/paicos*tar.gz
+        ls
+        twine upload --repository-url https://test.pypi.org/legacy/ dist/*tar.gz
+        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
