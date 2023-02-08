@@ -7,11 +7,15 @@ The module includes a way of writing and reading data with units.
 The code is parallel with an OpenMP Cython implementation.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = 'Thomas Berlok'
 __credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
 
 import os
+import numpy
+import scipy
+import h5py
+import astropy
 from . import util
 from . import settings
 from .util import root_dir
