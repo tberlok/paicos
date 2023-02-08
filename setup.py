@@ -67,7 +67,7 @@ with open('README.md') as f:
 
 setup(
     name='paicos',
-    version='0.1.0',
+    version='0.1.1',
     description=('An object-oriented Python package for analysis of '
                  + '(cosmological) simulations performed with Arepo.'),
     url='https://github.com/tberlok/paicos',
