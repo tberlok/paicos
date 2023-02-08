@@ -7,7 +7,7 @@ The module includes a way of writing and reading data with units.
 The code is parallel with an OpenMP Cython implementation.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = 'Thomas Berlok'
 __credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
 

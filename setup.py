@@ -55,10 +55,10 @@ ext_modules = [
     )
 ]
 
-install_requires = ['scipy>=1.9.3',
-                    'numpy>=1.20',
+install_requires = ['scipy',
+                    'numpy',
                     'h5py',
-                    'astropy>=4.3']
+                    'astropy']
 
 
 with open('README.md') as f:
@@ -67,7 +67,7 @@ with open('README.md') as f:
 
 setup(
     name='paicos',
-    version='0.1.1',
+    version='0.1.2',
     description=('An object-oriented Python package for analysis of '
                  + '(cosmological) simulations performed with Arepo.'),
     url='https://github.com/tberlok/paicos',
