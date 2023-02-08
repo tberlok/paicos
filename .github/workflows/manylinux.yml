@@ -28,10 +28,9 @@ jobs:
         python-versions: 'cp310-cp310 cp311-cp311'
         build-requirements: 'cython numpy '
     - name: Publish distribution 📦 to Test PyPI
-          env:
-            TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-            TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-          run: |
-            twine check dist/*
-            twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        twine check dist/*
+        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
