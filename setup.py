@@ -9,8 +9,8 @@ import numpy
 import glob
 
 if sys.platform == 'darwin':
-    os.environ['CC'] = 'gcc-11'
-    os.environ['CXX'] = 'g++-11'
+    os.environ['CC'] = 'gcc-12'
+    os.environ['CXX'] = 'g++-12'
 
 Options.annotate = False
 compiler_directives = {"boundscheck": False, "cdivision": True,
