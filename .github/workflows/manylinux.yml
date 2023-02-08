@@ -33,5 +33,4 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         twine check dist/*
-        rm dist/paicos-0.1.0-cp310-cp310-linux_x86_64.whl
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux2014_x86_64.whl
