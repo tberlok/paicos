@@ -2,12 +2,14 @@ name: Python package build and publish with manylinux
 # https://github.com/RalfG/python-wheels-manylinux-build
 
 on:
+  release:
+    types: [created]
   # Trigger the workflow on push or pull request,
   # but only for the main branch and the pypi branch
-  push:
-    branches:
-      - main
-      - pypi
+  # push:
+  #   branches:
+  #     - main
+  #     - pypi
 
 jobs:
   deploy:
@@ -33,6 +35,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         twine check dist/*
-        ls
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*tar.gz
-        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
+        ls dist/
+        #twine upload --repository-url https://test.pypi.org/legacy/ dist/*tar.gz
+        twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
