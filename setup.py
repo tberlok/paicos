@@ -52,6 +52,13 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
+    ),
+    Extension(
+        name='paicos.cython.get_derived_variables',
+        sources=['paicos/cython/get_derived_variables.pyx'],
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args
     )
 ]
 
