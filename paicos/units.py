@@ -581,7 +581,7 @@ class PaicosTimeSeries(PaicosQuantity):
                + 'dimension is equal to the length of the time array')
         assert value.shape[0] == a.shape[0], msg
 
-        assert len(value.shape) <= 2, 'Only 1D and 2D arrays are supported'
+        assert len(value.shape) <= 3, 'Only 1D, 2D and 3D arrays are supported'
 
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
                               order=order, subok=subok, ndmin=ndmin, h=h, a=a,
@@ -613,6 +613,8 @@ class PaicosTimeSeries(PaicosQuantity):
             new_value = value * factor
         elif len(value.shape) == 2:
             new_value = value * factor[:, None]
+        elif len(value.shape) == 3:
+            new_value = value * factor[:, None, None]
 
         return self._new_view(new_value, new_unit)
 
