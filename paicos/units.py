@@ -415,7 +415,7 @@ class PaicosQuantity(Quantity):
         label = co_label + r'\; \left[' + unit_label + r'\right]'
 
         # Get ckpc, cMpc, ckpc/h and Mkpc/h as used in literature
-        if normal_unit in ('kpc', 'Mpc'):
+        if normal_unit in ('kpc', 'Mpc', 'Gpc'):
             if a_sc in (0, 1):
                 if h_sc in (0, -1):
                     if a_sc == 1:
