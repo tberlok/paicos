@@ -117,6 +117,8 @@ def numthreads(numthreads):
 
     numthreads (int): e.g. 16
     """
+    util.check_if_omp_has_issues(False)
+
     if numthreads > settings.max_threads:
         print(f'Your machine only has {settings.max_threads} available threads')
 

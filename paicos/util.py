@@ -234,14 +234,14 @@ def check_if_omp_has_issues(verbose=True):
 
     max_threads = get_openmp_settings(0, False)
     settings.max_threads = max_threads
-    if settings.numthreads > max_threads:
-        msg = ('\n\nThe user specified number of OpenMP threads, {}, '
+    if settings.numthreads > max_threads and verbose:
+        msg = ('\n\nThe default number of OpenMP threads, {}, '
                + 'exceeds the {} available on your system. Setting '
-               + 'numthreads to use half the available threads, i.e. {}.\n'
+               + 'numthreads={}. '
                + 'You can set numthreads with e.g. the command\n '
                + 'paicos.set_numthreads(16)\n\n')
-        print(msg.format(settings.numthreads, max_threads, max_threads // 2))
-        settings.numthreads = max_threads // 2
+        print(msg.format(settings.numthreads, max_threads, max_threads))
+        settings.numthreads = max_threads
 
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
