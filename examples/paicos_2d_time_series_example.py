@@ -14,7 +14,7 @@ avec = np.logspace(-2, 0, 100)
 Bvec = []
 for a in avec:
     B = pa.units.PaicosQuantity(np.arange(1, 10), unit, h=snap.h, a=a,
-                                  comoving_sim=True)
+                                comoving_sim=True)
     Bvec.append(B)
 
 B = pa.units.PaicosTimeSeries(Bvec)
@@ -67,3 +67,11 @@ for ii in range(2):
 axes[0].set_ylabel(Bc.label())
 axes[1].set_ylabel(Bphys.label())
 plt.show()
+
+Bc * Bc
+
+Bc / Bc
+
+Bc - Bc
+
+Bc**2

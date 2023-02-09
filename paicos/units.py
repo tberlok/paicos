@@ -476,7 +476,7 @@ class PaicosQuantity(Quantity):
             scaling_str = base_string + '^{' + scaling_str + '}'
         return scaling, scaling_str
 
-    def __sanity_check(self, value):
+    def _sanity_check(self, value):
         """
         Function for sanity-checking addition, subtraction, multiplication
         and division of quantities. They should all have same a and h.
@@ -505,19 +505,19 @@ class PaicosQuantity(Quantity):
         return modified
 
     def __add__(self, value):
-        self.__sanity_check(value)
+        self._sanity_check(value)
         return super().__add__(value)
 
     def __sub__(self, value):
-        self.__sanity_check(value)
+        self._sanity_check(value)
         return super().__sub__(value)
 
     def __mul__(self, value):
-        self.__sanity_check(value)
+        self._sanity_check(value)
         return super().__mul__(value)
 
     def __truediv__(self, value):
-        self.__sanity_check(value)
+        self._sanity_check(value)
         return super().__truediv__(value)
 
     def dump(self):
@@ -625,16 +625,17 @@ class PaicosTimeSeries(PaicosQuantity):
         """
         return {'unit': self.unit.to_string(), 'Paicos': 'PaicosTimeSeries'}
 
-    def __sanity_check(self, value):
+    def _sanity_check(self, value):
         """
         Function for sanity-checking addition, subtraction, multiplication
         and division of quantities. They should all have same a and h.
         """
         err_msg = "Operation requires objects to have same a and h value.\n"
         if isinstance(value, PaicosQuantity):
-            msg = ('operations combining PaicosQuantity and '
-                   + 'PaicosTimeSeries is not allowed.')
-            raise RuntimeError(msg)
+            if not isinstance(value, PaicosTimeSeries):
+                msg = ('operations combining PaicosQuantity and '
+                       + 'PaicosTimeSeries is not allowed.')
+                raise RuntimeError(msg)
 
         if isinstance(value, PaicosTimeSeries):
             info = f'\nObj1.a={self._a}.\n\nObj2.a={value._a}'
