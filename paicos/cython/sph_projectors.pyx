@@ -1,6 +1,5 @@
 from cython.parallel import prange, parallel
 cimport openmp
-import cython
 import numpy as np
 cimport numpy as np
 
@@ -10,7 +9,7 @@ ctypedef fused real_t:
     np.float32_t
     np.float64_t
 
-STUFF = "Hi" # https://stackoverflow.com/questions/8024805/cython-compiled-c-extension-importerror-dynamic-module-does-not-define-init-fu
+STUFF = "Hi"  # https://stackoverflow.com/questions/8024805/cython-compiled-c-extension-importerror-dynamic-module-does-not-define-init-fu
 
 
 def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
@@ -39,17 +38,18 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
     # Shape of projection array
     cdef int ny = <int> (sidelength_y/sidelength_x * nx)
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, '(sidelength_y/sidelength_x * nx) needs to be an integer'
+    msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
+    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
 
     # Create projection array
-    cdef real_t[:,:] projection = np.zeros((nx, ny), dtype=np.float64)
+    cdef real_t[:, :] projection = np.zeros((nx, ny), dtype=np.float64)
 
     # Loop integers and other variables
     cdef int ip, ix, iy, ih
     cdef int ipx, ipy
     cdef int ix_min, ix_max
     cdef int iy_min, iy_max
-    cdef real_t tx, ty, dx, dy, r2, h, h2, weight
+    cdef real_t dx, dy, r2, h, h2, weight
     cdef real_t x, y, norm
     cdef real_t x0, y0
 
@@ -131,25 +131,26 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     tmp[:, :] = projection[:, :]
     return tmp
 
+
 def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
-                  real_t[:] hvec, int nx, real_t xc, real_t yc,
-                  real_t sidelength_x, real_t sidelength_y,
-                  real_t boxsize, int numthreads):
+                      real_t[:] hvec, int nx, real_t xc, real_t yc,
+                      real_t sidelength_x, real_t sidelength_y,
+                      real_t boxsize, int numthreads):
 
     # Number of particles
     cdef int Np = xvec.shape[0]
 
     # Shape of projection array
     cdef int ny = <int> (sidelength_y/sidelength_x * nx)
-
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, '(sidelength_y/sidelength_x * nx) needs to be an integer'
+    msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
+    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
 
     # Loop integers and other variables
-    cdef int ip, ix, iy, ih
+    cdef int ip, ix, iy, ih, threadnum
     cdef int ipx, ipy
     cdef int ix_min, ix_max
     cdef int iy_min, iy_max
-    cdef real_t tx, ty, dx, dy, r2, h, h2, weight
+    cdef real_t dx, dy, r2, h, h2, weight
     cdef real_t x, y, norm
     cdef real_t x0, y0
 
@@ -159,12 +160,8 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     x0 = xc - sidelength_x/2.0
     y0 = yc - sidelength_y/2.0
 
-    cdef int threadnum, maxthreads
-
-    maxthreads = openmp.omp_get_max_threads()
-
-    cdef real_t[:,:, :] tmp_variable = np.zeros((nx, ny, numthreads), dtype=np.float64)
-    cdef real_t[:,:] projection = np.zeros((nx, ny), dtype=np.float64)
+    cdef real_t[:, :, :] tmp_var = np.zeros((nx, ny, numthreads), dtype=np.float64)
+    cdef real_t[:, :] projection = np.zeros((nx, ny), dtype=np.float64)
 
     with nogil, parallel(num_threads=numthreads):
         for ip in prange(Np, schedule='static'):
@@ -233,13 +230,14 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
                     weight = 1.0 - r2/h2
                     if weight > 0.0:
-                        tmp_variable[ix, iy, threadnum] = tmp_variable[ix, iy, threadnum] + weight*variable[ip]/norm
+                        tmp_var[ix, iy, threadnum] = tmp_var[ix, iy, threadnum] \
+                                                     + weight*variable[ip]/norm
 
     # Add up contributions from each thread
     for threadnum in range(numthreads):
         for ix in range(nx):
             for iy in range(ny):
-                projection[ix, iy] = projection[ix, iy] + tmp_variable[ix, iy, threadnum]
+                projection[ix, iy] = projection[ix, iy] + tmp_var[ix, iy, threadnum]
 
     # Fix to avoid returning a memory-view
     tmp = np.zeros((nx, ny), dtype=np.float64)

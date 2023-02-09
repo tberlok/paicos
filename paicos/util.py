@@ -1,9 +1,20 @@
-from . import settings
-from . import units
+"""
+Defines a few useful functions and most importantly, the low level
+hdf5 reader and writer. It also serves as a placeholder for variables
+that can be changed via user functions.
+"""
+import os
+import warnings
 import numpy as np
+import h5py
+from functools import wraps
+from . import settings
+from . import units as pu
+from .cython.get_index_of_region import get_cube, get_radial_range
+from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
+from .cython.openmp_info import simple_reduction, get_openmp_settings
 
-openMP_has_issues = None
-
+# These will be set by the user using the add_user_unit function
 user_unit_dict = {'default': {},
                   'voronoi_cells': {},
                   'dark_matter': {},
@@ -14,20 +25,24 @@ user_unit_dict = {'default': {},
 
 
 def get_project_root_dir():
-    import os
+    """
+    Returns the root directory of the local Paicos copy.
+    """
     path = os.path.dirname(os.path.abspath(__file__))
-    root_dir = ''
+    r_dir = ''
     path_split = path.split('/')
-    for ii in range(1, len(path_split)-1):
-        root_dir += '/' + path_split[ii]
+    for ii in range(1, len(path_split) - 1):
+        r_dir += '/' + path_split[ii]
 
-    return root_dir + '/'
+    return r_dir + '/'
 
 
+# Set the root_dir for Paicos
 root_dir = get_project_root_dir()
 
 
-def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
+def save_dataset(hdf5file, name, data=None, data_attrs={},
+                 group=None, group_attrs={}):
     """
     Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'w') )
     If the data has units then they are saved as an attribute.
@@ -39,25 +54,26 @@ def save_dataset(hdf5file, name, data=None, group=None, group_attrs=None):
     else:
         if group not in hdf5file:
             hdf5file.create_group(group)
-            if isinstance(group_attrs, dict):
-                for key in group_attrs.keys():
-                    hdf5file[group].attrs[key] = group_attrs[key]
+            for key in group_attrs:
+                hdf5file[group].attrs[key] = group_attrs[key]
         path = hdf5file[group]
 
     # Save data set
     if hasattr(data, 'unit'):
         path.create_dataset(name, data=data.value)
-        if isinstance(data, units.PaicosTimeSeries):
-            attrs = data.hdf5_attrs
-        else:
-            attrs = {'unit': data.unit.to_string()}
-        for key in attrs.keys():
-            path[name].attrs[key] = attrs[key]
     else:
         path.create_dataset(name, data=data)
 
+    # Write attributes
+    if isinstance(data, pu.PaicosTimeSeries):
+        data_attrs.update(data.hdf5_attrs)
+    elif hasattr(data, 'unit'):
+        data_attrs['unit'] = data.unit.to_string()
+    for key in data_attrs.keys():
+        path[name].attrs[key] = data_attrs[key]
+
     # Check if scale_factors are already saved
-    if isinstance(data, units.PaicosTimeSeries):
+    if isinstance(data, pu.PaicosTimeSeries):
         if 'scale_factor' not in path.keys():
             path.create_dataset('scale_factor', data=data.a)
         else:
@@ -69,9 +85,8 @@ def load_dataset(hdf5file, name, group=None):
     Load dataset, returning a paicos quantity if the attributes
     contain units and units are enabled.
     """
-    import h5py
 
-    if not isinstance(hdf5file, h5py._hl.files.File):
+    if not isinstance(hdf5file, h5py.File):
         if isinstance(hdf5file, str):
             hdf5file = h5py.File(hdf5file, 'r')
         else:
@@ -79,10 +94,10 @@ def load_dataset(hdf5file, name, group=None):
             raise RuntimeError(msg)
 
     comoving_sim = bool(hdf5file['Parameters'].attrs['ComovingIntegrationOn'])
-    Time = hdf5file['Header'].attrs['Time']
-    h = hdf5file['Parameters'].attrs['HubbleParam']
-    if h == 0. or h == 1.0:
-        h = 1.0
+    time = hdf5file['Header'].attrs['Time']
+    hubble_param = hdf5file['Parameters'].attrs['HubbleParam']
+    if hubble_param == 0.:
+        hubble_param = 1.0
 
     # Allow for loading data sets in groups or nested groups
     if group is None:
@@ -96,21 +111,20 @@ def load_dataset(hdf5file, name, group=None):
 
     if settings.use_units:
         if 'unit' in path[name].attrs.keys():
-            from . import units as pu
             unit = path[name].attrs['unit']
             if 'Paicos' in path[name].attrs.keys():
                 if path[name].attrs['Paicos'] == 'PaicosTimeSeries':
                     if comoving_sim:
-                        Time = path['scale_factor'][...]
+                        time = path['scale_factor'][...]
                     else:
-                        Time = path['time'][...]
-                    data = pu.PaicosTimeSeries(data, unit, a=Time, h=h,
+                        time = path['time'][...]
+                    data = pu.PaicosTimeSeries(data, unit, a=time, h=hubble_param,
                                                comoving_sim=comoving_sim)
                 elif path[name].attrs['Paicos'] == 'PaicosQuantity':
-                    data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                    data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
                                              comoving_sim=comoving_sim)
             else:
-                data = pu.PaicosQuantity(data, unit, a=Time, h=h,
+                data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
                                          comoving_sim=comoving_sim)
     return data
 
@@ -124,18 +138,19 @@ def remove_astro_units(func):
     so, replaces it with its 'value' attribute. This is useful for functions
     that do not support astro units or need to work with raw values.
     """
+    @wraps(func)
     def inner(*args, **kwargs):
         # Create new args
         new_args = list(args)
-        for ii in range(len(new_args)):
-            if hasattr(new_args[ii], 'unit'):
-                new_args[ii] = new_args[ii].value
+        for ii, new_arg in enumerate(new_args):
+            if hasattr(new_arg, 'unit'):
+                new_args[ii] = new_arg.value
 
         # Create new kwargs
         new_kwargs = kwargs  # dict(kwargs)
-        for key in kwargs.keys():
-            if hasattr(kwargs[key], 'unit'):
-                new_kwargs[key] = kwargs[key].value
+        for key, kwarg in kwargs.items():
+            if hasattr(kwarg, 'unit'):
+                new_kwargs[key] = kwarg.value
 
         return func(*new_args, **new_kwargs)
     return inner
@@ -143,46 +158,61 @@ def remove_astro_units(func):
 
 @remove_astro_units
 def get_index_of_radial_range(pos, center, r_min, r_max):
-    from .cython.get_index_of_region_functions import get_index_of_radial_range as get_index_of_radial_range_cython
-    xc, yc, zc = center[0], center[1], center[2]
-    index = get_index_of_radial_range_cython(pos, xc, yc, zc, r_min, r_max,
-                                             settings.numthreads)
+    """
+    Get a boolean array of positions, pos, which are inside the spherical
+    shell with inner radius r_min and outer radius r_max, centered at center.
+    """
+    x_c, y_c, z_c = center[0], center[1], center[2]
+    index = get_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
+                             settings.numthreads)
     return index
 
 
 @remove_astro_units
-def get_index_of_region(pos, center, widths, box):
-    from .cython.get_index_of_region_functions import get_index_of_region as get_index_of_region_cython
-    xc, yc, zc = center[0], center[1], center[2]
+def get_index_of_cubic_region(pos, center, widths, box):
+    """
+    Get a boolean array to the position array, pos, which are inside a cubic
+    region.
+
+    pos (array): position array with dimensions = (n, 3)
+    center (array with length 3): the center of the box (x, y, z)
+    widths (array with length 3): the widths of the box
+    box: the box size of the simulation (e.g. snap.box)
+    """
+    x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    index = get_index_of_region_cython(pos, xc, yc, zc,
-                                       width_x, width_y, width_z, box,
-                                       settings.numthreads)
+    index = get_cube(pos, x_c, y_c, z_c, width_x, width_y, width_z, box,
+                     settings.numthreads)
     return index
 
 
 @remove_astro_units
 def get_index_of_slice_region(pos, center, widths, thickness, box):
-    xc, yc, zc = center[0], center[1], center[2]
+    """
+    Get a boolean array to the position array, pos, which are inside a thin
+    slice region with width thickness.
+
+    pos (array): position array with dimensions = (n, 3)
+    center (array with length 3): the center of the box (x, y, z)
+    widths (array with length 3): the widths of the box (one of which should
+                                  contain a zero, the selection will be
+                                  perpendicular to the corresponding direction)
+    thickness: (array): array with same length as the position array
+    box: the box size of the simulation (e.g. snap.box)
+    """
+    x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
+    numthreads = settings.numthreads
+
     if widths[0] == 0.:
-        from .cython.get_index_of_region_functions import get_index_of_x_slice_region
-        index = get_index_of_x_slice_region(pos, xc, yc, zc,
-                                            width_y, width_z,
-                                            thickness, box,
-                                            settings.numthreads)
+        index = get_x_slice(pos, x_c, y_c, z_c, width_y, width_z, thickness,
+                            box, numthreads)
     elif widths[1] == 0.:
-        from .cython.get_index_of_region_functions import get_index_of_y_slice_region
-        index = get_index_of_y_slice_region(pos, xc, yc, zc,
-                                            width_x, width_z,
-                                            thickness, box,
-                                            settings.numthreads)
+        index = get_y_slice(pos, x_c, y_c, z_c, width_x, width_z, thickness,
+                            box, numthreads)
     elif widths[2] == 0.:
-        from .cython.get_index_of_region_functions import get_index_of_z_slice_region
-        index = get_index_of_z_slice_region(pos, xc, yc, zc,
-                                            width_x, width_y,
-                                            thickness, box,
-                                            settings.numthreads)
+        index = get_z_slice(pos, x_c, y_c, z_c, width_x, width_y, thickness,
+                            box, numthreads)
     else:
         raise RuntimeError('width={} should have length 3 and contain a zero!')
 
@@ -198,35 +228,49 @@ def check_if_omp_has_issues(verbose=True):
     numthreads : int
         Number of threads used in parallelization
     """
-    from .cython.openmp_info import simple_reduction, get_openmp_settings
-
-    if openMP_has_issues is not None:
-        return openMP_has_issues
 
     if settings.give_openMP_warnings is False:
         verbose = False
 
     max_threads = get_openmp_settings(0, False)
+    settings.max_threads = max_threads
     if settings.numthreads > max_threads:
-        msg = ('\n\nThe user specified number of OpenMP threads, {}, ' +
-               'exceeds the {} available on your system. Setting ' +
-               'numthreads to use half the available threads, i.e. {}.\n' +
-               'You can set numthreads with e.g. the command\n ' +
-               'paicos.set_numthreads(16)\n\n')
-        print(msg.format(settings.numthreads, max_threads, max_threads//2))
-        settings.numthreads = max_threads//2
+        msg = ('\n\nThe user specified number of OpenMP threads, {}, '
+               + 'exceeds the {} available on your system. Setting '
+               + 'numthreads to use half the available threads, i.e. {}.\n'
+               + 'You can set numthreads with e.g. the command\n '
+               + 'paicos.set_numthreads(16)\n\n')
+        print(msg.format(settings.numthreads, max_threads, max_threads // 2))
+        settings.numthreads = max_threads // 2
 
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:
-        return False
+        settings.numthreads_reduction = settings.numthreads
+        settings.openMP_has_issues = False
     else:
-        import warnings
-        msg = ("OpenMP seems to have issues with reduction operators " +
-               "on your system, so we'll turn it off for those use cases. " +
-               "If you're on Mac then the issue is likely a " +
-               "compiler problem, discussed here:\n" +
-               "https://stackoverflow.com/questions/54776301/" +
-               "cython-prange-is-repeating-not-parallelizing.\n\n")
+        # We have issues...
+        settings.openMP_has_issues = True
+        settings.numthreads_reduction = 1
+
+        msg = ("OpenMP seems to have issues with reduction operators "
+               + "on your system, so we'll turn it off for those use cases. "
+               + "If you're on Mac then the issue is likely a "
+               + "compiler problem, discussed here:\n"
+               + "https://stackoverflow.com/questions/54776301/"
+               + "cython-prange-is-repeating-not-parallelizing.\n\n")
         if verbose:
             warnings.warn(msg)
-        return True
+
+
+def copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
+    """
+    Copy over attributes from the original arepo snapshot.
+    In this way we will have access to units used, redshift etc
+    """
+    g = h5py.File(org_filename, 'r')
+    with h5py.File(new_filename, mode) as f:
+        for group in ['Header', 'Parameters', 'Config']:
+            f.create_group(group)
+            for key in g[group].attrs.keys():
+                f[group].attrs[key] = g[group].attrs[key]
+    g.close()

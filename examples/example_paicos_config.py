@@ -7,13 +7,13 @@ pa.numthreads(8)
 
 
 def TemperaturesTimesMassesSquared(snap):
-    return snap['0_TemperaturesTimesMasses']*snap['0_Masses']
+    return snap['0_TemperaturesTimesMasses'] * snap['0_Masses']
 
 
 def MassesPartType1(snap):
     import numpy as np
-    M = snap.masstable[1]*np.ones(snap['1_Coordinates'].shape[0],
-                                  dtype=np.float32)
+    M = snap.masstable[1] * np.ones(snap['1_Coordinates'].shape[0],
+                                    dtype=np.float32)
     return M
 
 

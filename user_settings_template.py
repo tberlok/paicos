@@ -25,7 +25,7 @@ pa.give_openMP_warnings(False)
 def TemperaturesTimesMassesSquared(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_TemperaturesTimesMasses', '0_Masses']
-    return snap['0_TemperaturesTimesMasses']*snap['0_Masses']
+    return snap['0_TemperaturesTimesMasses'] * snap['0_Masses']
 
 
 pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)

@@ -1,5 +1,4 @@
-from cython.parallel import prange, parallel
-import cython
+from cython.parallel import prange
 import numpy as np
 cimport numpy as np
 cimport libc.math as math
@@ -9,6 +8,7 @@ ctypedef fused real_t:
     double
     np.float32_t
     np.float64_t
+
 
 def get_curvature(real_t[:, :] Bvec, real_t[:, :] Bgradient):
 
@@ -23,12 +23,12 @@ def get_curvature(real_t[:, :] Bvec, real_t[:, :] Bgradient):
     """
     cdef int ip, ii, jj, kk
     cdef int Np = Bvec.shape[0]
-    cdef real_t B2, gradB_ij, gradB_kj, K_kk, term1, term2
+    cdef real_t B2, gradB_ij, gradB_kj, term1, term2
 
     cdef real_t[:] K2 = np.zeros(Np, dtype=np.float64)
 
     # Bgradient has not been reshaped, \nabla B_ij
-    for ip in prange(Np, nogil=True, schedule='static'):#, num_threads=32):
+    for ip in prange(Np, nogil=True, schedule='static'): #, num_threads=32):
         B2 = 0.0
         for ii in range(3):
             B2 = B2 + Bvec[ip, ii]**2
@@ -48,6 +48,7 @@ def get_curvature(real_t[:, :] Bvec, real_t[:, :] Bgradient):
     tmp = np.zeros(Np, dtype=np.float64)
     tmp[:] = np.sqrt(K2[:])
     return tmp
+
 
 def get_magnitude_of_vector(real_t[:, :] Bvec):
 

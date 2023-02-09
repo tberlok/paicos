@@ -1,6 +1,12 @@
+"""
+Defines small_a and small_h, conversion to Gauss and eV,
+and the PaicosQuantity and PaicosTimeSeries classes.
+"""
+from fractions import Fraction
+import numpy as np
 import astropy.units as u
 from astropy.units import Quantity
-import numpy as np
+from astropy.units import UnitConversionError
 
 _ns = globals()
 
@@ -29,10 +35,10 @@ u.add_enabled_units(small_h)
 u.add_enabled_equivalencies(u.temperature_energy())
 # Allows conversion to Gauss (potential issues?)
 # https://github.com/astropy/astropy/issues/7396
-gauss_B = (u.g/u.cm)**(0.5)/u.s
+gauss_B = (u.g / u.cm)**(0.5) / u.s
 equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
-scaling = small_a**(-2)*small_h
-equiv_B_comoving = [(u.G*scaling, gauss_B*scaling, lambda x: x, lambda x: x)]
+Bscaling = small_a**(-2) * small_h
+equiv_B_comoving = [(u.G * Bscaling, gauss_B * Bscaling, lambda x: x, lambda x: x)]
 u.add_enabled_equivalencies(equiv_B)
 u.add_enabled_equivalencies(equiv_B_comoving)
 
@@ -96,8 +102,18 @@ class PaicosQuantity(Quantity):
 
     """
 
+    # pylint: disable=too-many-arguments
+
     def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
                 subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
+        """
+        Here we initialize the Paicos Quantity. The three additional
+        input arguments (compared to a standard astropy quantity) are
+
+        h
+        a
+        comoving_sim
+        """
 
         assert h is not None, 'Paicos quantity is missing a value for h'
         assert a is not None, 'Paicos quantity is missing a value for a'
@@ -140,8 +156,7 @@ class PaicosQuantity(Quantity):
         """
         if self.comoving_sim:
             return self._a
-        else:
-            raise RuntimeError('Non-comoving object has no scale factor')
+        raise RuntimeError('Non-comoving object has no scale factor')
 
     @property
     def h(self):
@@ -163,41 +178,58 @@ class PaicosQuantity(Quantity):
         The redshift.
         """
         if self.comoving_sim:
-            return 1./self._a - 1.
-        else:
-            raise RuntimeError('Non-comoving object has no redshift')
+            return 1. / self._a - 1.
+        raise RuntimeError('Non-comoving object has no redshift')
 
     def lookback_time(self, reader_object):
+        """
+        The lookback time.
+
+        Requires a reader object as input (e.g. a snap,
+        cat or other instance of Snapshot, Catalog or PaicosReader)
+        """
         if self.comoving_sim:
             return reader_object.get_lookback_time(self.z)
-        else:
-            msg = 'lookback_time not defined for non-comoving sim'
-            raise RuntimeError(msg)
+        msg = 'lookback_time not defined for non-comoving sim'
+        raise RuntimeError(msg)
 
     def age(self, reader_object):
+        """
+        The age of the universe in the simulation.
+
+        Requires a reader object as input (e.g. a snap,
+        cat or other instance of Snapshot, Catalog or PaicosReader)
+        """
         if self.comoving_sim:
             return reader_object.get_age(self.z)
-        else:
-            msg = 'age not defined for non-comoving sim'
-            raise RuntimeError(msg)
+        msg = 'age not defined for non-comoving sim'
+        raise RuntimeError(msg)
 
     @property
     def time(self):
+        """
+        The time elapsed since the beginning of the simulation.
+
+        Only defined for non-comoving simulations.
+        """
         if self.comoving_sim:
             msg = 'time not defined for comoving sim'
             raise RuntimeError(msg)
+
+        if hasattr(self._a, 'unit'):
+            return self._a
         else:
-            from astropy import units as u
-            if hasattr(self._a, 'unit'):
-                return self._a
-            else:
-                return self._a*u.Unit('arepo_time')
+            return self._a*u.Unit('arepo_time')
 
     def __get_unit_dictionaries(self):
+        """
+        Returns dictionaries with information about the units of the
+        quantity.
+        """
         codic = {}
         dic = {}
         for unit, power in zip(self.unit.bases, self.unit.powers):
-            if unit == small_a or unit == small_h:
+            if unit in (small_a, small_h):
                 codic[unit] = power
             else:
                 dic[unit] = power
@@ -243,6 +275,10 @@ class PaicosQuantity(Quantity):
 
     @property
     def separate_units(self):
+        """
+        Separate the standard physical units (u_unit) from the units involving
+        a and h (pu_unit).
+        """
         codic, dic = self.__get_unit_dictionaries()
         u_unit = self._construct_unit_from_dic(dic)
         pu_unit = self._construct_unit_from_dic(codic)
@@ -260,12 +296,12 @@ class PaicosQuantity(Quantity):
         """
         Remove scaling with h, returning a quantity with adjusted values.
         """
-        codic, dic = self.__get_unit_dictionaries()
+        codic, _ = self.__get_unit_dictionaries()
         factor = self.h**codic[small_h]
 
         value = self.view(np.ndarray)
         new_unit = self._get_new_units([small_h])
-        return self._new_view(value*factor, new_unit)
+        return self._new_view(value * factor, new_unit)
 
     @property
     def cgs(self):
@@ -301,34 +337,33 @@ class PaicosQuantity(Quantity):
         # of whether the pu_unit is included or not
         if (small_a in unit.bases) or (small_h in unit.bases):
             return super().to(unit, equivalencies, copy)
-        else:
-            _, pu_unit = self.separate_units
-            return super().to(unit*pu_unit, equivalencies, copy)
+
+        _, pu_unit = self.separate_units
+        return super().to(unit * pu_unit, equivalencies, copy)
 
     @property
     def arepo(self):
         """
-        Return quantity in Arepo code units.
+        Returns the quantity in Arepo code units.
         """
-        from astropy.units import UnitConversionError
         arepo_bases = set([u.Unit('arepo_mass'),
                            u.Unit('arepo_length'),
                            u.Unit('arepo_time')])
         try:
             return self.decompose(bases=arepo_bases)
         except UnitConversionError as inst:
-            err_msg = ('Conversion to arepo_units does not work well for ' +
-                       'Temperature and magnetic field strength in Gauss. ' +
-                       'Astropy throws the following error: ' + str(inst))
+            err_msg = ('Conversion to arepo_units does not work well for '
+                       + 'Temperature and magnetic field strength in Gauss. '
+                       + 'Astropy throws the following error: ' + str(inst))
 
-            raise UnitConversionError(err_msg)
+            raise UnitConversionError(err_msg) from inst
 
         return None
 
     @property
     def astro(self):
         """
-        Return quantity in typical units used in cosmological simulations
+        Returns the quantity in typical units used in cosmological simulations
         """
         return self.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV, u.K])
 
@@ -340,16 +375,16 @@ class PaicosQuantity(Quantity):
 
         small_a and small_h are automatically included in the bases.
         """
-        u_unit, pu_unit = self.separate_units
+        _, pu_unit = self.separate_units
         if len(bases) == 0 or pu_unit == u.Unit(''):
             return super().decompose(bases)
-        else:
-            if isinstance(bases, set):
-                bases = list(bases)
-            bases.append(small_a)
-            bases.append(small_h)
-            bases = set(bases)
-            return super().decompose(bases)
+
+        if isinstance(bases, set):
+            bases = list(bases)
+        bases.append(small_a)
+        bases.append(small_h)
+        bases = set(bases)
+        return super().decompose(bases)
 
     def label(self, variable=''):
         """
@@ -365,9 +400,7 @@ class PaicosQuantity(Quantity):
 
         normal_unit = self._get_new_units([small_h, small_a])
 
-        # unit_label = normal_unit.to_string(format='latex')[1:-1]
-
-        codic, dic = self.__get_unit_dictionaries()
+        _, dic = self.__get_unit_dictionaries()
 
         unit_label = ''
         for ii, key in enumerate(dic.keys()):
@@ -376,12 +409,12 @@ class PaicosQuantity(Quantity):
             if ii < len(dic.keys()) - 1:
                 unit_label += r'\;'
 
-        label = (co_label + r'\; \left[' + unit_label + r'\right]')
+        label = co_label + r'\; \left[' + unit_label + r'\right]'
 
         # Get ckpc, cMpc, ckpc/h and Mkpc/h as used in literature
-        if normal_unit == 'kpc' or normal_unit == 'Mpc':
-            if (a_sc == 0) or (a_sc == 1):
-                if (h_sc == 0) or (h_sc == -1):
+        if normal_unit in ('kpc', 'Mpc'):
+            if a_sc in (0, 1):
+                if h_sc in (0, -1):
                     if a_sc == 1:
                         label = r'\mathrm{c}' + unit_label
                     elif a_sc == 0:
@@ -404,7 +437,7 @@ class PaicosQuantity(Quantity):
         a and h factors removed, i.e. transform from comoving to physical.
         The value of the resulting object is scaled accordingly.
         """
-        codic, dic = self.__get_unit_dictionaries()
+        codic, _ = self.__get_unit_dictionaries()
         factor = self.h**codic[small_h]
 
         if self.comoving_sim:
@@ -412,25 +445,24 @@ class PaicosQuantity(Quantity):
 
         value = self.view(np.ndarray)
         new_unit = self._get_new_units([small_a, small_h])
-        return self._new_view(value*factor, new_unit)
+        return self._new_view(value * factor, new_unit)
 
     def __scaling_and_scaling_str(self, unit):
         """
         Helper function to create labels
         """
-        from fractions import Fraction
         codic, dic = self.__get_unit_dictionaries()
         # print(unit, dic, codic)
-        if unit in codic.keys():
+        if unit in codic:
             scaling = codic[unit]
-        elif unit in dic.keys():
+        elif unit in dic:
             scaling = dic[unit]
         else:
             raise RuntimeError('should not happen')
 
-        if unit in codic.keys():
+        if unit in codic:
             base_string = unit.to_string(format='unicode')
-        elif unit in dic.keys():
+        elif unit in dic:
             base_string = unit.to_string(format='latex')[1:-1]
         scaling_str = str(Fraction(scaling).limit_denominator(10000))
         if scaling_str == '0':
@@ -446,24 +478,25 @@ class PaicosQuantity(Quantity):
         Function for sanity-checking addition, subtraction, multiplication
         and division of quantities. They should all have same a and h.
         """
+        # pylint: disable=protected-access
         err_msg = "Operation requires objects to have same a and h value."
         if isinstance(value, PaicosQuantity):
             if value._a != self._a:
-                info = ' Obj1._a={}, Obj2._a={}'.format(self._a, value._a)
+                info = f' Obj1._a={self._a}, Obj2._a={value._a}'
                 raise RuntimeError(err_msg + info)
             if value.h != self.h:
-                info = ' Obj1.h={}, Obj2.h={}'.format(self.h, value.h)
+                info = f' Obj1.h={self.h}, Obj2.h={value.h}'
                 raise RuntimeError(err_msg + info)
 
     def _repr_latex_(self):
         number_part = super()._repr_latex_().split('\\;')[0]
         _, pu_units = self.separate_units
-        u_latex = (self.unit/pu_units).to_string(format='latex')[1:-1]
+        u_latex = (self.unit / pu_units).to_string(format='latex')[1:-1]
         pu_latex = pu_units.to_string(format='latex')[1:-1]
 
         if pu_units != u.Unit(''):
             modified = number_part + '\\;' + u_latex + \
-                       '\\times' + pu_latex + '$'
+                '\\times' + pu_latex + '$'
         else:
             modified = number_part + '\\;' + u_latex + '$'
         return modified
@@ -483,6 +516,27 @@ class PaicosQuantity(Quantity):
     def __truediv__(self, value):
         self.__sanity_check(value)
         return super().__truediv__(value)
+
+    def dump(self):
+        pass
+
+    def dumps(self):
+        pass
+
+    def tobytes(self):
+        pass
+
+    def tofile(self):
+        pass
+
+    def tolist(self):
+        pass
+
+    def tostring(self):
+        pass
+
+    def choose(self):
+        pass
 
 
 class PaicosTimeSeries(PaicosQuantity):
@@ -546,15 +600,16 @@ class PaicosTimeSeries(PaicosQuantity):
         """
         err_msg = "Operation requires objects to have same a and h value.\n"
         if isinstance(value, PaicosQuantity):
-            msg = ('operations combining PaicosQuantity and ' +
-                   'PaicosTimeSeries is not allowed.')
+            msg = ('operations combining PaicosQuantity and '
+                   + 'PaicosTimeSeries is not allowed.')
             raise RuntimeError(msg)
-        elif isinstance(value, PaicosTimeSeries):
+
+        if isinstance(value, PaicosTimeSeries):
+            info = f'\nObj1.a={self._a}.\n\nObj2.a={value._a}'
             try:
-                info = '\nObj1.a={}.\n\nObj2.a={}'.format(self._a, value._a)
                 np.testing.assert_array_equal(value._a, self._a)
-            except AssertionError:
-                raise RuntimeError(err_msg + info)
+            except AssertionError as exc:
+                raise RuntimeError(err_msg + info) from exc
             if value.h != self.h:
-                info = '\nObj1.h={}.\n\nObj2.h={}'.format(self.h, value.h)
+                info = f'\nObj1.h={self.h}.\n\nObj2.h={value.h}'
                 raise RuntimeError(err_msg + info)

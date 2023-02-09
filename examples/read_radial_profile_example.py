@@ -14,6 +14,7 @@ class RadialReader(pa.PaicosReader):
     A quick custom reader for radial profiles.
     This reader gets the densities and the weighted variables of interest
     """
+
     def __init__(self, basedir, snapnum, basename="radial", load_all=True):
 
         # The PaicosReader class takes care of most of the loading
@@ -34,20 +35,20 @@ class RadialReader(pa.PaicosReader):
                 # are split up
                 start, end = key.split('Times')
                 if (end in keys):
-                    self[start] = self[key]/self[end]
+                    self[start] = self[key] / self[end]
                     del self[key]
                 elif (start[0:2] + end in keys):
-                    self[start] = self[key]/self[start[0:2] + end]
+                    self[start] = self[key] / self[start[0:2] + end]
                     del self[key]
 
         # Calculate density if we have both masses and volumes
         for p in ['', '0_']:
             if (p + 'Masses' in keys) and (p + 'Volume' in keys):
-                self[p + 'Density'] = self[p+'Masses']/self[p+'Volume']
+                self[p + 'Density'] = self[p + 'Masses'] / self[p + 'Volume']
 
         # For dark matter we use the bin volumes
         for p in [str(i) + '_' for i in range(1, 5)]:
-            self[p + 'Density'] = self[p+'Masses']/self['bin_volumes']
+            self[p + 'Density'] = self[p + 'Masses'] / self['bin_volumes']
 
 
 pro = RadialReader(pa.root_dir + 'data', 247)

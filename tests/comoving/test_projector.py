@@ -25,7 +25,7 @@ def test_projector(show=False):
 
             projector = pa.Projector(snap, center, widths, direction, npix=512)
 
-            basename = 'reduced_projection_{}'.format(direction)
+            basename = f'reduced_projection_{direction}'
             image_file = pa.ArepoImage(projector, basedir=basedir,
                                        basename=basename)
 
@@ -41,7 +41,7 @@ def test_projector(show=False):
 
             # Make a plot
             if show:
-                axes[ii].imshow(np.array((Masses/Volume)), origin='lower',
+                axes[ii].imshow(np.array((Masses / Volume)), origin='lower',
                                 extent=np.array(projector.extent),
                                 norm=LogNorm())
 

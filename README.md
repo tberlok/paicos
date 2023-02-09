@@ -1,4 +1,9 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/tberlok/paicos/tree/main.svg?style=svg&circle-token=dbdb37aa907d919a167a8ef5ccf197c0d358c300)](https://dl.circleci.com/status-badge/redirect/gh/tberlok/paicos/tree/main)
+[![pylint](https://github.com/tberlok/paicos/actions/workflows/pylint.yml/badge.svg)](
+https://github.com/tberlok/paicos/actions/workflows/pylint.yml)
+[![flake8](https://github.com/tberlok/paicos/actions/workflows/flake8.yml/badge.svg)](
+https://github.com/tberlok/paicos/actions/workflows/flake8.yml)
+
 
 # Paicos
 
@@ -37,7 +42,7 @@ make
 
 The examples require an Arepo snapshot. You can download one [here](https://www.dropbox.com/sh/xdmqpc72jprtfs7/AADTmM12Zqc4K5--R5OTb4oCa?dl=0) (1 GB Dropbox link).
 
-The main functionality is contained inside 8 classes. These are:
+The main functionality is contained inside some main classes. These are:
 
 - Snapshot (arepo_snap.py)
 
@@ -49,15 +54,17 @@ The main functionality is contained inside 8 classes. These are:
 
 - NestedProjector (nested_projector.py)
 
-- RadialProfiles (radial_profiles.py)
-
 - ArepoImage (arepo_image.py)
 
-- ArepoConverter (arepo_converter.py)
+- PaicosWriter (paicos_writer.py)
+
+- PaicosReader (paicos_readers.py)
 
 Each of these can by run in python, displaying their functionality, e.g.,
 
 ```
+#### Basic features
+
 # Simple example of loading a snapshot
 python examples/loading_data_example.py
 
@@ -68,13 +75,24 @@ python examples/slicer_example.py
 python examples/projector_example.py
 python examples/nested_projector_example.py
 
-
 # Histograms
 python examples/histogram1D_example.py
 python examples/histogram2d_example.py
 
 # Loading images
 python examples/image_reader_example.py
+
+# Creating radial profiles
+python examples/create_radial_profiles_hdf5file_example.py
+python examples/read_radial_profile_example.py
+
+# Make a time series
+python examples/paicos_time_series_example.py
+
+# Select an index of a snapshot
+python examples/select_subset_of_snap.py
+
+#### Advanced features
 
 # Setting up user-defined functions for obtaining derived variables
 python examples/user_defined_functions_example.py
@@ -83,8 +101,11 @@ python examples/user_defined_functions_example.py
 python examples/using_a_paicos_config.py
 python examples/example_paicos_config.py
 
-# Select an index of a snapshot
-python examples/select_subset_of_snap.py
+# Saving a reduced snapshot file
+python examples/save_reduced_file_example.py
+
+# Using aliases
+python examples/using_aliases_example.py
 ```
 
 ## Tutorial Jupyter notebooks

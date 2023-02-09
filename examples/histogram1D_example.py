@@ -27,7 +27,7 @@ for ii in range(2):
     r = np.sqrt(np.sum((snap["0_Coordinates"] - center[None, :]) ** 2.0,
                 axis=1))
 
-    bins = [1e-3*r_max, r_max*1.1, 50]
+    bins = [1e-3 * r_max, r_max * 1.1, 50]
 
     B2 = np.sum((snap["0_MagneticField"]) ** 2, axis=1)
     Volume = snap["0_Volume"]
@@ -60,7 +60,7 @@ for ii in range(2):
             Masses = Masses.value
             r = r.value
 
-        bins = np.logspace(np.log10(1e-3*r_max), np.log10(r_max), 50)
+        bins = np.logspace(np.log10(1e-3 * r_max), np.log10(r_max), 50)
         B2TimesVolume, edges = np.histogram(
             r, weights=(B2 * Volume), bins=bins
         )
