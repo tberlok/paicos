@@ -61,6 +61,7 @@ def get_unit_dictionaries(unit):
 
     return codic, dic
 
+
 def construct_unit_from_dic(dic):
     """
     Construct unit from a dictionary with the format returned
@@ -78,6 +79,7 @@ def separate_units(unit):
     u_unit = construct_unit_from_dic(dic)
     pu_unit = construct_unit_from_dic(codic)
     return u_unit, pu_unit
+
 
 def get_new_unit(unit, remove_list=[]):
     """
@@ -267,7 +269,7 @@ class PaicosQuantity(Quantity):
         if hasattr(self._a, 'unit'):
             return self._a
         else:
-            return self._a*u.Unit('arepo_time')
+            return self._a * u.Unit('arepo_time')
 
     @property
     def unit_quantity(self):
@@ -568,14 +570,15 @@ class PaicosTimeSeries(PaicosQuantity):
             assert a.shape[0] == value.shape[0]
             if hasattr(value, 'unit'):
                 if unit is not None:
-                    raise RuntimeError('value has units but you are also passing unit={}:'.format(unit))
+                    raise RuntimeError(
+                        'value has units but you are also passing unit={}:'.format(unit))
                 unit = value.unit
                 value = value.value
         else:
             raise RuntimeError('unexpected input for value:', value)
 
         msg = ('PaicosTimeSeries requires that the length of the first '
-                + 'dimension is equal to the length of the time array')
+               + 'dimension is equal to the length of the time array')
         assert value.shape[0] == a.shape[0], msg
 
         assert len(value.shape) <= 2, 'Only 1D and 2D arrays are supported'
