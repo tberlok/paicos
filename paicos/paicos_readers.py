@@ -94,8 +94,10 @@ class PaicosReader(dict):
                 self.multi_filename = multi_file
                 self.no_subdir = True
             else:
-                err_msg = "File: {} not found found"
-                raise FileNotFoundError(err_msg.format(self.filename))
+                err_msg = "File not found. Tried locations:\n{}\n{}\n{}"
+                err_msg = err_msg.format(single_file, multi_file.format(0),
+                                         multi_wo_dir.format(0))
+                raise FileNotFoundError(err_msg)
 
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)
