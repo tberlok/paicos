@@ -445,12 +445,7 @@ class PaicosReader(dict):
         if self.h == 1.:
             remove_list.append(u.Unit('small_h'))
 
-        unit_list = []
-        for base, power in zip(unit.bases, unit.powers):
-            if base not in remove_list:
-                unit_list.append(base**power)
-
-        return np.product(unit_list)
+        return pu.get_new_unit(unit, remove_list)
 
     def load_data(self, name, group=None):
         """

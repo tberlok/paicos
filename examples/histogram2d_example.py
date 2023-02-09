@@ -29,11 +29,11 @@ rhoT = pa.Histogram2D(snap, rho, T, weights=M, bins_x=bins_rho,
 colorlabel = rhoT.get_colorlabel(r'\rho', 'T', 'M')
 
 # Save the 2D histogram
-rhoT.save(basedir=pa.root_dir + '/data', basename='rhoT_hist')
+rhoT.save(basedir=pa.root_dir + 'test_data', basename='rhoT_hist')
 
 del rhoT
 
-rhoT = pa.Histogram2DReader(pa.root_dir + '/data', 247, basename='rhoT_hist')
+rhoT = pa.Histogram2DReader(pa.root_dir + 'test_data', 247, basename='rhoT_hist')
 
 plt.figure(1)
 plt.clf()

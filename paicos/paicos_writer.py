@@ -48,6 +48,9 @@ class PaicosWriter:
         if basedir[-1] != '/':
             basedir += '/'
 
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
+
         self.basedir = basedir
         self.basename = basename
 
@@ -151,7 +154,7 @@ class PaicosTimeSeriesWriter(PaicosWriter):
     """
 
     def __init__(self, reader_object, basedir,
-                 basename="paicos_file", add_snapnum=False, mode='w'):
+                 basename="paicos_time_series", add_snapnum=False, mode='w'):
 
         super().__init__(reader_object, basedir,
                          basename=basename,

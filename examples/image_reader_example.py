@@ -1,6 +1,6 @@
 import paicos as pa
 
-im = pa.ImageReader(pa.root_dir + '/data/', 247,
+im = pa.ImageReader(pa.root_dir + 'test_data/', 247,
                     basename='projection_x')
 
 print(im['0_Density'][:, :])

@@ -5,7 +5,7 @@ import numpy as np
 snap = pa.Snapshot(pa.root_dir + "/data", 247)
 
 # Create a Paicos writer object
-radfile = pa.PaicosWriter(snap, pa.root_dir + 'data', basename='radial')
+radfile = pa.PaicosWriter(snap, pa.root_dir + 'test_data', basename='radial')
 
 # The center of the most massive Friends-of-friends group in the simulation
 center = snap.Cat.Group["GroupPos"][0]
