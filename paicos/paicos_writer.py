@@ -48,6 +48,9 @@ class PaicosWriter:
         if basedir[-1] != '/':
             basedir += '/'
 
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
+
         self.basedir = basedir
         self.basename = basename
 

@@ -29,7 +29,7 @@ for use_units in [False, True]:
         widths = width_vec[ii]
         projector = pa.Projector(snap, center, widths, direction, npix=512)
 
-        image_file = pa.ArepoImage(projector, basedir=root_dir + '/data/',
+        image_file = pa.ArepoImage(projector, basedir=root_dir + 'test_data/',
                                    basename=f'projection_{direction}')
 
         Masses = projector.project_variable('0_Masses')

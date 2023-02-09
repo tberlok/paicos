@@ -17,4 +17,4 @@ index = pa.util.get_index_of_cubic_region(pos, center, widths, snap.box)
 
 snap = snap.select(index)
 
-snap.save_new_snapshot('reduced_snap')
+snap.save_new_snapshot('reduced_snap2')
