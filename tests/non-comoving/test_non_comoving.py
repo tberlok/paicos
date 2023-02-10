@@ -8,7 +8,9 @@ def test_non_comoving(show=False):
     center = snap.box_size.copy / 2
     print(widths)
     projector = pa.Projector(snap, center, widths, 'z', npix=300, nvol=128)
-    rho_proj = projector.project_variable('0_Density')
+    M = projector.project_variable('0_Masses')
+    V = projector.project_variable('0_Volume')
+    rho_proj = M / V
 
     widths[2] = 0
     slicer = pa.Slicer(snap, center.value, widths.value, 'z')
