@@ -77,7 +77,7 @@ class ImageCreator:
                            self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
 
         if settings.use_units:
-            self.extent = units.PaicosQuantity(self.extent, a=snap.a, h=snap.h,
+            self.extent = units.PaicosQuantity(self.extent, a=snap._Time, h=snap.h,
                                                comoving_sim=snap.comoving_sim)
         else:
             self.extent = np.array(self.extent)

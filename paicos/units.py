@@ -281,6 +281,14 @@ class PaicosQuantity(Quantity):
                               comoving_sim=self.comoving_sim)
 
     @property
+    def copy(self):
+        """
+        Returns a copy of the PaicosQuantity
+        """
+        return PaicosQuantity(self.value, self.unit, a=self._a, h=self.h,
+                              comoving_sim=self.comoving_sim)
+
+    @property
     def uq(self):
         """
         A short hand for the 'unit_quantity' method.

@@ -82,7 +82,14 @@ class Slicer(ImageCreator):
         w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
         h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
 
-        ww, hh = np.meshgrid(w, h)
+        if settings.use_units:
+            wu = w.unit_quantity
+            ww, hh = np.meshgrid(w.value, h.value)
+            ww = ww * wu
+            hh = hh * wu
+        else:
+            ww, hh = np.meshgrid(w, h)
+
         w = ww.flatten()
         h = hh.flatten()
 
