@@ -21,7 +21,10 @@ def test_non_comoving(show=False):
         plt.figure(1)
         plt.clf()
         fig, axes = plt.subplots(num=1, nrows=2, sharex=True)
-        axes[0].imshow(rho_slice.value, extent=slicer.extent.value)
+
+        # Define new imshow_wo_units that automatically plots the values
+        imshow_wo_units = pa.util.remove_astro_units(axes[0].imshow)
+        imshow_wo_units(rho_slice, extent=slicer.extent)
         axes[0].set_ylabel(slicer.extent.label('y'))
         axes[0].set_title('slice')
 
