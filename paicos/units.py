@@ -79,7 +79,12 @@ def construct_unit_from_dic(dic):
 def separate_units(unit):
     """
     Separate the standard physical units (u_unit) from the units involving
-    a and h (pu_unit).
+    a and h (pu_unit). That is,
+
+    u_unit, pu_unit = separate_units(unit)
+
+    where pu_unit contains small_a and small_h and u_unit contains
+    everything else such that unit = u_unit * pu_unit
     """
     codic, dic = get_unit_dictionaries(unit)
     u_unit = construct_unit_from_dic(dic)
@@ -287,6 +292,14 @@ class PaicosQuantity(Quantity):
                               comoving_sim=self.comoving_sim)
 
     @property
+    def copy(self):
+        """
+        Returns a copy of the PaicosQuantity
+        """
+        return PaicosQuantity(self.value, self.unit, a=self._a, h=self.h,
+                              comoving_sim=self.comoving_sim)
+
+    @property
     def uq(self):
         """
         A short hand for the 'unit_quantity' method.
@@ -466,6 +479,40 @@ class PaicosQuantity(Quantity):
         new_unit = get_new_unit(self.unit, [small_a, small_h])
         return self._new_view(value * factor, new_unit)
 
+    def to_comoving(self, unit):
+        """
+        Returns a copy of the current `PaicosQuantity` instance with the
+        a and h factors given by the input unit.
+        """
+
+        if not self.comoving_sim:
+            raise RuntimeError('Only implemented for comoving simulations')
+
+        if isinstance(unit, str):
+            unit = u.Unit(unit)
+
+        u_unit_to, pu_unit_to = separate_units(unit)
+
+        u_unit, pu_unit = separate_units(self.unit)
+
+        if u_unit_to == u.Unit(''):
+            u_unit_to = u_unit
+        elif u_unit_to != u_unit:
+            raise RuntimeError('This method can only change the a and h factors!')
+
+        change_pu = pu_unit / pu_unit_to
+
+        codic, _ = get_unit_dictionaries(change_pu)
+        factor = self.h**codic[small_h]
+
+        if self.comoving_sim:
+            factor *= self.a**codic[small_a]
+
+        value = self.view(np.ndarray)
+        new_unit = self.unit / change_pu
+
+        return self._new_view(value * factor, new_unit)
+
     def __scaling_and_scaling_str(self, unit):
         """
         Helper function to create labels
@@ -634,12 +681,61 @@ class PaicosTimeSeries(PaicosQuantity):
 
         return self._new_view(new_value, new_unit)
 
+    def to_comoving(self, unit):
+        """
+        Returns a copy of the current `PaicosTimeSeries` instance with the
+        a and h factors removed, i.e. transform from comoving to physical.
+        The value of the resulting object is scaled accordingly.
+        """
+
+        if not self.comoving_sim:
+            raise RuntimeError('Only implemented for comoving simulations')
+
+        if isinstance(unit, str):
+            unit = u.Unit(unit)
+
+        u_unit_to, pu_unit_to = separate_units(unit)
+        u_unit, pu_unit = separate_units(self.unit)
+
+        if u_unit_to == u.Unit(''):
+            u_unit_to = u_unit
+        elif u_unit_to != u_unit:
+            raise RuntimeError('This method can only change the a and h factors!')
+
+        change_pu = pu_unit / pu_unit_to
+
+        codic, _ = get_unit_dictionaries(change_pu)
+        factor = self.h**codic[small_h]
+
+        if self.comoving_sim:
+            factor *= self.a**codic[small_a]
+
+        value = self.view(np.ndarray)
+        new_unit = self.unit / change_pu
+
+        if len(value.shape) == 1:
+            new_value = value * factor
+        elif len(value.shape) == 2:
+            new_value = value * factor[:, None]
+        elif len(value.shape) == 3:
+            new_value = value * factor[:, None, None]
+
+        return self._new_view(new_value, new_unit)
+
     @property
     def hdf5_attrs(self):
         """
         Give the units as a dictionary for hdf5 data set attributes
         """
         return {'unit': self.unit.to_string(), 'Paicos': 'PaicosTimeSeries'}
+
+    @property
+    def copy(self):
+        """
+        Returns a copy of the PaicosQuantity
+        """
+        return PaicosTimeSeries(self.value, self.unit, a=self._a, h=self.h,
+                                comoving_sim=self.comoving_sim)
 
     def _sanity_check(self, value):
         """
