@@ -35,12 +35,18 @@ u.add_enabled_units(small_h)
 u.add_enabled_equivalencies(u.temperature_energy())
 # Allows conversion to Gauss (potential issues?)
 # https://github.com/astropy/astropy/issues/7396
+
+# The equivalencies sometimes frustratingly fail.
+# TODO: Override the .to method ignore the Gauss component of the unit...
 gauss_B = (u.g / u.cm)**(0.5) / u.s
 equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
 Bscaling = small_a**(-2) * small_h
 equiv_B_comoving = [(u.G * Bscaling, gauss_B * Bscaling, lambda x: x, lambda x: x)]
+Bscaling = small_a**(-2)
+equiv_B_no_small_h = [(u.G * Bscaling, gauss_B * Bscaling, lambda x: x, lambda x: x)]
 u.add_enabled_equivalencies(equiv_B)
 u.add_enabled_equivalencies(equiv_B_comoving)
+u.add_enabled_equivalencies(equiv_B_no_small_h)
 
 
 def get_unit_dictionaries(unit):
@@ -349,13 +355,23 @@ class PaicosQuantity(Quantity):
         if isinstance(unit, str):
             unit = u.Unit(unit)
 
-        # Fix so that it works regardless
-        # of whether the pu_unit is included or not
-        if (small_a in unit.bases) or (small_h in unit.bases):
-            return super().to(unit, equivalencies, copy)
+        u_unit, pu_unit = separate_units(self.unit)
 
-        _, pu_unit = separate_units(self.unit)
-        return super().to(unit * pu_unit, equivalencies, copy)
+        u_unit_to, pu_unit_to = separate_units(unit)
+
+        if pu_unit_to == u.Unit(''):
+            return super().to(unit * pu_unit, equivalencies, copy)
+        elif pu_unit == pu_unit_to:
+            return super().to(unit, equivalencies, copy)
+        else:
+            err_msg = ('\n\nYou have requested conversion from\n {} '
+                       + '\nto\n {} . \nThis is not possible as the a and h '
+                       + 'factors differ. I.e. you cannot convert from\n '
+                       + '{}\nto\n {}\nUse the .to_physical or .no_small_h '
+                       + 'methods if you are trying to get rid of the a '
+                       + 'and h factors.')
+
+            raise RuntimeError(err_msg.format(self.unit, unit, pu_unit, pu_unit_to))
 
     @property
     def arepo(self):
@@ -428,7 +444,7 @@ class PaicosQuantity(Quantity):
         label = co_label + r'\; \left[' + unit_label + r'\right]'
 
         # Get ckpc, cMpc, ckpc/h and Mkpc/h as used in literature
-        if normal_unit in ('kpc', 'Mpc'):
+        if normal_unit in ('kpc', 'Mpc', 'Gpc'):
             if a_sc in (0, 1):
                 if h_sc in (0, -1):
                     if a_sc == 1:
@@ -628,7 +644,7 @@ class PaicosTimeSeries(PaicosQuantity):
                + 'dimension is equal to the length of the time array')
         assert value.shape[0] == a.shape[0], msg
 
-        assert len(value.shape) <= 2, 'Only 1D and 2D arrays are supported'
+        assert len(value.shape) <= 3, 'Only 1D, 2D and 3D arrays are supported'
 
         obj = super().__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
                               order=order, subok=subok, ndmin=ndmin, h=h, a=a,
@@ -660,6 +676,8 @@ class PaicosTimeSeries(PaicosQuantity):
             new_value = value * factor
         elif len(value.shape) == 2:
             new_value = value * factor[:, None]
+        elif len(value.shape) == 3:
+            new_value = value * factor[:, None, None]
 
         return self._new_view(new_value, new_unit)
 

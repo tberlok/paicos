@@ -13,6 +13,7 @@ B = pa.units.PaicosTimeSeries(np.ones_like(a), unit, h=snap.h, a=a,
                               comoving_sim=True)
 
 Bc = B.to('uG').no_small_h
+Bc2 = B.no_small_h.to('uG')
 Bphys = B.to_physical.to('uG')
 
 f = pa.PaicosTimeSeriesWriter(snap, pa.root_dir + 'test_data',
