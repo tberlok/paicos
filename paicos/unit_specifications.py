@@ -39,6 +39,7 @@ voronoi_cells = {
     'CenterOfMass': Coordinates,
     'Coordinates': Coordinates,
     'Density': Density,
+    'Volume': Volume,
     'ElectronAbundance': unit_less,
     'EnergyDissipation': 'arepo_energy arepo_time^-1 small_a^-1',
     'GFM_AGNRadiation': False,  # u.Unit('erg s^-1 cm^-2')*u.Unit(str(4*np.pi)),
