@@ -26,15 +26,18 @@ class Slicer(ImageCreator):
             A snapshot object of Snapshot class from paicos package.
 
         center :
-            Center of the region on which projection is to be done, e.g.
+            Center of the region on which slicing is to be done, e.g.
             center = [x_c, y_c, z_c].
 
         widths :
-            Widths of the region on which projection is to be done,
-            e.g.m widths=[width_x, width_y, width_z].
+            Widths of the region on which slicing is to be done,
+            e.g. widths=[width_x, width_y, width_z] where one of the widths
+            is zero (e.g. width_x=0 if direction='x').
 
         direction : str
-            Direction of the projection, e.g. 'x', 'y' or 'z'.
+            Direction of the slicing, e.g. 'x', 'y' or 'z'. For instance,
+            setting direction to 'x' gives a slice in the yz plane with the
+            constant x-value set to be x_c.
 
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
@@ -66,18 +69,40 @@ class Slicer(ImageCreator):
                                                     thickness, snap.box)
 
         # Now construct the image grid
-        def unflatten(arr):
-            return arr.flatten().reshape((npix_height, npix_width))
+        w, h = self._get_width_and_height_arrays()
 
-        extent = self.extent
         center = self.center
+        ones = np.ones(w.shape[0])
+        if direction == 'x':
+            image_points = np.vstack([ones * center[0], w, h]).T
+        elif direction == 'y':
+            image_points = np.vstack([w, ones * center[1], h]).T
+        elif direction == 'z':
+            image_points = np.vstack([w, h, ones * center[2]]).T
 
-        npix_width = npix
+        # Construct a tree and find the Voronoi cells closest to the image grid
+        self.pos = pos[self.slice]
+        tree = KDTree(self.pos)
+
+        # Query the tree to obtain closest Voronoi cell indices
+        d, i = tree.query(image_points, workers=settings.numthreads)
+
+        self.index = self._unflatten(np.arange(pos.shape[0])[self.slice][i])
+        self.distance_to_nearest_cell = self._unflatten(d)
+
+    def _get_width_and_height_arrays(self):
+        """
+        Get width and height coordinates in the image as 1D arrays
+        of total length npix_width × npix_height.
+        """
+        extent = self.extent
+
+        self.npix_width = npix_width = self.npix
         width = extent[1] - extent[0]
         height = extent[3] - extent[2]
 
         # TODO: Make assertion that dx=dy
-        npix_height = int(height / width * npix_width)
+        self.npix_height = npix_height = int(height / width * npix_width)
 
         w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
         h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
@@ -93,24 +118,15 @@ class Slicer(ImageCreator):
         w = ww.flatten()
         h = hh.flatten()
 
-        np.testing.assert_array_equal(ww, unflatten(ww.flatten()))
+        np.testing.assert_array_equal(ww, self._unflatten(ww.flatten()))
 
-        ones = np.ones(w.shape[0])
-        if direction == 'x':
-            image_points = np.vstack([ones * center[0], w, h]).T
-        elif direction == 'y':
-            image_points = np.vstack([w, ones * center[1], h]).T
-        elif direction == 'z':
-            image_points = np.vstack([w, h, ones * center[2]]).T
+        return w, h
 
-        # Construct a tree and find the Voronoi cells closest to the image grid
-        self.pos = pos[self.slice]
-        tree = KDTree(self.pos)
-
-        d, i = tree.query(image_points, workers=settings.numthreads)
-
-        self.index = unflatten(np.arange(pos.shape[0])[self.slice][i])
-        self.distance_to_nearest_cell = unflatten(d)
+    def _unflatten(self, arr):
+        """
+        Helper function to un-flatten 1D arrays to a 2D image
+        """
+        return arr.flatten().reshape((self.npix_height, self.npix_width))
 
     def slice_variable(self, variable):
         """
