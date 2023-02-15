@@ -110,8 +110,8 @@ python3 examples/using_aliases_example.py
 
 ## Tutorial Jupyter notebooks
 
-I have uploaded a tutorial notebook `tutorials/paicos_examples.ipynb` which
-displays the functionality on one of the bigger simulations on the cluster.
+I have uploaded a few tutorial notebooks in `notebook-tutorials` which
+displays the functionality.
 
 ### Avoiding bloated git from jupyter notebooks
 
