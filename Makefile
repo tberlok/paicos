@@ -18,4 +18,4 @@ checks:
 	pytest tests/comoving
 	pytest tests/non-comoving
 	flake8 paicos
-	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=E0611 paicos
+	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=E0611,E0401 paicos
