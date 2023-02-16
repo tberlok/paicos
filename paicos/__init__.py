@@ -11,25 +11,39 @@ __version__ = "0.1.4"
 __author__ = 'Thomas Berlok'
 __credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
 
+# Dependencies
 import os
 import numpy
 import scipy
 import h5py
 import astropy
+
+# Settings and utility functions
 from . import util
 from . import settings
 from .util import root_dir
+
 from .arepo_image import ArepoImage, ImageCreator
+
+# HDF5 file readers
 from .readers.arepo_snap import Snapshot
 from .readers.arepo_catalog import Catalog
 from .readers.paicos_readers import PaicosReader, ImageReader, Histogram2DReader
-from .projectors.projector import Projector
-from .projectors.nested_projector import NestedProjector
-from .projectors.tree_projector import TreeProjector
-from .slicer import Slicer
+
+# HDF5 file writers
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
+
+# Image creators
+from .image_creators.projector import Projector
+from .image_creators.nested_projector import NestedProjector
+from .image_creators.tree_projector import TreeProjector
+from .image_creators.slicer import Slicer
+
+# Histograms
 from .histograms.histogram import Histogram
 from .histograms.histogram2D import Histogram2D
+
+# Derived variables
 from .derived_variables import derived_variables
 
 # Cython functions
