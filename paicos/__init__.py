@@ -11,26 +11,40 @@ __version__ = "0.1.4"
 __author__ = 'Thomas Berlok'
 __credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
 
+# Dependencies
 import os
 import numpy
 import scipy
 import h5py
 import astropy
+
+# Settings and utility functions
 from . import util
 from . import settings
 from .util import root_dir
-from .arepo_image import ArepoImage, ImageCreator
-from .arepo_snap import Snapshot
-from .arepo_catalog import Catalog
-from .projector import Projector
-from .nested_projector import NestedProjector
-from .tree_projector import TreeProjector
-from .slicer import Slicer
-from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
-from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader
-from .histogram import Histogram
-from .histogram2D import Histogram2D
-from . import derived_variables
+
+# HDF5 file readers
+from .readers.arepo_snap import Snapshot
+from .readers.arepo_catalog import Catalog
+from .readers.paicos_readers import PaicosReader, ImageReader, Histogram2DReader
+
+# HDF5 file writers
+from .writers.paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
+from .writers.arepo_image import ArepoImage
+
+# Image creators
+from .image_creators.image_creator import ImageCreator
+from .image_creators.projector import Projector
+from .image_creators.nested_projector import NestedProjector
+from .image_creators.tree_projector import TreeProjector
+from .image_creators.slicer import Slicer
+
+# Histograms
+from .histograms.histogram import Histogram
+from .histograms.histogram2D import Histogram2D
+
+# Derived variables
+from .derived_variables import derived_variables
 
 # Cython functions
 from . import cython

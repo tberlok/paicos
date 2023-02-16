@@ -3,10 +3,9 @@ Defines a class that creates an image of a given variable by projecting it
 onto a 2D plane using nested grids.
 """
 import numpy as np
-from . import settings
+from .. import settings
 from .projector import Projector
-from .util import remove_astro_units
-from .cython.sph_projectors import project_image, project_image_omp
+from ..util import remove_astro_units
 
 
 class NestedProjector(Projector):
@@ -173,9 +172,9 @@ class NestedProjector(Projector):
         plane using nested grids and a cython implementation.
         """
         if settings.openMP_has_issues:
-            from .cython.sph_projectors import project_image as project
+            from ..cython.sph_projectors import project_image as project
         else:
-            from .cython.sph_projectors import project_image_omp as project
+            from ..cython.sph_projectors import project_image_omp as project
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths

@@ -3,9 +3,9 @@ This module defines a class for 1D histograms.
 """
 import time
 import numpy as np
-from . import util
-from . import settings
-from .cython.histogram import get_hist_from_weights_and_idigit as func
+from .. import util
+from .. import settings
+from ..cython.histogram import get_hist_from_weights_and_idigit as func
 
 
 def make_bins(bins, logscale):

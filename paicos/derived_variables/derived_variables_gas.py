@@ -105,7 +105,7 @@ def Temperatures(snap, get_dependencies=False):
     mmean = snap['0_MeanMolecularWeight']
 
     # temperature in Kelvin
-    from . import settings
+    from .. import settings
     if settings.use_units:
         variable = (gm1 * snap["0_InternalEnergy"]
                     * mmean * mhydrogen).to('K')
@@ -229,11 +229,11 @@ def MagneticCurvature(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_MagneticField', '0_BfieldGradient']
 
-    from . import util
+    from .. import util
 
     @util.remove_astro_units
     def get_func(B, gradB):
-        from .cython.get_derived_variables import get_curvature
+        from ..cython.get_derived_variables import get_curvature
         return get_curvature(B, gradB)
 
     curva = get_func(snap['0_MagneticField'], snap['0_BfieldGradient'])
@@ -247,11 +247,11 @@ def VelocityCurvature(snap, get_dependencies=False):
     if get_dependencies:
         return ['0_Velocities', '0_VelocityGradient']
 
-    from . import util
+    from .. import util
 
     @util.remove_astro_units
     def get_func(V, gradV):
-        from .cython.get_derived_variables import get_curvature
+        from ..cython.get_derived_variables import get_curvature
         return get_curvature(V, gradV)
 
     curva = get_func(snap['0_Velocities'], snap['0_VelocityGradient'])
