@@ -7,9 +7,9 @@ import h5py
 import numpy as np
 from astropy import units as u
 from astropy.cosmology import LambdaCDM
-from . import util
-from . import units as pu
-from . import settings
+from .. import util
+from .. import units as pu
+from .. import settings
 
 
 class PaicosReader(dict):
@@ -94,8 +94,10 @@ class PaicosReader(dict):
                 self.multi_filename = multi_file
                 self.no_subdir = True
             else:
-                err_msg = "File: {} not found found"
-                raise FileNotFoundError(err_msg.format(self.filename))
+                err_msg = "File not found. Tried locations:\n{}\n{}\n{}"
+                err_msg = err_msg.format(single_file, multi_file.format(0),
+                                         multi_wo_dir.format(0))
+                raise FileNotFoundError(err_msg)
 
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)
@@ -244,7 +246,7 @@ class PaicosReader(dict):
         Add all user supplied units
         """
         # pylint: disable=import-outside-toplevel, consider-using-dict-items
-        from . import unit_specifications
+        from .. import unit_specifications
 
         unit_dict = unit_specifications.unit_dict
         user_unit_dict = util.user_unit_dict
@@ -408,7 +410,7 @@ class PaicosReader(dict):
 
         # This import statement can only be done after arepo units have
         # been globally enabled
-        from . import unit_specifications
+        from .. import unit_specifications
 
         if field not in unit_specifications.unit_dict:
             raise RuntimeError(f'unknown field: {field}')
@@ -445,12 +447,7 @@ class PaicosReader(dict):
         if self.h == 1.:
             remove_list.append(u.Unit('small_h'))
 
-        unit_list = []
-        for base, power in zip(unit.bases, unit.powers):
-            if base not in remove_list:
-                unit_list.append(base**power)
-
-        return np.product(unit_list)
+        return pu.get_new_unit(unit, remove_list)
 
     def load_data(self, name, group=None):
         """

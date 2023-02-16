@@ -7,9 +7,11 @@ import os
 import warnings
 import numpy as np
 import h5py
+from functools import wraps
 from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
+from .cython.get_index_of_region import get_cube_plus_thin_layer
 from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
 from .cython.openmp_info import simple_reduction, get_openmp_settings
 
@@ -137,6 +139,7 @@ def remove_astro_units(func):
     so, replaces it with its 'value' attribute. This is useful for functions
     that do not support astro units or need to work with raw values.
     """
+    @wraps(func)
     def inner(*args, **kwargs):
         # Create new args
         new_args = list(args)
@@ -181,6 +184,25 @@ def get_index_of_cubic_region(pos, center, widths, box):
     width_x, width_y, width_z = widths
     index = get_cube(pos, x_c, y_c, z_c, width_x, width_y, width_z, box,
                      settings.numthreads)
+    return index
+
+
+@remove_astro_units
+def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, box):
+    """
+    Get a boolean array to the position array, pos, which are inside a cubic
+    region plus a think layer with a cell-dependent thickness
+
+    pos (array): position array with dimensions = (n, 3)
+    center (array with length 3): the center of the box (x, y, z)
+    widths (array with length 3): the widths of the box
+    thickness: (array): array with same length as the position array
+    box: the box size of the simulation (e.g. snap.box)
+    """
+    x_c, y_c, z_c = center[0], center[1], center[2]
+    width_x, width_y, width_z = widths
+    index = get_cube_plus_thin_layer(pos, x_c, y_c, z_c, width_x, width_y,
+                                     width_z, thickness, box, settings.numthreads)
     return index
 
 
@@ -232,14 +254,14 @@ def check_if_omp_has_issues(verbose=True):
 
     max_threads = get_openmp_settings(0, False)
     settings.max_threads = max_threads
-    if settings.numthreads > max_threads:
-        msg = ('\n\nThe user specified number of OpenMP threads, {}, '
+    if settings.numthreads > max_threads and verbose:
+        msg = ('\n\nThe default number of OpenMP threads, {}, '
                + 'exceeds the {} available on your system. Setting '
-               + 'numthreads to use half the available threads, i.e. {}.\n'
+               + 'numthreads={}. '
                + 'You can set numthreads with e.g. the command\n '
                + 'paicos.set_numthreads(16)\n\n')
-        print(msg.format(settings.numthreads, max_threads, max_threads // 2))
-        settings.numthreads = max_threads // 2
+        print(msg.format(settings.numthreads, max_threads, max_threads))
+        settings.numthreads = max_threads
 
     n = simple_reduction(1000, settings.numthreads)
     if n == 1000:

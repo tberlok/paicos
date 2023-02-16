@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Simply read the radial file using the standard reader
-pro_simple = pa.PaicosReader(pa.root_dir + 'data', 247,
+pro_simple = pa.PaicosReader(pa.root_dir + 'test_data', 247,
                              basename='radial', load_all=True)
 
 
@@ -51,7 +51,7 @@ class RadialReader(pa.PaicosReader):
             self[p + 'Density'] = self[p + 'Masses'] / self['bin_volumes']
 
 
-pro = RadialReader(pa.root_dir + 'data', 247)
+pro = RadialReader(pa.root_dir + 'test_data', 247)
 
 # Make a density plot of the varius particle types
 plt.figure(1)

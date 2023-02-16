@@ -3,9 +3,9 @@ This module defines a class for 1D histograms.
 """
 import time
 import numpy as np
-from . import util
-from . import settings
-from .cython.histogram import get_hist_from_weights_and_idigit as func
+from .. import util
+from .. import settings
+from ..cython.histogram import get_hist_from_weights_and_idigit as func
 
 
 def make_bins(bins, logscale):
@@ -74,6 +74,9 @@ class Histogram:
             x_variable (array): x-coordinates of the data.
 
             bins (array): Bin edges for the histogram.
+
+            logscale (bool): Indicates whether to use logscale for the
+                             histogram, default is True.
 
             verbose (bool, optional): If True, prints the time taken to
                                       digitize the x-coordinates.

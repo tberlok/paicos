@@ -2,7 +2,7 @@
 import numpy as np
 import h5py
 from .paicos_readers import PaicosReader
-from . import settings
+from .. import settings
 
 
 class Catalog(PaicosReader):
