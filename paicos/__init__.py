@@ -28,8 +28,8 @@ from .projectors.nested_projector import NestedProjector
 from .projectors.tree_projector import TreeProjector
 from .slicer import Slicer
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
-from .histogram import Histogram
-from .histogram2D import Histogram2D
+from .histograms.histogram import Histogram
+from .histograms.histogram2D import Histogram2D
 from . import derived_variables
 
 # Cython functions

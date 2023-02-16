@@ -4,11 +4,11 @@ This module defines a class for 2D histograms.
 import numpy as np
 import h5py
 from astropy import units as u
-from . import units as pu
-from . import util
-from . import settings
+from .. import units as pu
+from .. import util
+from .. import settings
 from .histogram import make_bins
-from .cython.histogram import find_normalizing_norm_of_2d_hist
+from ..cython.histogram import find_normalizing_norm_of_2d_hist
 
 
 class Histogram2D:
@@ -157,9 +157,9 @@ class Histogram2D:
         """
 
         if settings.openMP_has_issues:
-            from .cython.histogram import get_hist2d_from_weights as get_hist2d
+            from ..cython.histogram import get_hist2d_from_weights as get_hist2d
         else:
-            from .cython.histogram import get_hist2d_from_weights_omp as get_hist2d
+            from ..cython.histogram import get_hist2d_from_weights_omp as get_hist2d
 
         nbins_x = edges_x.shape[0] - 1
         nbins_y = edges_y.shape[0] - 1
