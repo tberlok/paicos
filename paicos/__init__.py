@@ -30,7 +30,7 @@ from .slicer import Slicer
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
 from .histograms.histogram import Histogram
 from .histograms.histogram2D import Histogram2D
-from . import derived_variables
+from .derived_variables import derived_variables
 
 # Cython functions
 from . import cython
