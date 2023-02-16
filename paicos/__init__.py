@@ -22,9 +22,9 @@ from .util import root_dir
 from .arepo_image import ArepoImage, ImageCreator
 from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog
-from .projector import Projector
-from .nested_projector import NestedProjector
-from .tree_projector import TreeProjector
+from .projectors.projector import Projector
+from .projectors.nested_projector import NestedProjector
+from .projectors.tree_projector import TreeProjector
 from .slicer import Slicer
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
 from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader

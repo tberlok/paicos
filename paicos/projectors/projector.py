@@ -3,10 +3,10 @@ Defines a class that creates an image of a given variable by projecting it
 onto a 2D plane.
 """
 import numpy as np
-from . import ImageCreator
-from . import util
-from . import settings
-from . import units
+from .. import ImageCreator
+from .. import util
+from .. import settings
+from .. import units
 
 
 class Projector(ImageCreator):
@@ -87,9 +87,9 @@ class Projector(ImageCreator):
         Private method for projecting using cython
         """
         if settings.openMP_has_issues:
-            from .cython.sph_projectors import project_image as project
+            from ..cython.sph_projectors import project_image as project
         else:
-            from .cython.sph_projectors import project_image_omp as project
+            from ..cython.sph_projectors import project_image_omp as project
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
