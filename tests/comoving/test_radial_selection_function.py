@@ -25,6 +25,11 @@ def test_radial_selection():
 
     selected_snap.save_new_snapshot('very_small_snap')
 
+    r = np.sqrt(np.sum((selected_snap['0_Coordinates'] - center[None, :])**2.,
+                       axis=1))
+
+    assert np.sum(r < r_max) == r.shape[0]
+
 
 if __name__ == '__main__':
     test_radial_selection()

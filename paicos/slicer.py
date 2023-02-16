@@ -54,19 +54,21 @@ class Slicer(ImageCreator):
 
         super().__init__(snap, center, widths, direction, npix=npix)
 
-        util.check_if_omp_has_issues(verbose=False)
-
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
                 assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
-        pos = snap["0_Coordinates"]
-
         thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
 
-        self.slice = util.get_index_of_slice_region(pos, center, widths,
+        self.slice = util.get_index_of_slice_region(snap["0_Coordinates"], center, widths,
                                                     thickness, snap.box)
+
+        self.index_in_slice_region = np.arange(snap["0_Coordinates"].shape[0])[self.slice]
+
+        # Construct a tree
+        self.pos = snap["0_Coordinates"][self.slice]
+        tree = KDTree(self.pos)
 
         # Now construct the image grid
         w, h = self._get_width_and_height_arrays()
@@ -80,14 +82,10 @@ class Slicer(ImageCreator):
         elif direction == 'z':
             image_points = np.vstack([w, h, ones * center[2]]).T
 
-        # Construct a tree and find the Voronoi cells closest to the image grid
-        self.pos = pos[self.slice]
-        tree = KDTree(self.pos)
-
         # Query the tree to obtain closest Voronoi cell indices
         d, i = tree.query(image_points, workers=settings.numthreads)
 
-        self.index = self._unflatten(np.arange(pos.shape[0])[self.slice][i])
+        self.index = self._unflatten(self.index_in_slice_region[i])
         self.distance_to_nearest_cell = self._unflatten(d)
 
     def _get_width_and_height_arrays(self):
