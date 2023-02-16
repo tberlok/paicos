@@ -24,6 +24,7 @@ from .arepo_snap import Snapshot
 from .arepo_catalog import Catalog
 from .projector import Projector
 from .nested_projector import NestedProjector
+from .tree_projector import TreeProjector
 from .slicer import Slicer
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
 from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader
