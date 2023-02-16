@@ -7,9 +7,9 @@ import numpy as np
 import h5py
 from .arepo_catalog import Catalog
 from .paicos_readers import PaicosReader
-from .paicos_writer import PaicosWriter
-from . import settings
-from . import derived_variables
+from ..paicos_writer import PaicosWriter
+from .. import settings
+from .. import derived_variables
 
 
 class Snapshot(PaicosReader):

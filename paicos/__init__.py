@@ -20,14 +20,14 @@ from . import util
 from . import settings
 from .util import root_dir
 from .arepo_image import ArepoImage, ImageCreator
-from .arepo_snap import Snapshot
-from .arepo_catalog import Catalog
+from .readers.arepo_snap import Snapshot
+from .readers.arepo_catalog import Catalog
+from .readers.paicos_readers import PaicosReader, ImageReader, Histogram2DReader
 from .projectors.projector import Projector
 from .projectors.nested_projector import NestedProjector
 from .projectors.tree_projector import TreeProjector
 from .slicer import Slicer
 from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
-from .paicos_readers import PaicosReader, ImageReader, Histogram2DReader
 from .histogram import Histogram
 from .histogram2D import Histogram2D
 from . import derived_variables

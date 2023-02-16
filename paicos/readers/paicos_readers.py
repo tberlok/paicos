@@ -7,9 +7,9 @@ import h5py
 import numpy as np
 from astropy import units as u
 from astropy.cosmology import LambdaCDM
-from . import util
-from . import units as pu
-from . import settings
+from .. import util
+from .. import units as pu
+from .. import settings
 
 
 class PaicosReader(dict):
@@ -246,7 +246,7 @@ class PaicosReader(dict):
         Add all user supplied units
         """
         # pylint: disable=import-outside-toplevel, consider-using-dict-items
-        from . import unit_specifications
+        from .. import unit_specifications
 
         unit_dict = unit_specifications.unit_dict
         user_unit_dict = util.user_unit_dict
@@ -410,7 +410,7 @@ class PaicosReader(dict):
 
         # This import statement can only be done after arepo units have
         # been globally enabled
-        from . import unit_specifications
+        from .. import unit_specifications
 
         if field not in unit_specifications.unit_dict:
             raise RuntimeError(f'unknown field: {field}')
