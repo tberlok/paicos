@@ -23,17 +23,17 @@ from . import util
 from . import settings
 from .util import root_dir
 
-from .arepo_image import ArepoImage, ImageCreator
-
 # HDF5 file readers
 from .readers.arepo_snap import Snapshot
 from .readers.arepo_catalog import Catalog
 from .readers.paicos_readers import PaicosReader, ImageReader, Histogram2DReader
 
 # HDF5 file writers
-from .paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
+from .writers.paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
+from .writers.arepo_image import ArepoImage
 
 # Image creators
+from .image_creators.image_creator import ImageCreator
 from .image_creators.projector import Projector
 from .image_creators.nested_projector import NestedProjector
 from .image_creators.tree_projector import TreeProjector

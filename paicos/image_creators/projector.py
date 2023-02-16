@@ -3,7 +3,7 @@ Defines a class that creates an image of a given variable by projecting it
 onto a 2D plane.
 """
 import numpy as np
-from .. import ImageCreator
+from .image_creator import ImageCreator
 from .. import util
 from .. import settings
 from .. import units

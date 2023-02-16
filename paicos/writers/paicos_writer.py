@@ -3,7 +3,7 @@ Defines hdf5 file writers that can be read with a PaicosReader instance.
 """
 import os
 import h5py
-from . import util
+from .. import util
 
 
 class PaicosWriter:

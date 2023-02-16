@@ -7,7 +7,7 @@ import numpy as np
 import h5py
 from .arepo_catalog import Catalog
 from .paicos_readers import PaicosReader
-from ..paicos_writer import PaicosWriter
+from ..writers.paicos_writer import PaicosWriter
 from .. import settings
 from ..derived_variables import derived_variables
 

@@ -4,7 +4,7 @@ the Voronoi cells closest to the line of sight using a KDTree.
 """
 import numpy as np
 from scipy.spatial import KDTree
-from ..arepo_image import ImageCreator
+from .image_creator import ImageCreator
 from .. import util
 from .. import settings
 
