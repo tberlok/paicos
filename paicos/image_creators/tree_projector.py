@@ -16,7 +16,7 @@ class TreeProjector(ImageCreator):
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, npix_depth=None, make_snap_with_selection=False,
-                 tol=0.2):
+                 tol=1):
 
         """
         Initialize the Slicer object.
@@ -73,7 +73,7 @@ class TreeProjector(ImageCreator):
 
         # Automatically set numbers of pixels in depth direction based on cell sizes
         if npix_depth is None:
-            npix_depth = int(depth / min_thickness)
+            npix_depth = int(np.ceil(depth / min_thickness / tol))
 
         self.npix_depth = npix_depth
 
@@ -114,7 +114,7 @@ class TreeProjector(ImageCreator):
 
             if min_thickness < tol * self.delta_depth:
                 print(f'Warning: Minimum cell size {min_thickness} is '
-                      + f'less than {tol} of the depth '
+                      + f'less than {tol} of delta_depth '
                       + f'{self.delta_depth}. You should probably increase '
                       + f'npix_depth from its current value of {npix_depth}. '
                       + 'Image convergence is expected for npix_depth='
