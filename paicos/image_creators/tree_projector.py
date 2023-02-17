@@ -43,7 +43,13 @@ class TreeProjector(ImageCreator):
 
         npix_depth: int, optional
             Number of pixels in the depth direction, by default set
-            automatically based on the smallest cell sizes in the region.
+            automatically based on the smallest cell sizes in the region
+            and the tolerance parameter, tol (see below).
+
+        tol: float, optional
+            Smaller values of tol adds more slices to the integration.
+            Convergence is expected for tol ≤ 1 but you can experiment with
+            higher values.
 
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
@@ -112,7 +118,7 @@ class TreeProjector(ImageCreator):
             slice_index = self._unflatten(self.index_in_box_region[i])
             self.distance_to_nearest_cell = self._unflatten(d)
 
-            if min_thickness < tol * self.delta_depth:
+            if min_thickness < self.delta_depth / tol:
                 print(f'Warning: Minimum cell size {min_thickness} is '
                       + f'less than {tol} of delta_depth '
                       + f'{self.delta_depth}. You should probably increase '
