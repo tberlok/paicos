@@ -16,7 +16,7 @@ class TreeProjector(ImageCreator):
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, npix_depth=None, make_snap_with_selection=False,
-                 tol=1):
+                 tol=1, verbose=False):
 
         """
         Initialize the Slicer object.
@@ -68,6 +68,9 @@ class TreeProjector(ImageCreator):
         self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
                                        snap.box)
 
+        if verbose:
+            print('Sub-selection [DONE]')
+
         min_thickness = np.min(thickness)
 
         if direction == 'x':
@@ -80,6 +83,8 @@ class TreeProjector(ImageCreator):
         # Automatically set numbers of pixels in depth direction based on cell sizes
         if npix_depth is None:
             npix_depth = int(np.ceil(depth / min_thickness / tol))
+            if verbose:
+                print(f'npix_depth is {npix_depth}')
 
         self.npix_depth = npix_depth
 
@@ -89,6 +94,8 @@ class TreeProjector(ImageCreator):
         # Construct a tree
         self.pos = snap["0_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
+        if verbose:
+            print('Tree construction [DONE]')
 
         # Now construct the image grid
         w, h = self._get_width_and_height_arrays()
