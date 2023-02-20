@@ -49,9 +49,6 @@ class Slicer(ImageCreator):
 
         """
 
-        if make_snap_with_selection:
-            raise RuntimeError('make_snap_with_selection not yet implemented!')
-
         super().__init__(snap, center, widths, direction, npix=npix)
 
         for ii, direc in enumerate(['x', 'y', 'z']):
@@ -64,10 +61,18 @@ class Slicer(ImageCreator):
         self.slice = util.get_index_of_slice_region(snap["0_Coordinates"], center, widths,
                                                     thickness, snap.box)
 
-        self.index_in_slice_region = np.arange(snap["0_Coordinates"].shape[0])[self.slice]
+        self.make_snap_with_selection = make_snap_with_selection
+        # Reduce the snapshot to only contain region of interest
+        if make_snap_with_selection:
+            self.snap = self.snap.select(self.slice)
+            self.index_in_slice_region = self.snap.dic_selection_index[0]
+            self.pos = self.snap["0_Coordinates"]
+        else:
+            self.index_in_slice_region = np.arange(self.snap["0_Coordinates"].shape[0]
+                                                   )[self.slice]
+            self.pos = self.snap["0_Coordinates"][self.slice]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.slice]
         tree = KDTree(self.pos)
 
         # Now construct the image grid
@@ -85,7 +90,10 @@ class Slicer(ImageCreator):
         # Query the tree to obtain closest Voronoi cell indices
         d, i = tree.query(image_points, workers=settings.numthreads)
 
-        self.index = self._unflatten(self.index_in_slice_region[i])
+        if make_snap_with_selection:
+            self.index = self._unflatten(i)
+        else:
+            self.index = self._unflatten(self.index_in_slice_region[i])
         self.distance_to_nearest_cell = self._unflatten(d)
 
     def _get_width_and_height_arrays(self):
@@ -142,6 +150,17 @@ class Slicer(ImageCreator):
 
         if isinstance(variable, str):
             variable = self.snap[variable]
+        elif isinstance(variable, np.ndarray) and self.make_snap_with_selection:
+            if self.slice.shape[0] == variable.shape[0]:
+                variable = variable[self.index_in_slice_region]
+            else:
+                msg = ('make_snap_with_selection is set to True and '
+                       + 'you are trying to pass an array to slice_variable. This '
+                       + 'only works if you pass the full data array. '
+                       + 'If you pass the variable as a string then everything will be '
+                       + 'handled automatically.')
+
+                raise RuntimeError(msg)
         else:
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')

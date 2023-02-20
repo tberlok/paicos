@@ -15,7 +15,7 @@ class TreeProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, npix_depth=None, make_snap_with_selection=False,
+                 npix=512, npix_depth=None, make_snap_with_selection=True,
                  tol=1, verbose=False):
 
         """
@@ -57,9 +57,6 @@ class TreeProjector(ImageCreator):
 
         """
 
-        if make_snap_with_selection:
-            raise RuntimeError('make_snap_with_selection not yet implemented!')
-
         super().__init__(snap, center, widths, direction, npix=npix)
 
         # Pre-select a narrow region around the region-of-interest
@@ -88,11 +85,19 @@ class TreeProjector(ImageCreator):
 
         self.npix_depth = npix_depth
 
-        self.index_in_box_region = np.arange(snap["0_Coordinates"].shape[0]
-                                             )[self.box_selection]
+        self.make_snap_with_selection = make_snap_with_selection
+
+        # Reduce the snapshot to only contain region of interest
+        if make_snap_with_selection:
+            self.snap = self.snap.select(self.box_selection)
+            self.index_in_box_region = self.snap.dic_selection_index[0]
+            self.pos = self.snap["0_Coordinates"]
+        else:
+            self.index_in_box_region = np.arange(self.snap["0_Coordinates"].shape[0]
+                                                 )[self.box_selection]
+            self.pos = self.snap["0_Coordinates"][self.box_selection]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
         if verbose:
             print('Tree construction [DONE]')
@@ -234,6 +239,17 @@ class TreeProjector(ImageCreator):
 
         if isinstance(variable, str):
             variable = self.snap[variable]
+        elif isinstance(variable, np.ndarray) and self.make_snap_with_selection:
+            if self.box_selection.shape[0] == variable.shape[0]:
+                variable = variable[self.index_in_box_region]
+            else:
+                msg = ('make_snap_with_selection is set to True and '
+                       + 'you are trying to pass an array to project_variable. This '
+                       + 'only works if you pass the full data array. '
+                       + 'If you pass the variable as a string then everything will be '
+                       + 'handled automatically.')
+
+                raise RuntimeError(msg)
         else:
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
