@@ -127,7 +127,10 @@ class TreeProjector(ImageCreator):
             # Query the tree to obtain closest Voronoi cell indices
             d, i = tree.query(image_points, workers=settings.numthreads)
 
-            slice_index = self._unflatten(self.index_in_box_region[i])
+            if self.make_snap_with_selection:
+                slice_index = self._unflatten(i)
+            else:
+                slice_index = self._unflatten(self.index_in_box_region[i])
             self.distance_to_nearest_cell = self._unflatten(d)
 
             if min_thickness < self.delta_depth / tol:
