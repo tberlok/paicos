@@ -2,6 +2,8 @@ import paicos as pa
 import matplotlib.pyplot as plt
 import numpy as np
 
+pa.use_units(True)
+
 # Simply read the radial file using the standard reader
 pro_simple = pa.PaicosReader(pa.root_dir + 'test_data', 247,
                              basename='radial', load_all=True)

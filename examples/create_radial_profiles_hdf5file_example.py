@@ -1,6 +1,8 @@
 import paicos as pa
 import numpy as np
 
+pa.use_units(True)
+
 # Open an Arepo snapshot
 snap = pa.Snapshot(pa.root_dir + "/data", 247)
 
