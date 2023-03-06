@@ -15,7 +15,7 @@ class TreeProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, npix_depth=None, make_snap_with_selection=False,
+                 npix=512, npix_depth=None, parttype=0, make_snap_with_selection=False,
                  tol=1, verbose=False):
 
         """
@@ -41,6 +41,9 @@ class TreeProjector(ImageCreator):
             Number of pixels in the horizontal direction of the image,
             by default 512.
 
+        parttype : int, optional
+            Number of the particle type to project, by default gas (PartType 0).
+
         npix_depth: int, optional
             Number of pixels in the depth direction, by default set
             automatically based on the smallest cell sizes in the region
@@ -60,13 +63,22 @@ class TreeProjector(ImageCreator):
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
+        self.parttype = parttype
+        if self.parttype !=0:
+               print("Projection for non-gas quantity")
+        
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        thickness = 4.0 * np.cbrt((snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
         get_index = util.get_index_of_cubic_region_plus_thin_layer
-        self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
+        self.box_selection = get_index(snap[f"{self.parttype}_Coordinates"], center, widths, thickness,
                                        snap.box)
+        
+        #thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        #get_index = util.get_index_of_cubic_region_plus_thin_layer
+        #self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
+        #                               snap.box)
 
         if verbose:
             print('Sub-selection [DONE]')
@@ -88,11 +100,12 @@ class TreeProjector(ImageCreator):
 
         self.npix_depth = npix_depth
 
-        self.index_in_box_region = np.arange(snap["0_Coordinates"].shape[0]
+        self.index_in_box_region = np.arange(snap[f"{self.parttype}_Coordinates"].shape[0]
                                              )[self.box_selection]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.box_selection]
+        #self.pos = snap["0_Coordinates"][self.box_selection]
+        self.pos = snap[f"{PartType}_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
         if verbose:
             print('Tree construction [DONE]')
@@ -241,7 +254,7 @@ class TreeProjector(ImageCreator):
 
         if extrinsic:
             dV = area_per_pixel * self.delta_depth
-            variable = variable[self.index] * (dV / self.snap['0_Volume'][self.index])
+            variable = variable[self.index] * (dV / self.snap[f'{self.parttype}_Volume'][self.index])
             projection = np.sum(variable, axis=2) / area_per_pixel
         else:
             variable = variable[self.index]
