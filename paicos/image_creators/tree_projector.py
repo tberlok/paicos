@@ -74,11 +74,6 @@ class TreeProjector(ImageCreator):
         get_index = util.get_index_of_cubic_region_plus_thin_layer
         self.box_selection = get_index(snap[f"{self.parttype}_Coordinates"], center, widths, thickness,
                                        snap.box)
-        
-        #thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
-        #get_index = util.get_index_of_cubic_region_plus_thin_layer
-        #self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
-        #                               snap.box)
 
         if verbose:
             print('Sub-selection [DONE]')
@@ -104,8 +99,7 @@ class TreeProjector(ImageCreator):
                                              )[self.box_selection]
 
         # Construct a tree
-        #self.pos = snap["0_Coordinates"][self.box_selection]
-        self.pos = snap[f"{PartType}_Coordinates"][self.box_selection]
+        self.pos = snap[f"{parttype}_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
         if verbose:
             print('Tree construction [DONE]')
