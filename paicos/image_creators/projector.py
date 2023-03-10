@@ -29,7 +29,7 @@ class Projector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, nvol=8, make_snap_with_selection=True):
+                 npix=512, parttype=0, nvol=8, make_snap_with_selection=True):
         """
         Initialize the Projector class.
 
@@ -52,6 +52,9 @@ class Projector(ImageCreator):
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
             by default 512.
+        
+        parttype : int, optional
+            Number of the particle type to project, by default gas (PartType 0).        
 
         nvol : int, optional
             Integer used to determine the smoothing length, by default 8
@@ -59,13 +62,17 @@ class Projector(ImageCreator):
         """
 
         # call the superclass constructor to initialize the ImageCreator class
-        super().__init__(snap, center, widths, direction, npix=npix)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=0)
+
+        self.parttype = parttype
+        if self.parttype !=0:
+               print("Projection for non-gas quantity")
 
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
         # get the index of the region of projection
-        self.index = util.get_index_of_cubic_region(self.snap["0_Coordinates"],
+        self.index = util.get_index_of_cubic_region(self.snap[f"{self.parttype}_Coordinates"],
                                                     center, widths, snap.box)
 
         # Reduce the snapshot to only contain region of interest
@@ -73,9 +80,9 @@ class Projector(ImageCreator):
             self.snap = self.snap.select(self.index)
 
         # Calculate the smoothing length
-        self.hsml = np.cbrt(nvol * (self.snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        self.hsml = np.cbrt(nvol * (self.snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
 
-        self.pos = self.snap['0_Coordinates']
+        self.pos = self.snap[f'{self.parttype}_Coordinates']
 
         if not make_snap_with_selection:
             self.hsml = self.hsml[self.index]
