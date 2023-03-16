@@ -15,7 +15,7 @@ class Slicer(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, make_snap_with_selection=False):
+                 npix=512, parttype=0, make_snap_with_selection=False):
 
         """
         Initialize the Slicer object.
@@ -42,6 +42,9 @@ class Slicer(ImageCreator):
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
             by default 512.
+        
+        parttype : int, optional
+            Number of the particle type to project, by default gas (PartType 0).        
 
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
@@ -52,22 +55,26 @@ class Slicer(ImageCreator):
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=0)
+        
+        self.parttype = parttype
+        if self.parttype !=0:
+               print(f"Slice for non-gas quantity")
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
                 assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        thickness = 4.0 * np.cbrt((snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
 
-        self.slice = util.get_index_of_slice_region(snap["0_Coordinates"], center, widths,
+        self.slice = util.get_index_of_slice_region(snap[f"{self.parttype}_Coordinates"], center, widths,
                                                     thickness, snap.box)
 
-        self.index_in_slice_region = np.arange(snap["0_Coordinates"].shape[0])[self.slice]
+        self.index_in_slice_region = np.arange(snap[f"{self.parttype}_Coordinates"].shape[0])[self.slice]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.slice]
+        self.pos = snap[f"{self.parttype}_Coordinates"][self.slice]
         tree = KDTree(self.pos)
 
         # Now construct the image grid
