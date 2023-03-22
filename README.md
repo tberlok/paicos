@@ -15,15 +15,33 @@ Arepo simulations.
 
 ## Installation on your laptop
 
-Clone the repo, then:
+> **Warning**
+Please do not try to pip install paicos. This is not yet supported and the mess that such an attempt creates will make the instructions below fail.
+
+We clone the repo, pip install the requirements and then compile the code:
 
 ```
+git clone git@github.com:tberlok/paicos.git
+cd paicos
 pip install -r requirements.txt
-```
-followed by
-```
 make
 ```
+
+Assuming this succeeds, you will then need to add the paicos directory to your Python path,
+For instance, I have
+```
+export PYTHONPATH=$PYTHONPATH:/Users/berlok/projects/paicos
+```
+in my `.bash_profile`.
+
+You can then check that everything works by doing
+```
+make checks
+```
+
+#### Note for installation on MacOs
+
+Paicos requires a compiler with OpenMP support. I have installed gcc-12 via Homebrew and this is currently hardcoded in setup.py. You will have to manually modify setup.py if you do not have this compiler installed.
 
 ## Installation for use with Jupyter notebooks on the AIP Newton cluster
 
@@ -113,11 +131,6 @@ python3 examples/using_aliases_example.py
 I have uploaded a few tutorial notebooks in `notebook-tutorials` which
 displays the functionality.
 
-### Avoiding bloated git from jupyter notebooks
 
-Remember to do the following before committing notebooks:
-```
-python3 -m nbconvert --clear-output *.ipynb **/*.ipynb
-```
 
 
