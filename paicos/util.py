@@ -170,7 +170,7 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
 
 
 @remove_astro_units
-def get_index_of_cubic_region(pos, center, widths, box):
+def get_index_of_cubic_region(pos, center, widths, box_size):
     """
     Get a boolean array to the position array, pos, which are inside a cubic
     region.
@@ -178,17 +178,17 @@ def get_index_of_cubic_region(pos, center, widths, box):
     pos (array): position array with dimensions = (n, 3)
     center (array with length 3): the center of the box (x, y, z)
     widths (array with length 3): the widths of the box
-    box: the box size of the simulation (e.g. snap.box)
+    box: the box size of the simulation (e.g. snap.box_size)
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    index = get_cube(pos, x_c, y_c, z_c, width_x, width_y, width_z, box,
+    index = get_cube(pos, x_c, y_c, z_c, width_x, width_y, width_z, box_size,
                      settings.numthreads)
     return index
 
 
 @remove_astro_units
-def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, box):
+def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, box_size):
     """
     Get a boolean array to the position array, pos, which are inside a cubic
     region plus a think layer with a cell-dependent thickness
@@ -197,17 +197,17 @@ def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, bo
     center (array with length 3): the center of the box (x, y, z)
     widths (array with length 3): the widths of the box
     thickness: (array): array with same length as the position array
-    box: the box size of the simulation (e.g. snap.box)
+    box: the box size of the simulation (e.g. snap.box_size)
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
     index = get_cube_plus_thin_layer(pos, x_c, y_c, z_c, width_x, width_y,
-                                     width_z, thickness, box, settings.numthreads)
+                                     width_z, thickness, box_size, settings.numthreads)
     return index
 
 
 @remove_astro_units
-def get_index_of_slice_region(pos, center, widths, thickness, box):
+def get_index_of_slice_region(pos, center, widths, thickness, box_size):
     """
     Get a boolean array to the position array, pos, which are inside a thin
     slice region with width thickness.
@@ -218,7 +218,7 @@ def get_index_of_slice_region(pos, center, widths, thickness, box):
                                   contain a zero, the selection will be
                                   perpendicular to the corresponding direction)
     thickness: (array): array with same length as the position array
-    box: the box size of the simulation (e.g. snap.box)
+    box: the box size of the simulation (e.g. snap.box_size)
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
@@ -226,13 +226,13 @@ def get_index_of_slice_region(pos, center, widths, thickness, box):
 
     if widths[0] == 0.:
         index = get_x_slice(pos, x_c, y_c, z_c, width_y, width_z, thickness,
-                            box, numthreads)
+                            box_size, numthreads)
     elif widths[1] == 0.:
         index = get_y_slice(pos, x_c, y_c, z_c, width_x, width_z, thickness,
-                            box, numthreads)
+                            box_size, numthreads)
     elif widths[2] == 0.:
         index = get_z_slice(pos, x_c, y_c, z_c, width_x, width_y, thickness,
-                            box, numthreads)
+                            box_size, numthreads)
     else:
         raise RuntimeError('width={} should have length 3 and contain a zero!')
 

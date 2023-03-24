@@ -66,7 +66,7 @@ class Projector(ImageCreator):
 
         # get the index of the region of projection
         self.index = util.get_index_of_cubic_region(self.snap["0_Coordinates"],
-                                                    center, widths, snap.box)
+                                                    center, widths, snap.box_size)
 
         # Reduce the snapshot to only contain region of interest
         if make_snap_with_selection:
@@ -94,7 +94,7 @@ class Projector(ImageCreator):
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
 
-        boxsize = self.snap.box
+        boxsize = self.snap.box_size
         if self.direction == 'x':
             projection = project(self.pos[:, 1],
                                  self.pos[:, 2],

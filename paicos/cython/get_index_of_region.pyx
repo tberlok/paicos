@@ -12,7 +12,8 @@ ctypedef fused real_t:
 
 def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
              real_t sidelength_x, real_t sidelength_y,
-             real_t thickness, real_t boxsize, int numthreads):
+             real_t thickness, real_t[:] box_size,
+             int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -28,20 +29,20 @@ def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         z = pos[ip, 2] - zc
 
         # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        if x < -0.5*box_size[0]:
+            x = x + box_size[0]
+        elif x > 0.5*box_size[0]:
+            x = x - box_size[0]
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        if y < -0.5*box_size[1]:
+            y = y + box_size[1]
+        elif y > 0.5*box_size[1]:
+            y = y - box_size[1]
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        if z < -0.5*box_size[2]:
+            z = z + box_size[2]
+        elif z > 0.5*box_size[2]:
+            z = z - box_size[2]
 
         # Index calculation
         index[ip] = 0
@@ -60,7 +61,7 @@ def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
 def get_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                              real_t sidelength_x, real_t sidelength_y,
                              real_t sidelength_z, real_t [:] thickness,
-                             real_t boxsize, int numthreads):
+                             real_t[:] box_size, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -76,20 +77,20 @@ def get_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         z = pos[ip, 2] - zc
 
         # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        if x < -0.5*box_size[0]:
+            x = x + box_size[0]
+        elif x > 0.5*box_size[0]:
+            x = x - box_size[0]
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        if y < -0.5*box_size[1]:
+            y = y + box_size[1]
+        elif y > 0.5*box_size[1]:
+            y = y - box_size[1]
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        if z < -0.5*box_size[2]:
+            z = z + box_size[2]
+        elif z > 0.5*box_size[2]:
+            z = z - box_size[2]
 
         # Index calculation
         index[ip] = 0
@@ -140,7 +141,7 @@ def get_radial_range(real_t [:, :] pos, real_t xc, real_t yc,
 
 def get_x_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                 real_t sidelength_y, real_t sidelength_z,
-                real_t [:] thickness, real_t boxsize, int numthreads):
+                real_t [:] thickness, real_t[:] box_size, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -156,20 +157,20 @@ def get_x_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         z = pos[ip, 2] - zc
 
         # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        if x < -0.5*box_size[0]:
+            x = x + box_size[0]
+        elif x > 0.5*box_size[0]:
+            x = x - box_size[0]
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        if y < -0.5*box_size[1]:
+            y = y + box_size[1]
+        elif y > 0.5*box_size[1]:
+            y = y - box_size[1]
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        if z < -0.5*box_size[2]:
+            z = z + box_size[2]
+        elif z > 0.5*box_size[2]:
+            z = z - box_size[2]
 
         # Index calculation
         index[ip] = 0
@@ -187,7 +188,7 @@ def get_x_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
 
 def get_y_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                 real_t sidelength_x, real_t sidelength_z,
-                real_t [:] thickness, real_t boxsize, int numthreads):
+                real_t [:] thickness, real_t[:] box_size, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -203,20 +204,20 @@ def get_y_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         z = pos[ip, 2] - zc
 
         # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        if x < -0.5*box_size[0]:
+            x = x + box_size[0]
+        elif x > 0.5*box_size[0]:
+            x = x - box_size[0]
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        if y < -0.5*box_size[1]:
+            y = y + box_size[1]
+        elif y > 0.5*box_size[1]:
+            y = y - box_size[1]
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        if z < -0.5*box_size[2]:
+            z = z + box_size[2]
+        elif z > 0.5*box_size[2]:
+            z = z - box_size[2]
 
         # Index calculation
         index[ip] = 0
@@ -234,7 +235,7 @@ def get_y_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
 
 def get_z_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                 real_t sidelength_x, real_t sidelength_y,
-                real_t [:] thickness, real_t boxsize, int numthreads):
+                real_t [:] thickness, real_t[:] box_size, int numthreads):
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -250,20 +251,20 @@ def get_z_slice(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         z = pos[ip, 2] - zc
 
         # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        if x < -0.5*box_size[0]:
+            x = x + box_size[0]
+        elif x > 0.5*box_size[0]:
+            x = x - box_size[0]
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        if y < -0.5*box_size[1]:
+            y = y + box_size[1]
+        elif y > 0.5*box_size[1]:
+            y = y - box_size[1]
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        if z < -0.5*box_size[2]:
+            z = z + box_size[2]
+        elif z > 0.5*box_size[2]:
+            z = z - box_size[2]
 
         # Index calculation
         index[ip] = 0

@@ -66,7 +66,7 @@ class TreeProjector(ImageCreator):
         thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
         get_index = util.get_index_of_cubic_region_plus_thin_layer
         self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
-                                       snap.box)
+                                       snap.box_size)
 
         if verbose:
             print('Sub-selection [DONE]')

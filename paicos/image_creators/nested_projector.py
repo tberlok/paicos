@@ -179,7 +179,7 @@ class NestedProjector(Projector):
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
 
-        boxsize = self.snap.box
+        boxsize = self.snap.box_size
 
         images = []
         for ii, n_grid in enumerate(self.n_grids):

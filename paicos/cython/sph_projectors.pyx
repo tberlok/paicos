@@ -15,7 +15,7 @@ STUFF = "Hi"  # https://stackoverflow.com/questions/8024805/cython-compiled-c-ex
 def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
                   real_t[:] hvec, int nx, real_t xc, real_t yc,
                   real_t sidelength_x, real_t sidelength_y,
-                  real_t boxsize, int numthreads=1):
+                  real_t[:] box_size, int numthreads=1):
 
     """
 
@@ -135,7 +135,7 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
                       real_t[:] hvec, int nx, real_t xc, real_t yc,
                       real_t sidelength_x, real_t sidelength_y,
-                      real_t boxsize, int numthreads):
+                      real_t[:] box_size, int numthreads):
 
     # Number of particles
     cdef int Np = xvec.shape[0]

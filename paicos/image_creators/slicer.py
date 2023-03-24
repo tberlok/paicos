@@ -62,7 +62,7 @@ class Slicer(ImageCreator):
         thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
 
         self.slice = util.get_index_of_slice_region(snap["0_Coordinates"], center, widths,
-                                                    thickness, snap.box)
+                                                    thickness, snap.box_size)
 
         self.index_in_slice_region = np.arange(snap["0_Coordinates"].shape[0])[self.slice]
 
