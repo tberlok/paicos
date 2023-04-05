@@ -45,7 +45,14 @@ Paicos requires a compiler with OpenMP support. I have installed gcc-12 via Home
 
 ## Installation for use with Jupyter notebooks on the AIP Newton cluster
 
-Compile the code from inside a notebook using bash magic (replace with
+First clone the repo onto the AIP newton cluster and then add the path
+to your .bash_profile (on the cluster!). I have, for instance,
+
+```
+export PYTHONPATH=$PYTHONPATH:/llust21/berlok/paicos
+```
+
+Now compile the code from inside a notebook using bash magic (replace with
 path to your own clone of paicos):
 
 ```
