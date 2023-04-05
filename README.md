@@ -51,6 +51,7 @@ to your .bash_profile (on the cluster!). I have, for instance,
 ```
 export PYTHONPATH=$PYTHONPATH:/llust21/berlok/paicos
 ```
+You might need to restart singularity in order for this change to the PYTHONPATH to be visible inside the jupyter notebooks.
 
 Now compile the code from inside a notebook using bash magic (replace with
 path to your own clone of paicos):
