@@ -29,10 +29,10 @@ for use_units in [False, True]:
         print(ii)
         widths = width_vec[ii]
 
-        projector = pa.Projector(snap, center, widths, direction, npix=100,
+        projector = pa.Projector(snap, center, widths, direction, npix=512,
                                  parttype=1, make_snap_with_selection=True)
         treeprojector = pa.TreeProjector(snap, center, widths, direction,
-                                         npix=100, parttype=1, verbose=True)
+                                         npix=512, parttype=1, verbose=True)
 
         image_file = pa.ArepoImage(projector, basedir=root_dir + 'test_data/',
                                    basename=f'projection_{direction}')
