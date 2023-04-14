@@ -58,16 +58,19 @@ class Slicer(ImageCreator):
         super().__init__(snap, center, widths, direction, npix=npix, parttype=0)
         
         self.parttype = parttype
-        if self.parttype !=0:
-               print(f"Slice for non-gas quantity")
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
                 assert self.widths[ii] == 0.
 
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
-
+        if f'{self.parttype}_SubfindHsml' in (list(snap.keys()) + snap._auto_list):
+            thickness = snap[f'{self.parttype}_SubfindHsml']
+        elif f'{self.parttype}_Volume' in (list(snap.keys()) + snap._auto_list):
+            thickness = 4.0 * np.cbrt((snap[f"{self.parttype}_Volume"]) /
+                                      (4.0 * np.pi / 3.0))
+        else:
+            raise RuntimeError('There is no smoothing length or volume for the thickness of the slice')
         self.slice = util.get_index_of_slice_region(snap[f"{self.parttype}_Coordinates"], center, widths,
                                                     thickness, snap.box)
 
@@ -148,6 +151,7 @@ class Slicer(ImageCreator):
         """
 
         if isinstance(variable, str):
+            assert int(variable[0]) == self.parttype, 'slicer uses a different parttype'
             variable = self.snap[variable]
         else:
             if not isinstance(variable, np.ndarray):
