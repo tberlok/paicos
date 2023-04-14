@@ -66,11 +66,14 @@ class TreeProjector(ImageCreator):
         super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
         self.parttype = parttype
-        if self.parttype !=0:
-               print("Projection for non-gas quantity")
         
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        if f'{self.parttype}_SubfindHsml' in (list(snap.keys()) + snap._auto_list):
+            thickness = snap[f'{self.parttype}_SubfindHsml']
+        elif f'{self.parttype}_Volume' in (list(snap.keys()) + snap._auto_list):
+            thickness = 4.0 * np.cbrt((snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        else:
+            raise RuntimeError('There is no smoothing length or volume for the thickness of the slice')
         get_index = util.get_index_of_cubic_region_plus_thin_layer
         self.box_selection = get_index(snap[f"{self.parttype}_Coordinates"], center, widths, thickness,
                                        snap.box)
@@ -240,6 +243,7 @@ class TreeProjector(ImageCreator):
         """
 
         if isinstance(variable, str):
+            assert int(variable[0]) == self.parttype, 'projector uses a different parttype'
             variable = self.snap[variable]
         else:
             if not isinstance(variable, np.ndarray):
@@ -248,8 +252,11 @@ class TreeProjector(ImageCreator):
 
         if extrinsic:
             dV = area_per_pixel * self.delta_depth
-            variable = variable[self.index] * (dV / self.snap[f'{self.parttype}_Volume'][self.index])
-            projection = np.sum(variable, axis=2) / area_per_pixel
+            if f'{self.parttype}_Volume' in (list(self.snap.keys()) + self.snap._auto_list):
+                variable = variable[self.index] * (dV / self.snap[f'{self.parttype}_Volume'][self.index])
+                projection = np.sum(variable, axis=2) / area_per_pixel
+            else:
+                raise RuntimeError(f'The volume field for parttype {self.parttype} is required if using extrinsic=True')
         else:
             variable = variable[self.index]
             projection = np.mean(variable, axis=2)

@@ -52,7 +52,7 @@ class Projector(ImageCreator):
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
             by default 512.
-        
+
         parttype : int, optional
             Number of the particle type to project, by default gas (PartType 0).        
 
@@ -62,11 +62,9 @@ class Projector(ImageCreator):
         """
 
         # call the superclass constructor to initialize the ImageCreator class
-        super().__init__(snap, center, widths, direction, npix=npix, parttype=0)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
         self.parttype = parttype
-        if self.parttype !=0:
-               print("Projection for non-gas quantity")
 
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
@@ -77,10 +75,15 @@ class Projector(ImageCreator):
 
         # Reduce the snapshot to only contain region of interest
         if make_snap_with_selection:
-            self.snap = self.snap.select(self.index)
+            self.snap = self.snap.select(self.index, parttype=self.parttype)
 
         # Calculate the smoothing length
-        self.hsml = np.cbrt(nvol * (self.snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        if f'{self.parttype}_SubfindHsml' in (list(snap.keys()) + snap._auto_list):
+            self.hsml = self.snap[f'{self.parttype}_SubfindHsml']
+        elif f'{self.parttype}_Volume' in (list(snap.keys()) + snap._auto_list):
+            self.hsml = np.cbrt(nvol * (self.snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        else:
+            raise RuntimeError('There is no smoothing length or volume for the projector')
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
 
@@ -149,7 +152,6 @@ class Projector(ImageCreator):
 
         if variable.shape == self.index.shape:
             variable = variable[self.index]
-
         # Do the projection
         projection = self._cython_project(self.center, self.widths, variable)
 
