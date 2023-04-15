@@ -54,7 +54,7 @@ class Projector(ImageCreator):
             by default 512.
 
         parttype : int, optional
-            Number of the particle type to project, by default gas (PartType 0).        
+            Number of the particle type to project, by default gas (PartType 0).
 
         nvol : int, optional
             Integer used to determine the smoothing length, by default 8
@@ -64,24 +64,26 @@ class Projector(ImageCreator):
         # call the superclass constructor to initialize the ImageCreator class
         super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
-        self.parttype = parttype
+        parttype = self.parttype
 
         # nvol is an integer that determines the smoothing length
         self.nvol = nvol
 
         # get the index of the region of projection
-        self.index = util.get_index_of_cubic_region(self.snap[f"{self.parttype}_Coordinates"],
+        self.index = util.get_index_of_cubic_region(self.snap[f"{parttype}_Coordinates"],
                                                     center, widths, snap.box)
 
         # Reduce the snapshot to only contain region of interest
         if make_snap_with_selection:
-            self.snap = self.snap.select(self.index, parttype=self.parttype)
+            self.snap = self.snap.select(self.index, parttype=parttype)
 
         # Calculate the smoothing length
-        if f'{self.parttype}_SubfindHsml' in (list(snap.keys()) + snap._auto_list):
-            self.hsml = self.snap[f'{self.parttype}_SubfindHsml']
-        elif f'{self.parttype}_Volume' in (list(snap.keys()) + snap._auto_list):
-            self.hsml = np.cbrt(nvol * (self.snap[f"{self.parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        avail_list = (list(snap.keys()) + snap._auto_list)
+        if f'{parttype}_SubfindHsml' in avail_list:
+            self.hsml = self.snap[f'{parttype}_SubfindHsml']
+        elif f'{parttype}_Volume' in avail_list:
+            self.hsml = np.cbrt(nvol * (self.snap[f"{parttype}_Volume"])
+                                / (4.0 * np.pi / 3.0))
         else:
             raise RuntimeError('There is no smoothing length or volume for the projector')
 
@@ -145,6 +147,8 @@ class Projector(ImageCreator):
         """
 
         if isinstance(variable, str):
+            err_msg = 'projector uses a different parttype'
+            assert int(variable[0]) == self.parttype, err_msg
             variable = self.snap[variable]
         else:
             if not isinstance(variable, np.ndarray):

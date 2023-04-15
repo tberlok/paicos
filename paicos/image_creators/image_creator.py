@@ -28,8 +28,6 @@ class ImageCreator:
             direction (str): Direction of the image ('x', 'y', 'z')
 
             npix (int): Number of pixels in the image (default is 512)
-            
-            
         """
 
         self.snap = snap
@@ -64,7 +62,7 @@ class ImageCreator:
         self.npix = npix
 
         self.parttype = parttype
-        
+
         if direction == 'x':
             self.extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
                            self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
