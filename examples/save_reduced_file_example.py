@@ -15,6 +15,6 @@ snap['0_Masses']
 
 index = pa.util.get_index_of_cubic_region(pos, center, widths, snap.box)
 
-snap = snap.select(index)
+snap = snap.select(index, parttype=0)
 
 snap.save_new_snapshot('reduced_snap2')

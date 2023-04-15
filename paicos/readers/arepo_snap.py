@@ -630,12 +630,16 @@ class Snapshot(PaicosReader):
 
         Example use:
         index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
-        selected_snap = snap.select(index)
+        selected_snap = snap.select(index, parttype=0)
 
         """
         if parttype is None:
             parttype = 0
-            print('You will need to specify the parttype')
+            msg = ("You have not specified the parttype that the selection index"
+                   + " corresponds to. The code will assume parttype=0. Future versions"
+                   + " of this method will likely have parttype as a required input")
+            warnings.warn(msg)
+
         s_index = selection_index
 
         if parttype in self.dic_selection_index:
