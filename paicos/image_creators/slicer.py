@@ -43,7 +43,7 @@ class Slicer(ImageCreator):
             by default 512.
 
         parttype : int, optional
-            Number of the particle type to project, by default gas (PartType 0).
+            The particle type to project, by default gas (PartType 0).
 
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
@@ -54,7 +54,7 @@ class Slicer(ImageCreator):
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix, parttype=0)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:

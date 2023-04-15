@@ -42,7 +42,7 @@ class TreeProjector(ImageCreator):
             by default 512.
 
         parttype : int, optional
-            Number of the particle type to project, by default gas (PartType 0).
+            The particle type to project, by default gas (PartType 0).
 
         npix_depth: int, optional
             Number of pixels in the depth direction, by default set
