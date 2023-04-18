@@ -426,27 +426,27 @@ class Snapshot(PaicosReader):
             """
             parttype_str = f'PartType{parttype}'
             with h5py.File(filename, 'r') as f:
-                # Do something with the file, e.g. extract a dataset
+                # Load a dataset
                 dataset = f[parttype_str][blockname][()]
 
-                if settings.double_precision:
-                    # Load all variables with double precision
-                    if not issubclass(dataset.dtype.type, numbers.Integral):
-                        dataset = dataset.astype(np.float64)
-                else:
-                    warnings.warn('\n\nThe cython routines expect double precision '
-                                  + 'and will fail unless settings.double_precision '
-                                  + 'is True.\n\n')
+            if settings.double_precision:
+                # Load all variables with double precision
+                if not issubclass(dataset.dtype.type, numbers.Integral):
+                    dataset = dataset.astype(np.float64)
+            else:
+                warnings.warn('\n\nThe cython routines expect double precision '
+                              + 'and will fail unless settings.double_precision '
+                              + 'is True.\n\n')
 
-                if settings.use_units:
-                    if parttype in self._type_info:
-                        ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
-                        dataset = self.get_paicos_quantity(dataset, blockname,
-                                                           field=ptype)
-                    else:
-                        # Assume dark matter for the units
-                        dataset = self.get_paicos_quantity(dataset, blockname,
-                                                           field='dark_matter')
+            if settings.use_units:
+                if parttype in self._type_info:
+                    ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
+                    dataset = self.get_paicos_quantity(dataset, blockname,
+                                                       field=ptype)
+                else:
+                    # Assume dark matter for the units
+                    dataset = self.get_paicos_quantity(dataset, blockname,
+                                                       field='dark_matter')
                 return dataset
 
         if self.multi_file:
