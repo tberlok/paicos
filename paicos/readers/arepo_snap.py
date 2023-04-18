@@ -226,7 +226,7 @@ class Snapshot(PaicosReader):
                                 dtype = file[parttype_str][key].dtype
                                 self._part_specs[parttype][key] = {'shape': tuple(shape),
                                                                    'dtype': dtype}
-                            print(f'found parttype in partfile {ii}, breaking out')
+                            # print(f'found parttype in partfile {ii}, breaking out')
                             break
 
             self._all_avail_load += self._part_avail_load[parttype]
