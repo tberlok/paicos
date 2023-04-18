@@ -220,13 +220,11 @@ class Snapshot(PaicosReader):
                             for key in file[parttype_str]:
                                 p_key = f'{parttype}_{key}'
                                 self._part_avail_load[parttype].append(p_key)
-                                shape = file[parttype_str][key].shape
+                                shape = list(file[parttype_str][key].shape)
                                 if len(shape) > 1:
                                     shape[0] = self.npart[parttype]
-                                else:
-                                    shape = (shape[0],)
                                 dtype = file[parttype_str][key].dtype
-                                self._part_specs[parttype][key] = {'shape': shape,
+                                self._part_specs[parttype][key] = {'shape': tuple(shape),
                                                                    'dtype': dtype}
                             print(f'found parttype in partfile {ii}, breaking out')
                             break
