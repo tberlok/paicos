@@ -451,7 +451,7 @@ class Snapshot(PaicosReader):
 
         if self.multi_file:
             filenames = [self.multi_filename.format(ii) for ii in range(self.nfiles)]
-            self[alias_key] = np.vstack([read_hdf5_file(filename, parttype, blockname)
+            self[alias_key] = np.hstack([read_hdf5_file(filename, parttype, blockname)
                                          for filename in filenames])
         else:
             self[alias_key] = read_hdf5_file(self.filename, parttype, blockname)
