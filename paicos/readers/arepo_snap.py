@@ -221,11 +221,12 @@ class Snapshot(PaicosReader):
                                 p_key = f'{parttype}_{key}'
                                 self._part_avail_load[parttype].append(p_key)
                                 shape = file[parttype_str][key].shape
+                                shape[0] = self.npart[parttype]
                                 dtype = file[parttype_str][key].dtype
                                 self._part_specs[parttype][key] = {'shape': shape,
                                                                    'dtype': dtype}
-                        print(f'found parttype in partfile {ii}, breaking out')
-                        break
+                            print(f'found parttype in partfile {ii}, breaking out')
+                            break
 
             self._all_avail_load += self._part_avail_load[parttype]
 
@@ -511,7 +512,6 @@ class Snapshot(PaicosReader):
             raise RuntimeError(msg)
 
         datname = f'PartType{parttype}/{blockname}'
-        parttype_str = f'PartType{parttype}'
         if alias_key in self:
             if self.verbose:
                 print(blockname, "for species",
