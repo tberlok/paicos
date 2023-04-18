@@ -447,7 +447,7 @@ class Snapshot(PaicosReader):
                     # Assume dark matter for the units
                     dataset = self.get_paicos_quantity(dataset, blockname,
                                                        field='dark_matter')
-                return dataset
+            return dataset
 
         if self.multi_file:
             filenames = [self.multi_filename.format(ii) for ii in range(self.nfiles)]
