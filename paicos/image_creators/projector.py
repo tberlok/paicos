@@ -79,11 +79,11 @@ class Projector(ImageCreator):
 
         # Calculate the smoothing length
         avail_list = (list(snap.keys()) + snap._auto_list)
-        if f'{parttype}_SubfindHsml' in avail_list:
-            self.hsml = self.snap[f'{parttype}_SubfindHsml']
-        elif f'{parttype}_Volume' in avail_list:
+        if f'{parttype}_Volume' in avail_list:
             self.hsml = np.cbrt(nvol * (self.snap[f"{parttype}_Volume"])
                                 / (4.0 * np.pi / 3.0))
+        elif f'{parttype}_SubfindHsml' in avail_list:
+            self.hsml = self.snap[f'{parttype}_SubfindHsml']
         else:
             raise RuntimeError('There is no smoothing length or volume for the projector')
 

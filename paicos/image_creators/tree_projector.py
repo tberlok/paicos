@@ -69,10 +69,10 @@ class TreeProjector(ImageCreator):
 
         # Pre-select a narrow region around the region-of-interest
         avail_list = (list(snap.keys()) + snap._auto_list)
-        if f'{parttype}_SubfindHsml' in avail_list:
-            thickness = snap[f'{parttype}_SubfindHsml']
-        elif f'{parttype}_Volume' in avail_list:
+        if f'{parttype}_Volume' in avail_list:
             thickness = 4.0 * np.cbrt((snap[f"{parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        elif f'{parttype}_SubfindHsml' in avail_list:
+            thickness = snap[f'{parttype}_SubfindHsml']
         else:
             err_msg = ("There is no smoothing length or volume for calculating"
                        + "the thickness of the slice")
