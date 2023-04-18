@@ -194,6 +194,7 @@ class Snapshot(PaicosReader):
         """
         self._all_avail_load = []
         self._part_avail_load = {i: [] for i in range(self.nspecies)}
+        self._part_specs = {i: {} for i in range(self.nspecies)}
         for parttype in range(self.nspecies):
             parttype_str = f'PartType{parttype}'
 
@@ -203,6 +204,10 @@ class Snapshot(PaicosReader):
                         for key in file[parttype_str]:
                             p_key = f'{parttype}_{key}'
                             self._part_avail_load[parttype].append(p_key)
+                            shape = file[parttype_str][key].shape
+                            dtype = file[parttype_str][key].dtype
+                            self._part_specs[parttype][key] = {'shape': shape,
+                                                               'dtype': dtype}
             else:
                 # For multiple files we sometimes need to open many of them
                 # to find *all* the available parttypes.
@@ -215,6 +220,10 @@ class Snapshot(PaicosReader):
                             for key in file[parttype_str]:
                                 p_key = f'{parttype}_{key}'
                                 self._part_avail_load[parttype].append(p_key)
+                                shape = file[parttype_str][key].shape
+                                dtype = file[parttype_str][key].dtype
+                                self._part_specs[parttype][key] = {'shape': shape,
+                                                                   'dtype': dtype}
                         print(f'found parttype in partfile {ii}, breaking out')
                         break
 
@@ -379,7 +388,7 @@ class Snapshot(PaicosReader):
         else:
             return load_keys
 
-    def load_data(self, parttype, blockname):
+    def load_data_experimental(self, parttype, blockname):
         """
         Load data from hdf5 file(s). Example usage:
 
@@ -453,6 +462,7 @@ class Snapshot(PaicosReader):
             filenames = [self.multi_filename.format(ii) for ii in range(self.nfiles)]
             self[alias_key] = np.hstack([read_hdf5_file(filename, parttype, blockname)
                                          for filename in filenames])
+            # Probably need vstack for Coordinates, Velocities etc...
         else:
             self[alias_key] = read_hdf5_file(self.filename, parttype, blockname)
 
@@ -470,7 +480,7 @@ class Snapshot(PaicosReader):
         if self.verbose:
             print("... done! (took", time.time() - start_time, "s)")
 
-    def load_data_old(self, parttype, blockname):
+    def load_data(self, parttype, blockname):
         """
         Load data from hdf5 file(s). Example usage:
 
@@ -529,19 +539,15 @@ class Snapshot(PaicosReader):
             np_file = f["Header"].attrs["NumPart_ThisFile"][parttype]
 
             if ifile == 0:   # initialize array
-                if len(f[datname].shape) == 1:
-                    self[alias_key] = np.empty(
-                        self.npart[parttype], dtype=f[datname].dtype)
+                shape = self._part_specs[parttype][blockname]['shape']
+                dtype = self._part_specs[parttype][blockname]['dtype']
+                if len(shape) == 1:
+                    self[alias_key] = np.empty(self.npart[parttype], dtype=dtype)
                 else:
-                    self[alias_key] = np.empty(
-                        (self.npart[parttype], f[datname].shape[1]),
-                        dtype=f[datname].dtype)
-                # Load attributes
-                data_attributes = dict(f[parttype_str][blockname].attrs)
-
-                self.P_attrs[alias_key] = data_attributes
-
-            self[alias_key][skip_part:skip_part + np_file] = f[datname]
+                    self[alias_key] = np.empty((self.npart[parttype], shape[1]),
+                                               dtype=dtype)
+            if np_file > 0:
+                self[alias_key][skip_part:skip_part + np_file] = f[datname]
 
             skip_part += np_file
 
