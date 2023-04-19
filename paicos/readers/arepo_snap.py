@@ -554,7 +554,10 @@ class Snapshot(PaicosReader):
                     self[alias_key] = np.empty((self.npart[parttype], shape[1]),
                                                dtype=dtype)
             if np_file > 0:
-                self[alias_key][skip_part:skip_part + np_file] = f[datname]
+                if len(shape) == 1:
+                    self[alias_key][skip_part:skip_part + np_file] = f[datname][...]
+                else:
+                    self[alias_key][skip_part:skip_part + np_file, :] = f[datname][...]
 
             skip_part += np_file
 
