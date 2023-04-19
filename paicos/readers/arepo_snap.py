@@ -462,9 +462,15 @@ class Snapshot(PaicosReader):
 
         if self.multi_file:
             filenames = [self.multi_filename.format(ii) for ii in range(self.nfiles)]
-            self[alias_key] = np.hstack([read_hdf5_file(filename, parttype, blockname)
-                                         for filename in filenames])
-            # Probably need vstack for Coordinates, Velocities etc...
+            shape = self._part_specs[parttype][blockname]['shape']
+            if len(shape) == 1:
+                self[alias_key] = np.hstack([read_hdf5_file(filename, parttype, blockname)
+                                             for filename in filenames])
+            elif len(shape) == 2:
+                self[alias_key] = np.vstack([read_hdf5_file(filename, parttype, blockname)
+                                             for filename in filenames])
+            else:
+                raise RuntimeError(f"Unexpected shape={shape} for {parttype}_{blockname}")
         else:
             self[alias_key] = read_hdf5_file(self.filename, parttype, blockname)
 
