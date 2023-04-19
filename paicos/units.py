@@ -165,7 +165,7 @@ class PaicosQuantity(Quantity):
 
     # pylint: disable=too-many-arguments
 
-    def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
+    def __new__(cls, value, unit=None, dtype=None, copy=False, order=None,
                 subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
         """
         Here we initialize the Paicos Quantity. The three additional
