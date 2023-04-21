@@ -683,9 +683,8 @@ class PaicosTimeSeries(PaicosQuantity):
 
     def to_comoving(self, unit):
         """
-        Returns a copy of the current `PaicosTimeSeries` instance with the
-        a and h factors removed, i.e. transform from comoving to physical.
-        The value of the resulting object is scaled accordingly.
+        Returns a copy of the current `PaicosTimeSeries` with the
+        a and h factors given by the input unit.
         """
 
         if not self.comoving_sim:
@@ -736,6 +735,12 @@ class PaicosTimeSeries(PaicosQuantity):
         """
         return PaicosTimeSeries(self.value, self.unit, a=self._a, h=self.h,
                                 comoving_sim=self.comoving_sim)
+
+    def make_matrix(self, vec):
+        """
+        """
+        assert vec.shape[0] == self.shape[0]
+        return np.vstack([vec for _ in range(self.shape[1])]).T
 
     def _sanity_check(self, value):
         """
