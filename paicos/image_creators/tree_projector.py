@@ -15,7 +15,7 @@ class TreeProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, npix_depth=None, make_snap_with_selection=False,
+                 npix=512, npix_depth=None, parttype=0, make_snap_with_selection=False,
                  tol=1, verbose=False):
 
         """
@@ -41,6 +41,9 @@ class TreeProjector(ImageCreator):
             Number of pixels in the horizontal direction of the image,
             by default 512.
 
+        parttype : int, optional
+            The particle type to project, by default gas (PartType 0).
+
         npix_depth: int, optional
             Number of pixels in the depth direction, by default set
             automatically based on the smallest cell sizes in the region
@@ -60,13 +63,23 @@ class TreeProjector(ImageCreator):
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
+
+        parttype = self.parttype
 
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        avail_list = (list(snap.keys()) + snap._auto_list)
+        if f'{parttype}_Volume' in avail_list:
+            thickness = 4.0 * np.cbrt((snap[f"{parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        elif f'{parttype}_SubfindHsml' in avail_list:
+            thickness = snap[f'{parttype}_SubfindHsml']
+        else:
+            err_msg = ("There is no smoothing length or volume for calculating"
+                       + "the thickness of the slice")
+            raise RuntimeError(err_msg)
         get_index = util.get_index_of_cubic_region_plus_thin_layer
-        self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
-                                       snap.box)
+        self.box_selection = get_index(snap[f"{parttype}_Coordinates"],
+                                       center, widths, thickness, snap.box)
 
         if verbose:
             print('Sub-selection [DONE]')
@@ -88,11 +101,11 @@ class TreeProjector(ImageCreator):
 
         self.npix_depth = npix_depth
 
-        self.index_in_box_region = np.arange(snap["0_Coordinates"].shape[0]
+        self.index_in_box_region = np.arange(snap[f"{self.parttype}_Coordinates"].shape[0]
                                              )[self.box_selection]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.box_selection]
+        self.pos = snap[f"{parttype}_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
         if verbose:
             print('Tree construction [DONE]')
@@ -232,7 +245,10 @@ class TreeProjector(ImageCreator):
 
         """
 
+        parttype = self.parttype
+
         if isinstance(variable, str):
+            assert int(variable[0]) == parttype, 'projector uses a different parttype'
             variable = self.snap[variable]
         else:
             if not isinstance(variable, np.ndarray):
@@ -241,8 +257,15 @@ class TreeProjector(ImageCreator):
 
         if extrinsic:
             dV = area_per_pixel * self.delta_depth
-            variable = variable[self.index] * (dV / self.snap['0_Volume'][self.index])
-            projection = np.sum(variable, axis=2) / area_per_pixel
+            avail_list = (list(self.snap.keys()) + self.snap._auto_list)
+            if f'{parttype}_Volume' in avail_list:
+                weight = dV / self.snap[f'{parttype}_Volume'][self.index]
+                variable = variable[self.index] * weight
+                projection = np.sum(variable, axis=2) / area_per_pixel
+            else:
+                err_msg = (f"The volume field for parttype {parttype} is required when"
+                           + "using extrinsic=True")
+                raise RuntimeError(err_msg)
         else:
             variable = variable[self.index]
             projection = np.mean(variable, axis=2)

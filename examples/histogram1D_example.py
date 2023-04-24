@@ -22,7 +22,7 @@ for ii in range(2):
 
     index = r < r_max * 1.1
 
-    snap = snap.select(index)
+    snap = snap.select(index, parttype=0)
 
     r = np.sqrt(np.sum((snap["0_Coordinates"] - center[None, :]) ** 2.0,
                 axis=1))

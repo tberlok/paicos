@@ -724,16 +724,22 @@ class Snapshot(PaicosReader):
         if p_key in self.P_attrs:
             del self.P_attrs[p_key]
 
-    def select(self, selection_index, parttype=0):
+    def select(self, selection_index, parttype=None):
         """
         Create a new snapshot object which will only contain
         cells with a selection_index.
 
         Example use:
         index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
-        selected_snap = snap.select(index)
+        selected_snap = snap.select(index, parttype=0)
 
         """
+        if parttype is None:
+            parttype = 0
+            msg = ("You have not specified the parttype that the selection index"
+                   + " corresponds to. The code will assume parttype=0. Future versions"
+                   + " of this method will likely have parttype as a required input")
+            warnings.warn(msg)
 
         s_index = selection_index
 
