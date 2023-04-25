@@ -64,22 +64,36 @@ class ImageCreator:
         self.parttype = parttype
 
         if direction == 'x':
-            self.extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
-                           self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
+            extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
+                      self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
+
+            centered_extent = [- self.width_y / 2, self.width_y / 2,
+                               - self.width_z / 2, self.width_z / 2]
 
         elif direction == 'y':
-            self.extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
-                           self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
+            extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
+                      self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
+            centered_extent = [- self.width_x / 2, self.width_x / 2,
+                               - self.width_z / 2, self.width_z / 2]
         elif direction == 'z':
-            self.extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
-                           self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
+            extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
+                      self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
+
+            centered_extent = [- self.width_x / 2, self.width_x / 2,
+                               - self.width_y / 2, self.width_y / 2]
 
         if settings.use_units:
-            self.extent = units.PaicosQuantity(self.extent, a=snap._Time, h=snap.h,
-                                               comoving_sim=snap.comoving_sim)
+            a = snap._Time
+            h = snap.h
+            comoving = snap.comoving_sim
+            self.extent = units.PaicosQuantity(extent, a=a, h=h, comoving_sim=comoving)
+
+            self.centered_extent = units.PaicosQuantity(centered_extent, a=a, h=h,
+                                                        comoving_sim=comoving)
         else:
-            self.extent = np.array(self.extent)
+            self.extent = np.array(extent)
+            self.centered_extent = np.array(centered_extent)
 
         area = (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
         self.area = area

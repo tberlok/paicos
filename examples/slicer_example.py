@@ -13,7 +13,7 @@ width_vec = (
 
 plt.figure(1)
 plt.clf()
-fig, axes = plt.subplots(num=1, ncols=3)
+fig, axes = plt.subplots(num=1, ncols=3, sharey=True)
 for ii, direction in enumerate(['x', 'y', 'z']):
     widths = width_vec[ii]
     slicer = pa.Slicer(snap, center, widths, direction, npix=512)
@@ -38,12 +38,13 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     image_file.save_image('0_Temperatures', Temperatures)
 
     # Make a plot
+    extent = slicer.centered_extent
     if pa.settings.use_units:
         axes[ii].imshow(Density.value, origin='lower',
-                        extent=slicer.extent.value, norm=LogNorm())
+                        extent=extent.value, norm=LogNorm())
     else:
         axes[ii].imshow(Density, origin='lower',
-                        extent=slicer.extent, norm=LogNorm())
+                        extent=extent, norm=LogNorm())
 
 # Example of how to read the image files
 im = pa.ImageReader(pa.root_dir + 'test_data', 247, 'slice_x')
