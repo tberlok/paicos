@@ -23,7 +23,7 @@ def test_compare_slicer_with_snap_util(show=False):
     """
     import numpy as np
     import paicos as pa
-    snap = pa.Snapshot(pa.root_dir + 'data', 247)
+    snap = pa.Snapshot(pa.root_dir + 'data', 247, basename='reduced_snap')
     center = [398968.4, 211682.6, 629969.9]
 
     widths = np.array([2000, 2000, 0.])
