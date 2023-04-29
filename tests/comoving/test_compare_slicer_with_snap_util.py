@@ -49,7 +49,7 @@ def test_compare_slicer_with_snap_util(show=False):
         axes[0].imshow(pai, norm=LogNorm(), origin='lower')
         axes[1].imshow(are, norm=LogNorm(), origin='lower')
 
-        axes[2].imshow(rel_diff, norm=LogNorm(), origin='lower')
+        axes[2].imshow(rel_diff, origin='lower')
 
         axes[0].set_title('Paicos')
         axes[1].set_title('arepo-snap-util')
