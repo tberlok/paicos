@@ -28,7 +28,7 @@ def test_compare_projector_with_snap_util(show=False):
 
     widths = np.array([2000, 2000, 2000])
 
-    projector = pa.TreeProjector(snap, center, widths, 'z', npix=128)
+    projector = pa.TreeProjector(snap, center, widths, 'z', npix=128, npix_depth=128)
 
     dat = np.load(pa.root_dir + '/data/arepo-snap-util-proj.npz')
     pai = projector.project_variable('0_Density', extrinsic=False).to_physical.value
@@ -41,7 +41,7 @@ def test_compare_projector_with_snap_util(show=False):
 
     rms_diff = (np.sqrt(np.mean(rel_diff)))
 
-    assert rms_diff < 0.1, f'rms_diff {rms_diff} is too large'
+    assert rms_diff < 1e-4, f'rms_diff {rms_diff} is too large'
 
     if show:
         import matplotlib.pyplot as plt
