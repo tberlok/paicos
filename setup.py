@@ -30,8 +30,7 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
-    )
-    ,
+    ),
     Extension(
         name='paicos.cython.histogram',
         sources=['paicos/cython/histogram.pyx'],

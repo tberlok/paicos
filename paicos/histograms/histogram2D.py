@@ -174,7 +174,7 @@ class Histogram2D:
             lower_x, upper_x, nbins_x,
             lower_y, upper_y, nbins_y,
             self.logscale,
-            numthreads=1)
+            numthreads=settings.numthreads_reduction)
 
         return hist2d
 

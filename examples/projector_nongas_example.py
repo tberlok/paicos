@@ -47,11 +47,11 @@ for use_units in [False, True]:
         image_file.finalize()
 
         # Make a plot
-        axes[0,ii].imshow(np.array(Density), origin='lower',
-                          extent=np.array(projector.extent), norm=LogNorm())
+        axes[0, ii].imshow(np.array(Density), origin='lower',
+                           extent=np.array(projector.extent), norm=LogNorm())
         axes[0, 1].set_title('SPH projector')
-        axes[1,ii].imshow(np.array(Density_tree), origin='lower',
-                          extent=np.array(projector.extent), norm=LogNorm())
+        axes[1, ii].imshow(np.array(Density_tree), origin='lower',
+                           extent=np.array(projector.extent), norm=LogNorm())
         axes[1, 1].set_title('Tree projector')
 
     plt.show()
