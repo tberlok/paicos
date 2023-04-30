@@ -548,7 +548,7 @@ class Histogram2DReader(PaicosReader):
             if 'colorlabel' in hdf5file['hist2d'].attrs.keys():
                 self.colorlabel = hdf5file['hist2d'].attrs['colorlabel']
             self.normalize = hdf5file['hist_info'].attrs['normalize']
-            self.logscale = hdf5file['hist_info'].attrs['normalize']
+            self.logscale = hdf5file['hist_info'].attrs['logscale']
 
         self.hist2d = self['hist2d']
         self.centers_x = self['centers_x']
