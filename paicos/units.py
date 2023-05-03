@@ -397,17 +397,7 @@ class PaicosQuantity(Quantity):
         """
         Returns the quantity in typical units used in cosmological simulations
         """
-
         return self.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV, u.K])
-
-    @property
-    def to_gauss(self):
-        u_unit, _ = separate_units(self.unit)
-
-        if u_unit == u.Unit('arepo_pressure^(1/2)'):
-            return self.to('uG')
-        else:
-            return self.to(u_unit)
 
     def decompose(self, bases=[]):
         """
