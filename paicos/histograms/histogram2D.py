@@ -77,10 +77,20 @@ class Histogram2D:
         if isinstance(bins_x, int):
             bins_x = [self.x.min(), self.x.max(), bins_x]
 
+            if logscale:
+                bins_x[0] = self.x[self.x > 0].min()
+
         if isinstance(bins_y, int):
             bins_y = [self.y.min(), self.y.max(), bins_y]
 
+            if logscale:
+                bins_y[0] = self.y[self.y > 0].min()
+
         self.logscale = logscale
+
+        if logscale:
+            assert bins_x[0] > 0
+            assert bins_y[0] > 0
 
         self.edges_x, self.centers_x = make_bins(bins_x, self.logscale)
         self.edges_y, self.centers_y = make_bins(bins_y, self.logscale)
