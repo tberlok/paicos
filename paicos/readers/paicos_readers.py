@@ -67,8 +67,9 @@ class PaicosReader(dict):
         # If snapnum is None, filename is basedir + basename + '.hdf5'
         if snapnum is None:
             self.filename = basedir + basename + '.hdf5'
-            msg = f'File: {self.filename} not found'
-            assert os.path.exists(self.filename), msg
+            err_msg = f'File: {self.filename} not found'
+            if not os.path.exists(self.filename):
+                raise FileNotFoundError(err_msg)
         else:
             # Set filenames for single_file and multi_file cases
             single_file = basename + "_{:03d}.hdf5"
