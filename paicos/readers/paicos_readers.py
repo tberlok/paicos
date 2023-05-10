@@ -500,11 +500,58 @@ class ImageReader(PaicosReader):
 
         # Load info specific to images
         with h5py.File(self.filename, 'r') as f:
-            self.extent = util.load_dataset(f, 'extent', group='image_info')
-            self.widths = util.load_dataset(f, 'widths', group='image_info')
-            self.center = util.load_dataset(f, 'center', group='image_info')
-            self.direction = f['image_info'].attrs['direction']
+            self.extent = extent = util.load_dataset(f, 'extent', group='image_info')
+            self.widths = widths = util.load_dataset(f, 'widths', group='image_info')
+            self.center = center = util.load_dataset(f, 'center', group='image_info')
+            self.direction = direction = f['image_info'].attrs['direction']
             self.image_creator = f['image_info'].attrs['image_creator']
+
+        self.x_c = self.center[0]
+        self.y_c = self.center[1]
+        self.z_c = self.center[2]
+        self.width_x = self.widths[0]
+        self.width_y = self.widths[1]
+        self.width_z = self.widths[2]
+
+        self.direction = direction
+
+        if direction == 'x':
+
+            self.width = self.width_y
+            self.height = self.width_z
+            self.depth = self.width_x
+
+        elif direction == 'y':
+
+            self.width = self.width_x
+            self.height = self.width_z
+            self.depth = self.width_y
+
+        elif direction == 'z':
+
+            self.width = self.width_x
+            self.height = self.width_y
+            self.depth = self.width_z
+
+        self.centered_extent = self.extent.copy
+        self.centered_extent[0] = -self.width / 2
+        self.centered_extent[1] = +self.width / 2
+        self.centered_extent[2] = -self.height / 2
+        self.centered_extent[3] = +self.height / 2
+
+        area = (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
+        self.area = area
+
+        if len(list(self.keys())) > 0:
+            arr_shape = self[list(self.keys())[0]].shape
+            self.npix = self.npix_width = arr_shape[0]
+            self.npix_height = arr_shape[1]
+        self.area_per_pixel = self.area / (self.npix_width * self.npix_height)
+        self.volume = self.width_x * self.width_y * self.width_z
+        self.volume_per_pixel = self.volume / (self.npix_width * self.npix_height)
+
+        self.dw = self.width / self.npix_width
+        self.dh = self.height / self.npix_height
 
         # Get derived images from projection-files
         keys = list(self.keys())
@@ -522,6 +569,48 @@ class ImageReader(PaicosReader):
         for p in ['', '0_']:
             if (p + 'Masses' in keys) and (p + 'Volume' in keys):
                 self[p + 'Density'] = self[p + 'Masses'] / self[p + 'Volume']
+
+    def get_image_coordinates(self):
+
+        extent = self.extent
+        npix_width = self.npix_width
+        npix_height = self.npix_height
+        width = self.width
+        height = self.height
+
+        w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
+        h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
+
+        if settings.use_units:
+            wu = w.unit_quantity
+            ww, hh = np.meshgrid(w.value, h.value)
+            ww = ww * wu
+            hh = hh * wu
+        else:
+            ww, hh = np.meshgrid(w, h)
+
+        return ww, hh
+
+    def get_centered_image_coordinates(self):
+
+        extent = self.centered_extent
+        npix_width = self.npix_width
+        npix_height = self.npix_height
+        width = self.width
+        height = self.height
+
+        w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
+        h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
+
+        if settings.use_units:
+            wu = w.unit_quantity
+            ww, hh = np.meshgrid(w.value, h.value)
+            ww = ww * wu
+            hh = hh * wu
+        else:
+            ww, hh = np.meshgrid(w, h)
+
+        return ww, hh
 
 
 class Histogram2DReader(PaicosReader):
