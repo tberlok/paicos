@@ -119,6 +119,9 @@ class Histogram2D:
                                                        self.centers_y)
 
         self.area_per_bin = dxx * dyy
+
+        if self.logscale and settings.use_units:
+            self.area_per_bin *= u.Unit('dex')**(2) / self.area_per_bin.unit
         self.centers_x_mat = centers_x_mat
         self.centers_y_mat = centers_y_mat
 
@@ -237,10 +240,14 @@ class Histogram2D:
                                        comoving_sim=self.x.comoving_sim)
         if normalize:
             norm = np.sum(self.area_per_bin * hist2d)
+            hist2d /= norm
+
+            sanity = np.sum(self.area_per_bin * hist2d)
             if settings.use_units:
-                hist2d /= norm.value  # TODO: Take a closer look at this again
+                np.testing.assert_allclose(sanity.value, 1.0)
+                assert sanity.unit == u.Unit(''), f'{sanity.unit} should be dimensionless'
             else:
-                hist2d /= norm
+                np.testing.assert_allclose(sanity, 1.0)
 
         return hist2d
 
