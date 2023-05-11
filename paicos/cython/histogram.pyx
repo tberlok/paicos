@@ -44,7 +44,7 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
     cdef int Np = xvec.shape[0]
 
     # Create hist2d array
-    cdef real_t[:, :] hist2d = np.zeros((nbins_x+1, nbins_y+1),
+    cdef real_t[:, :] hist2d = np.zeros((nbins_x, nbins_y),
                                         dtype=np.float64)
 
     # Loop integers and other variables
@@ -71,13 +71,12 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
                 ix = <int> ((x - lower_x)*dx)
                 iy = <int> ((y - lower_y)*dy)
 
-        if (ix > 0) and (ix <= nbins_x) and (iy > 0) and (iy <= nbins_y):
+        if (ix >= 0) and (ix < nbins_x) and (iy >= 0) and (iy < nbins_y):
             hist2d[ix, iy] += weights[ip]
 
     # Fix to avoid returning a memory-view
-    tmp = np.zeros((nbins_x-1, nbins_y-1), dtype=np.float64)
-    # tmp[:, :] = hist2d[:, :]
-    tmp[:, :] = hist2d[1:nbins_x, 1:nbins_y]
+    tmp = np.zeros((nbins_x, nbins_y), dtype=np.float64)
+    tmp[:, :] = hist2d[:, :]
 
     return tmp
 
@@ -94,13 +93,13 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
 
     cdef int threadnum
 
-    cdef int nx = nbins_x + 1
-    cdef int ny = nbins_y + 1
+    cdef int nx = nbins_x
+    cdef int ny = nbins_y
 
     # Create hist2d array
-    cdef real_t[:, :] hist2d = np.zeros((nx, ny),
+    cdef real_t[:, :] hist2d = np.zeros((nbins_x, nbins_y),
                                         dtype=np.float64)
-    cdef real_t[:, :, :] tmp_variable = np.zeros((nx, ny, numthreads),
+    cdef real_t[:, :, :] tmp_variable = np.zeros((nbins_x, nbins_y, numthreads),
                                                  dtype=np.float64)
 
     # Loop integers and other variables
@@ -130,19 +129,18 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
                     ix = <int> ((x - lower_x)*dx)
                     iy = <int> ((y - lower_y)*dy)
 
-            if (ix > 0) and (ix <= nbins_x) and (iy > 0) and (iy <= nbins_y):
+            if (ix >= 0) and (ix < nbins_x) and (iy >= 0) and (iy < nbins_y):
                 tmp_variable[ix, iy, threadnum] = tmp_variable[ix, iy, threadnum] + weights[ip]
 
     # Add up contributions from each thread
     for threadnum in range(numthreads):
-        for ix in range(nx):
-            for iy in range(ny):
+        for ix in range(nbins_x):
+            for iy in range(nbins_y):
                 hist2d[ix, iy] = hist2d[ix, iy] + tmp_variable[ix, iy, threadnum]
 
     # Fix to avoid returning a memory-view
-    tmp = np.zeros((nbins_x-1, nbins_y-1), dtype=np.float64)
-    # tmp[:, :] = hist2d[:, :]
-    tmp[:, :] = hist2d[1:nbins_x, 1:nbins_y]
+    tmp = np.zeros((nbins_x, nbins_y), dtype=np.float64)
+    tmp[:, :] = hist2d[:, :]
 
     return tmp
 

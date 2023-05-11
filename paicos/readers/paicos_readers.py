@@ -500,9 +500,9 @@ class ImageReader(PaicosReader):
 
         # Load info specific to images
         with h5py.File(self.filename, 'r') as f:
-            self.extent = extent = util.load_dataset(f, 'extent', group='image_info')
-            self.widths = widths = util.load_dataset(f, 'widths', group='image_info')
-            self.center = center = util.load_dataset(f, 'center', group='image_info')
+            self.extent = util.load_dataset(f, 'extent', group='image_info')
+            self.widths = util.load_dataset(f, 'widths', group='image_info')
+            self.center = util.load_dataset(f, 'center', group='image_info')
             self.direction = direction = f['image_info'].attrs['direction']
             self.image_creator = f['image_info'].attrs['image_creator']
 
