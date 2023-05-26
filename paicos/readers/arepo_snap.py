@@ -321,10 +321,11 @@ class Snapshot(PaicosReader):
         assert isinstance(p_key, str)
 
         if not p_key[0].isnumeric() or p_key[1] != '_':
-            msg = ('\n\nKeys are expected to consist of an integer '
-                   + '(the particle type) and a blockname, separated by a '
-                   + ' _. For instance 0_Density. You can get the '
-                   + 'available fields like so: snap.info(0)')
+            msg = (f"The key '{p_key}' is not valid."
+                   + "\n\nKeys are expected to consist of an integer "
+                   + "(the particle type) and a blockname, separated by a "
+                   + " _. For instance 0_Density. You can get the "
+                   + "available fields like so: snap.info(0)")
             raise RuntimeError(msg)
 
         # Return a list with all available keys for this parttype
@@ -671,10 +672,11 @@ class Snapshot(PaicosReader):
 
         if p_key not in self:
             if not p_key[0].isnumeric() or p_key[1] != '_':
-                msg = ('\n\nKeys are expected to consist of an integer '
-                       + '(the particle type) and a blockname, separated by a '
-                       + ' _. For instance 0_Density. You can get the '
-                       + 'available fields like so: snap.info(0)')
+                msg = (f"The key '{p_key}' is not valid."
+                       + "\n\nKeys are expected to consist of an integer "
+                       + "(the particle type) and a blockname, separated by a "
+                       + " _. For instance 0_Density. You can get the "
+                       + "available fields like so: snap.info(0)")
                 raise RuntimeError(msg)
             parttype = int(p_key[0])
             name = p_key[2:]
@@ -784,6 +786,32 @@ class Snapshot(PaicosReader):
 
         return select_snap
 
+    def radial_selection(self, center, r_max, r_min=0.0, parttype=None):
+        """
+        A convenient function for selecting in radius
+
+        Returns a new snapshot with the radial selection
+        """
+        from .. import util
+        if parttype is None:
+
+            index = util.get_index_of_radial_range(self['0_Coordinates'],
+                                                   center, r_min, r_max)
+
+            selected_snap = self.select(index, parttype=0)
+            for p in range(1, self.nspecies):
+                index = util.get_index_of_radial_range(selected_snap[f'{p}_Coordinates'],
+                                                       center, r_min, r_max)
+                selected_snap = selected_snap.select(index, parttype=p)
+
+        else:
+            p = parttype
+            index = util.get_index_of_radial_range(self[f'{p}_Coordinates'],
+                                                   center, r_min, r_max)
+            selected_snap = self.select(index, parttype=p)
+
+        return selected_snap
+
     def save_new_snapshot(self, basename, single_precision=False):
         """
         Save a new snapshot containing the currently loaded (derived)
@@ -809,3 +837,152 @@ class Snapshot(PaicosReader):
             f['Header'].attrs["NumPart_Total"] = np.array(new_npart)
 
         writer.finalize()
+
+    def get_sum_of_array(self, variable):
+        """
+        Find the sum of a 1D array.
+
+        Equivalent to np.sum(arr, axis=0) but with open_mp
+        """
+        from .. import util
+
+        if isinstance(variable, str):
+            variable = self[variable]
+        else:
+            if not isinstance(variable, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if len(variable.shape) == 1:
+            from ..cython.get_derived_variables import sum_1d_array_omp as sum_omp
+        elif len(variable.shape) == 2:
+            from ..cython.get_derived_variables import sum_2d_array_omp as sum_omp
+        else:
+            raise RuntimeError('unexpected')
+
+        if settings.use_units:
+            sum_omp = util.remove_astro_units(sum_omp)
+            uq = variable.uq
+
+            return sum_omp(variable, settings.numthreads_reduction) * uq
+        return sum_omp(variable, settings.numthreads_reduction)
+
+    def get_sum_of_array_times_vector(self, arr, vector):
+        """
+        Find the sum of a 1D array times a 2D array
+
+        Equivalent to np.sum(arr[:, None] * vector, axis=0) but with open_mp
+        """
+        from .. import util
+        from ..cython.get_derived_variables import sum_arr_times_vector_omp
+        numthreads = settings.numthreads_reduction
+
+        if isinstance(arr, str):
+            arr = self[arr]
+        else:
+            if not isinstance(arr, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if isinstance(vector, str):
+            vector = self[vector]
+        else:
+            if not isinstance(vector, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        assert vector.shape[1] == 3, 'only works on vectors, e.g. coordinates'
+
+        if settings.use_units:
+            sum_arr_times_vector_omp = util.remove_astro_units(sum_arr_times_vector_omp)
+            uq = arr.uq * vector.uq
+
+            return sum_arr_times_vector_omp(arr, vector, numthreads) * uq
+        return sum_arr_times_vector_omp(arr, vector, numthreads)
+
+    def get_sum_of_arr_times_vector_cross_product(self, mass, coord, velocity, center):
+        """
+        This code calculates sum_i (mass_i (coord_ij - center) x velocity_ij).
+
+        That is, it returns the total angular momentum vector.
+        """
+        from .. import util
+        from ..cython.get_derived_variables import sum_arr_times_vector_cross_product
+        numthreads = settings.numthreads_reduction
+
+        if isinstance(mass, str):
+            mass = self[mass]
+        else:
+            if not isinstance(mass, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if isinstance(coord, str):
+            coord = self[coord]
+        else:
+            if not isinstance(coord, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if isinstance(velocity, str):
+            velocity = self[velocity]
+        else:
+            if not isinstance(velocity, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        if settings.use_units:
+            sum_func = util.remove_astro_units(sum_arr_times_vector_cross_product)
+            uq = mass.uq * coord.uq * velocity.uq
+
+            return sum_func(mass, coord, velocity, center, numthreads) * uq
+        return sum_func(mass, coord, velocity, center, numthreads)
+
+    def center_of_mass(self, parttype=None):
+        """
+        Finds the center of mass for the entire snapshot.
+
+        parttype (default None): if None, then all parttypes are included in the
+                                 center-of-mass calculation. If e.g. parttype=0,
+                                 then the center of mass of the gas is returned.
+                                 if parttype=None, then the total center and
+                                 a list of of the parttype centers are returned
+
+        Can be used in combination with self.select to find the
+        center of mass of a selection.
+        """
+        if parttype is None:
+            mass = [self.get_sum_of_array(f'{p}_Masses') for p in range(self.nspecies)]
+            mcord = [self.get_sum_of_array_times_vector(f'{p}_Masses', f'{p}_Coordinates')
+                     for p in range(self.nspecies)]
+            centers = [mcord[p] / mass[p] for p in range(self.nspecies)]
+
+            tot_center = np.sum(np.vstack(mcord), axis=0) / np.sum(np.stack(mass))
+
+            return tot_center, centers
+        else:
+            p = parttype
+            mcord = self.get_sum_of_array_times_vector(f'{p}_Masses', f'{p}_Coordinates')
+            mass = self.get_sum_of_array(f'{p}_Masses')
+            return mcord / mass
+
+    def total_angular_momentum(self, center, parttype=None):
+        """
+        Finds the total angular momentum for the entire snapshot.
+
+        center: the center around which to calculate the angular momentum
+
+        parttype (default None): if None, then all parttypes are included in the
+                                 calculation. If e.g. parttype=0,
+                                 then total angular momentum of the gas is returned.
+
+        Can be used in combination with self.select to find the
+        total angular momentum of a selection.
+        """
+        func = self.get_sum_of_arr_times_vector_cross_product
+        if parttype is None:
+            if settings.use_units:
+                for p in range(self.nspecies):
+                    assert self[f'{p}_Coordinates'].unit == center.unit
+            res = [func(f'{p}_Masses', f'{p}_Coordinates', f'{p}_Velocities', center)
+                   for p in range(self.nspecies)]
+            return np.sum(np.vstack(res), axis=0), res
+        else:
+            p = parttype
+            if settings.use_units:
+                assert self[f'{p}_Coordinates'].unit == center.unit
+            return func(f'{p}_Masses', f'{p}_Coordinates', f'{p}_Velocities', center)
