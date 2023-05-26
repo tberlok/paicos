@@ -11,8 +11,8 @@ snap = pa.Snapshot(root_dir + '/data', 247)
 group_pos = snap.Cat.Group['GroupPos'][0]
 R200c = snap.Cat.Group['Group_R_Crit200'][0]
 
-# Create a new snapshot which only contains stuff inside R200c from the catalog
-snap = snap.radial_selection(group_pos, R200c)
+# Create a new snapshot which only contains stuff inside 3 R200c from the catalog
+snap = snap.radial_select(group_pos, 3 * R200c)
 
 # Center of mass for the gas (which is parttype 0)
 center_gas = snap.center_of_mass(parttype=0)

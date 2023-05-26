@@ -786,7 +786,7 @@ class Snapshot(PaicosReader):
 
         return select_snap
 
-    def radial_selection(self, center, r_max, r_min=0.0, parttype=None):
+    def radial_select(self, center, r_max, r_min=0.0, parttype=None):
         """
         A convenient function for selecting in radius
 
