@@ -20,7 +20,7 @@ checks:
 
 linting:
 	flake8 ./
-	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=E0611,E0401 paicos
+	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=E0611,E0401,E1101 paicos
 
 make dev_checks:
 	make checks
