@@ -161,6 +161,10 @@ class Projector(ImageCreator):
 
         # Transpose
         projection = projection.T
+
+        assert projection.shape[0] == self.npix_height
+        assert projection.shape[1] == self.npix_width
+
         area_per_pixel = self.area / np.product(projection.shape)
 
         if isinstance(variable, units.PaicosQuantity):

@@ -50,4 +50,5 @@ for use_units in [False, True]:
         # Make a plot
         axes[ii].imshow(np.array((Masses / Volume)), origin='lower',
                         extent=np.array(projector.extent), norm=LogNorm())
+
     plt.show()

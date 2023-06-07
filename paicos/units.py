@@ -296,8 +296,8 @@ class PaicosQuantity(Quantity):
         """
         Returns a copy of the PaicosQuantity
         """
-        return PaicosQuantity(self.value, self.unit, a=self._a, h=self.h,
-                              comoving_sim=self.comoving_sim)
+        return PaicosQuantity(np.array(self.value), self.unit, a=self._a, h=self.h,
+                              comoving_sim=self.comoving_sim, copy=True)
 
     @property
     def uq(self):
@@ -734,7 +734,7 @@ class PaicosTimeSeries(PaicosQuantity):
         Returns a copy of the PaicosQuantity
         """
         return PaicosTimeSeries(self.value, self.unit, a=self._a, h=self.h,
-                                comoving_sim=self.comoving_sim)
+                                copy=True, comoving_sim=self.comoving_sim)
 
     def make_matrix(self, vec):
         """

@@ -153,14 +153,14 @@ class TreeProjector(ImageCreator):
         Get width and height coordinates in the image as 1D arrays
         of total length npix_width × npix_height.
         """
+
+        # TODO: Make this part of the image_creator class
         extent = self.extent
 
-        self.npix_width = npix_width = self.npix
-        width = extent[1] - extent[0]
-        height = extent[3] - extent[2]
-
-        # TODO: Make assertion that dx=dy
-        self.npix_height = npix_height = int(height / width * npix_width)
+        npix_width = self.npix_width
+        npix_height = self.npix_height
+        width = self.width
+        height = self.height
 
         w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
         h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
@@ -253,7 +253,8 @@ class TreeProjector(ImageCreator):
         else:
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
-        area_per_pixel = self.area / (self.npix_width * self.npix_height)
+
+        area_per_pixel = self.area_per_pixel
 
         if extrinsic:
             dV = area_per_pixel * self.delta_depth
