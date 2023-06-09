@@ -220,7 +220,7 @@ class TreeProjector(ImageCreator):
                     or not (e.g. Temperature, density, achieved by
                     setting additive=False). This parameter was previously
                     named 'extrinsic'.
-                    
+
         Returns:
             An array of shape (npix, npix) representing the projected gas variable
 
@@ -249,7 +249,7 @@ class TreeProjector(ImageCreator):
         if extrinsic is not None:
             import warnings
             warnings.warn("The keyword 'extrinsic' has been replaced by 'additive'."
-                          +" The support for 'extrinsic' will be removed eventually.")
+                          + " The support for 'extrinsic' will be removed eventually.")
             additive = extrinsic
 
         parttype = self.parttype
