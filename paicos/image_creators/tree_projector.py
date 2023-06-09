@@ -195,15 +195,16 @@ class TreeProjector(ImageCreator):
         projected is additive (extrinsic) or not (intrinsic).
         (see e.g. https://en.wikipedia.org/wiki/Intensive_and_extensive_properties).
 
-        For non-additive (intrinsic) properties, e.g. the density ρ, the returned projection, P,
-        is
+        For non-additive (intrinsic) properties, e.g. the density ρ, the returned
+        projection, P, is
 
         P = 1/L ∫ ρ dl ,
 
         where L is the depth of the projection. That is, it is simply the mean
         of a number of slices.
 
-        For additive (extrinsic) properties, e.g. mass M, the returned projection is instead
+        For additive (extrinsic) properties, e.g. mass M, the returned projection
+        is instead
 
         P = 1 / dA ∫ dM
 
