@@ -186,16 +186,16 @@ class TreeProjector(ImageCreator):
         """
         return arr.flatten().reshape((self.npix_height, self.npix_width))
 
-    def project_variable(self, variable, extrinsic=True):
+    def project_variable(self, variable, additive=True, extrinsic=None):
         """
         Project gas variable based on the Voronoi cells closest to each
         line of sight.
 
         The behavior of this method depends on whether the variable to be
-        projected is extrinsic or intrinsic
+        projected is additive (extrinsic) or not (intrinsic).
         (see e.g. https://en.wikipedia.org/wiki/Intensive_and_extensive_properties).
 
-        For intrinsic properties, e.g. the density ρ, the returned projection, P,
+        For non-additive (intrinsic) properties, e.g. the density ρ, the returned projection, P,
         is
 
         P = 1/L ∫ ρ dl ,
@@ -203,7 +203,7 @@ class TreeProjector(ImageCreator):
         where L is the depth of the projection. That is, it is simply the mean
         of a number of slices.
 
-        For extrinsic properties, e.g. mass M, the returned projection is instead
+        For additive (extrinsic) properties, e.g. mass M, the returned projection is instead
 
         P = 1 / dA ∫ dM
 
@@ -214,17 +214,18 @@ class TreeProjector(ImageCreator):
         variable: a string or an array of shape (N, )
                   representing the gas variable to project
 
-        extrinsic (bool): A boolean indicating whether the variable to be
-                    projected is extrinsic (e.g. Masses, Volumes)
-                    or intrinsic (e.g. Temperature, density, achieved by
-                    setting extrinsic=False).
-
+        additive (bool): A boolean indicating whether the variable to be
+                    projected is additive (e.g. Masses, Volumes)
+                    or not (e.g. Temperature, density, achieved by
+                    setting additive=False). This parameter was previously
+                    named 'extrinsic'.
+                    
         Returns:
             An array of shape (npix, npix) representing the projected gas variable
 
-            For intrinsic variables, the unit of the projection is identical
-            to the unit of the input variable. For extrinsic variables,
-            the projection unit is the input variable unit divided by area.
+            For non-additive (intrinsic) variables, the unit of the projection is
+            identical to the unit of the input variable. For additive (extrinsic)
+            variables, the projection unit is the input variable unit divided by area.
 
         Examples
         ----------
@@ -244,6 +245,11 @@ class TreeProjector(ImageCreator):
             rho = tree_projector.project_variable('0_Density', extrinsic=False)
 
         """
+        if extrinsic is not None:
+            import warnings
+            warnings.warn("The keyword 'extrinsic' has been replaced by 'additive'."
+                          +" The support for 'extrinsic' will be removed eventually.")
+            additive = extrinsic
 
         parttype = self.parttype
 
@@ -256,7 +262,7 @@ class TreeProjector(ImageCreator):
 
         area_per_pixel = self.area_per_pixel
 
-        if extrinsic:
+        if additive:
             dV = area_per_pixel * self.delta_depth
             avail_list = (list(self.snap.keys()) + self.snap._auto_list)
             if f'{parttype}_Volume' in avail_list:
@@ -265,7 +271,7 @@ class TreeProjector(ImageCreator):
                 projection = np.sum(variable, axis=2) / area_per_pixel
             else:
                 err_msg = (f"The volume field for parttype {parttype} is required when"
-                           + "using extrinsic=True")
+                           + "using additive=True")
                 raise RuntimeError(err_msg)
         else:
             variable = variable[self.index]
