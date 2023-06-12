@@ -337,6 +337,13 @@ class PaicosReader(dict):
             raise RuntimeError(msg)
         return self._Time * self.arepo_units['unit_time']
 
+    def rho_crit(self, z):
+        """
+        Returns the physical critical density (no a or h factors)
+        """
+        rho_crit = self.cosmo.critical_density(z).to('arepo_density')
+        return self.__convert_to_paicos(rho_crit, z)
+
     def get_lookback_time(self, z):
         """
         Returns the lookback time for a given redshift, z.
