@@ -838,6 +838,8 @@ class Snapshot(PaicosReader):
 
         writer.finalize()
 
+        return writer
+
     def get_sum_of_array(self, variable):
         """
         Find the sum of a 1D array.
