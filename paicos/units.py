@@ -624,6 +624,12 @@ class PaicosTimeSeries(PaicosQuantity):
             comoving_sim = value[0].comoving_sim
             unit = value[0].unit
             dtype = value[0].dtype
+
+            shapes = [value[i].value.shape for i in range(len(value))]
+            err_msg = f'Not all shapes of the list are identical!, {shapes},\n\n'
+            for shape in shapes:
+                assert shape == shapes[0], err_msg + f'{shape}'
+
             a = np.array([value[i]._a for i in range(len(value))])
             value = np.array([value[i].value for i in range(len(value))])
         elif isinstance(value, np.ndarray):
