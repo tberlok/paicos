@@ -165,7 +165,7 @@ class Projector(ImageCreator):
         assert projection.shape[0] == self.npix_height
         assert projection.shape[1] == self.npix_width
 
-        area_per_pixel = self.area / np.product(projection.shape)
+        area_per_pixel = self.area / np.prod(projection.shape)
 
         if isinstance(variable, units.PaicosQuantity):
             projection = projection * variable.unit_quantity

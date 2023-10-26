@@ -31,7 +31,7 @@ def test_compare_projector_with_snap_util(show=False):
     projector = pa.TreeProjector(snap, center, widths, 'z', npix=128, npix_depth=128)
 
     dat = np.load(pa.root_dir + '/data/arepo-snap-util-proj.npz')
-    pai = projector.project_variable('0_Density', extrinsic=False).to_physical.value
+    pai = projector.project_variable('0_Density', additive=False).to_physical.value
 
     # Note division by 128 because the Paicos tree projector has different behavior
     # than the arepo-snap-util projector. TODO: Make a better test.
