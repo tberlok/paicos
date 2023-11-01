@@ -41,5 +41,5 @@ jobs:
         # twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
 
         # Commands for uploading to pypi
-        twine upload dist/*tar.gz
+        #twine upload dist/*tar.gz
         twine upload dist/*manylinux*
