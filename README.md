@@ -3,6 +3,7 @@
 https://github.com/tberlok/paicos/actions/workflows/pylint.yml)
 [![flake8](https://github.com/tberlok/paicos/actions/workflows/flake8.yml/badge.svg)](
 https://github.com/tberlok/paicos/actions/workflows/flake8.yml)
+[![Documentation Status](https://readthedocs.org/projects/paicos/badge/?version=latest)](https://paicos.readthedocs.io/en/latest/?badge=latest)
 
 
 # Paicos
