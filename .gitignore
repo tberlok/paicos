@@ -7,5 +7,6 @@ build/
 user_settings.py
 paicos.egg-info
 dist/
+*-checkpoint.ipynb
 *.ipynb_checkpoints
 *.DS_Store
