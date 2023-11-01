@@ -5,7 +5,7 @@
 *__pycache__*
 build/
 user_settings.py
-*.hdf5
 paicos.egg-info
 dist/
 *.ipynb_checkpoints
+*.DS_Store
