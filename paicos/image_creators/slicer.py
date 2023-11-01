@@ -15,8 +15,7 @@ class Slicer(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, make_snap_with_selection=False):
-
+                 npix=512, parttype=0, make_snap_with_selection=False):
         """
         Initialize the Slicer object.
 
@@ -43,6 +42,9 @@ class Slicer(ImageCreator):
             Number of pixels in the horizontal direction of the image,
             by default 512.
 
+        parttype : int, optional
+            The particle type to project, by default gas (PartType 0).
+
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
             the selected region, defaults to False
@@ -52,22 +54,32 @@ class Slicer(ImageCreator):
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
                 assert self.widths[ii] == 0.
 
+        parttype = self.parttype
+
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        avail_list = (list(snap.keys()) + snap._auto_list)
+        if f'{parttype}_Volume' in avail_list:
+            thickness = 4.0 * np.cbrt((snap[f"{parttype}_Volume"])
+                                      / (4.0 * np.pi / 3.0))
+        elif f'{parttype}_SubfindHsml' in avail_list:
+            thickness = snap[f'{parttype}_SubfindHsml']
+        else:
+            raise RuntimeError(
+                'There is no smoothing length or volume for the thickness of the slice')
+        self.slice = util.get_index_of_slice_region(snap[f"{parttype}_Coordinates"],
+                                                    center, widths, thickness, snap.box)
 
-        self.slice = util.get_index_of_slice_region(snap["0_Coordinates"], center, widths,
-                                                    thickness, snap.box)
-
-        self.index_in_slice_region = np.arange(snap["0_Coordinates"].shape[0])[self.slice]
+        self.index_in_slice_region = np.arange(snap[f"{parttype}_Coordinates"].shape[0]
+                                               )[self.slice]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.slice]
+        self.pos = snap[f"{parttype}_Coordinates"][self.slice]
         tree = KDTree(self.pos)
 
         # Now construct the image grid
@@ -93,14 +105,14 @@ class Slicer(ImageCreator):
         Get width and height coordinates in the image as 1D arrays
         of total length npix_width × npix_height.
         """
+
+        # TODO: Make this part of the image_creator class
+
         extent = self.extent
-
-        self.npix_width = npix_width = self.npix
-        width = extent[1] - extent[0]
-        height = extent[3] - extent[2]
-
-        # TODO: Make assertion that dx=dy
-        self.npix_height = npix_height = int(height / width * npix_width)
+        npix_width = self.npix_width
+        npix_height = self.npix_height
+        width = self.width
+        height = self.height
 
         w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
         h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
@@ -141,6 +153,8 @@ class Slicer(ImageCreator):
         """
 
         if isinstance(variable, str):
+            err_msg = 'slicer uses a different parttype'
+            assert int(variable[0]) == self.parttype, err_msg
             variable = self.snap[variable]
         else:
             if not isinstance(variable, np.ndarray):

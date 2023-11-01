@@ -77,10 +77,20 @@ class Histogram2D:
         if isinstance(bins_x, int):
             bins_x = [self.x.min(), self.x.max(), bins_x]
 
+            if logscale:
+                bins_x[0] = self.x[self.x > 0].min()
+
         if isinstance(bins_y, int):
             bins_y = [self.y.min(), self.y.max(), bins_y]
 
+            if logscale:
+                bins_y[0] = self.y[self.y > 0].min()
+
         self.logscale = logscale
+
+        if logscale:
+            assert bins_x[0] > 0
+            assert bins_y[0] > 0
 
         self.edges_x, self.centers_x = make_bins(bins_x, self.logscale)
         self.edges_y, self.centers_y = make_bins(bins_y, self.logscale)
@@ -91,22 +101,39 @@ class Histogram2D:
 
         self.extent = [self.lower_x, self.upper_x, self.lower_y, self.upper_y]
 
+        self._get_image_properties()
+
         # Make the histogram
         self.hist2d = self._make_histogram()
 
         self.colorlabel = None
 
-    def _find_norm(self, hist2d):
-        """
-        Private method to find the normalizing constant for the histogram
-        Parameters:
-            hist2d (2D array): The 2D histogram for which the normalizing
-                               constant is needed
-        Returns:
-            norm (float): The normalizing constant
-        """
-        norm = find_normalizing_norm_of_2d_hist(hist2d, self.edges_x, self.edges_y)
-        return norm
+    def _get_image_properties(self):
+        dx = np.diff(self.edges_x)
+        dy = np.diff(self.edges_y)
+
+        if settings.use_units:
+            dxu = dx.unit_quantity
+            dyu = dy.unit_quantity
+            dxx, dyy = np.meshgrid(dx.value, dy.value)
+            dxx = dxx * dxu
+            dyy = dyy * dyu
+
+            centers_x_mat, centers_y_mat = np.meshgrid(self.centers_x.value,
+                                                       self.centers_y.value)
+            centers_x_mat = centers_x_mat * dxu
+            centers_y_mat = centers_y_mat * dyu
+        else:
+            dxx, dyy = np.meshgrid(dx, dy)
+            centers_x_mat, centers_y_mat = np.meshgrid(self.centers_x,
+                                                       self.centers_y)
+
+        self.area_per_bin = dxx * dyy
+
+        if self.logscale and settings.use_units:
+            self.area_per_bin *= u.Unit('dex')**(2) / self.area_per_bin.unit
+        self.centers_x_mat = centers_x_mat
+        self.centers_y_mat = centers_y_mat
 
     def get_colorlabel(self, x_symbol, y_symbol, weight_symbol=None):
         """
@@ -174,7 +201,7 @@ class Histogram2D:
             lower_x, upper_x, nbins_x,
             lower_y, upper_y, nbins_y,
             self.logscale,
-            numthreads=1)
+            numthreads=settings.numthreads_reduction)
 
         return hist2d
 
@@ -208,13 +235,12 @@ class Histogram2D:
             assert y.unit == self.edges_y.unit
 
         if weights is None:
-            weights = np.ones_like(x, dtype=np.float64)
+            # np.ones_like returns something with units,
+            # should replace with np.ones and the shape
+            weights = np.ones(x.shape, dtype=np.float64)
 
         hist2d = self._cython_make_histogram(x, y, self.edges_x,
                                              self.edges_y, weights)
-
-        if normalize:
-            hist2d /= self._find_norm(hist2d)
 
         hist2d = hist2d.T
 
@@ -222,6 +248,17 @@ class Histogram2D:
             hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x.a,
                                        h=self.x.h,
                                        comoving_sim=self.x.comoving_sim)
+        if normalize:
+            norm = np.sum(self.area_per_bin * hist2d)
+            hist2d /= norm
+
+            sanity = np.sum(self.area_per_bin * hist2d)
+            if settings.use_units:
+                np.testing.assert_allclose(sanity.value, 1.0)
+                assert sanity.unit == u.Unit(''), f'{sanity.unit} should be dimensionless'
+            else:
+                np.testing.assert_allclose(sanity, 1.0)
+
         return hist2d
 
     def save(self, basedir, basename="2d_histogram"):

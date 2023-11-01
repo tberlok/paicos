@@ -1,6 +1,8 @@
 import paicos as pa
 import numpy as np
 
+pa.use_units(True)
+
 # Open an Arepo snapshot
 snap = pa.Snapshot(pa.root_dir + "/data", 247)
 
@@ -20,7 +22,7 @@ index = pa.util.get_index_of_radial_range(snap['0_Coordinates'],
                                           center, 0., r_max)
 
 # Create a new snap object which only contains the index above
-snap = snap.select(index)
+snap = snap.select(index, parttype=0)
 
 
 # Calculate the radial distances (a bit duplicate here...)
@@ -72,7 +74,7 @@ for parttype in range(1, snap.nspecies):
                                               center, 0., r_max)
 
     # Create a new snap object which only contains the index above
-    snap = snap.select(index)
+    snap = snap.select(index, parttype=0)
 
     r = np.sqrt(np.sum((snap[pstr + "Coordinates"] - center[None, :]) ** 2.0,
                 axis=1))

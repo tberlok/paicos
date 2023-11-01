@@ -13,18 +13,17 @@ width_vec = (
 
 plt.figure(1)
 plt.clf()
-fig, axes = plt.subplots(num=1, ncols=3, sharey=True)
+fig, axes = plt.subplots(num=1, ncols=3)
 for ii, direction in enumerate(['x', 'y', 'z']):
     widths = width_vec[ii]
-    slicer = pa.Slicer(snap, center, widths, direction, npix=512)
+    slicer = pa.Slicer(snap, center, widths, direction, npix=512, parttype=1)
 
     image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + 'test_data',
                                basename=f'slice_{direction}')
 
-    Density = slicer.slice_variable(snap['0_Density'])
-    Temperatures = slicer.slice_variable('0_Temperatures')
+    Density = slicer.slice_variable(snap['1_SubfindDMDensity'])
 
-    image_file.save_image('0_Density', Density)
+    image_file.save_image('1_SubfindDMDensity', Density)
 
     # Move from temporary filename to final filename
     image_file.finalize()
@@ -34,17 +33,13 @@ for ii, direction in enumerate(['x', 'y', 'z']):
                                basename=f'slice_{direction}',
                                mode='a')
 
-    # Now add the temperatures as well
-    image_file.save_image('0_Temperatures', Temperatures)
-
     # Make a plot
-    extent = slicer.centered_extent
     if pa.settings.use_units:
         axes[ii].imshow(Density.value, origin='lower',
-                        extent=extent.value, norm=LogNorm())
+                        extent=slicer.extent.value, norm=LogNorm())
     else:
         axes[ii].imshow(Density, origin='lower',
-                        extent=extent, norm=LogNorm())
+                        extent=slicer.extent, norm=LogNorm())
 
 # Example of how to read the image files
 im = pa.ImageReader(pa.root_dir + 'test_data', 247, 'slice_x')

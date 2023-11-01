@@ -7,27 +7,54 @@ https://github.com/tberlok/paicos/actions/workflows/flake8.yml)
 
 # Paicos
 
-A somewhat bare-bones python package for making projections and slices of
-Arepo simulations.
+A somewhat bare-bones Python package for making projections and slices of
+Arepo simulations. Please note that while Paicos has its visibility set to
+public, it is still in beta mode and under active development.
 
 <img src="images/Z24_snap130_wide_projection_notnested.jpg" width="auto">
 
 
 ## Installation on your laptop
 
-Clone the repo, then:
+> **Warning**
+Please do not try to pip install paicos. This is not yet supported and the mess that such an attempt creates will make the instructions below fail.
+
+We clone the repo, pip install the requirements and then compile the code:
 
 ```
+git clone git@github.com:tberlok/paicos.git
+cd paicos
 pip install -r requirements.txt
-```
-followed by
-```
 make
 ```
 
+Assuming this succeeds, you will then need to add the paicos directory to your Python path,
+For instance, I have
+```
+export PYTHONPATH=$PYTHONPATH:/Users/berlok/projects/paicos
+```
+in my `.bash_profile`.
+
+You can then check that everything works by doing
+```
+make checks
+```
+
+#### Note for installation on MacOs
+
+Paicos requires a compiler with OpenMP support. I have installed gcc-12 via Homebrew and this is currently hardcoded in setup.py. You will have to manually modify setup.py if you do not have this compiler installed.
+
 ## Installation for use with Jupyter notebooks on the AIP Newton cluster
 
-Compile the code from inside a notebook using bash magic (replace with
+First clone the repo onto the AIP newton cluster and then add the path
+to your .bash_profile (on the cluster!). I have, for instance,
+
+```
+export PYTHONPATH=$PYTHONPATH:/llust21/berlok/paicos
+```
+You might need to restart singularity in order for this change to the PYTHONPATH to be visible inside the jupyter notebooks.
+
+Now compile the code from inside a notebook using bash magic (replace with
 path to your own clone of paicos):
 
 ```
@@ -113,11 +140,6 @@ python3 examples/using_aliases_example.py
 I have uploaded a few tutorial notebooks in `notebook-tutorials` which
 displays the functionality.
 
-### Avoiding bloated git from jupyter notebooks
 
-Remember to do the following before committing notebooks:
-```
-python3 -m nbconvert --clear-output *.ipynb **/*.ipynb
-```
 
 

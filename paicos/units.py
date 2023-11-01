@@ -73,7 +73,7 @@ def construct_unit_from_dic(dic):
     Construct unit from a dictionary with the format returned
     from __get_unit_dictionaries
     """
-    return np.product([unit**dic[unit] for unit in dic])
+    return np.prod([unit**dic[unit] for unit in dic])
 
 
 def separate_units(unit):
@@ -101,7 +101,7 @@ def get_new_unit(unit, remove_list=[]):
         if base not in remove_list:
             unit_list.append(base**power)
 
-    return np.product(unit_list)
+    return np.prod(unit_list)
 
 
 class PaicosQuantity(Quantity):
@@ -165,7 +165,7 @@ class PaicosQuantity(Quantity):
 
     # pylint: disable=too-many-arguments
 
-    def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
+    def __new__(cls, value, unit=None, dtype=None, copy=False, order=None,
                 subok=False, ndmin=0, h=None, a=None, comoving_sim=None):
         """
         Here we initialize the Paicos Quantity. The three additional
@@ -296,8 +296,8 @@ class PaicosQuantity(Quantity):
         """
         Returns a copy of the PaicosQuantity
         """
-        return PaicosQuantity(self.value, self.unit, a=self._a, h=self.h,
-                              comoving_sim=self.comoving_sim)
+        return PaicosQuantity(np.array(self.value), self.unit, a=self._a, h=self.h,
+                              comoving_sim=self.comoving_sim, copy=True)
 
     @property
     def uq(self):
@@ -683,9 +683,8 @@ class PaicosTimeSeries(PaicosQuantity):
 
     def to_comoving(self, unit):
         """
-        Returns a copy of the current `PaicosTimeSeries` instance with the
-        a and h factors removed, i.e. transform from comoving to physical.
-        The value of the resulting object is scaled accordingly.
+        Returns a copy of the current `PaicosTimeSeries` with the
+        a and h factors given by the input unit.
         """
 
         if not self.comoving_sim:
@@ -735,7 +734,13 @@ class PaicosTimeSeries(PaicosQuantity):
         Returns a copy of the PaicosQuantity
         """
         return PaicosTimeSeries(self.value, self.unit, a=self._a, h=self.h,
-                                comoving_sim=self.comoving_sim)
+                                copy=True, comoving_sim=self.comoving_sim)
+
+    def make_matrix(self, vec):
+        """
+        """
+        assert vec.shape[0] == self.shape[0]
+        return np.vstack([vec for _ in range(self.shape[1])]).T
 
     def _sanity_check(self, value):
         """

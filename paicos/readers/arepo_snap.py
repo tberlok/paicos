@@ -194,14 +194,42 @@ class Snapshot(PaicosReader):
         """
         self._all_avail_load = []
         self._part_avail_load = {i: [] for i in range(self.nspecies)}
+        self._part_specs = {i: {} for i in range(self.nspecies)}
         for parttype in range(self.nspecies):
             parttype_str = f'PartType{parttype}'
-            with h5py.File(self.filename, 'r') as file:
-                if parttype_str in file:
-                    for key in file[parttype_str]:
-                        p_key = f'{parttype}_{key}'
-                        self._all_avail_load.append(p_key)
-                        self._part_avail_load[parttype].append(p_key)
+
+            if not self.multi_file:
+                with h5py.File(self.filename, 'r') as file:
+                    if parttype_str in file:
+                        for key in file[parttype_str]:
+                            p_key = f'{parttype}_{key}'
+                            self._part_avail_load[parttype].append(p_key)
+                            shape = file[parttype_str][key].shape
+                            dtype = file[parttype_str][key].dtype
+                            self._part_specs[parttype][key] = {'shape': shape,
+                                                               'dtype': dtype}
+            else:
+                # For multiple files we sometimes need to open many of them
+                # to find *all* the available parttypes.
+                # This can occur when the parttypes are not evenly distributed
+                # in space (e.g. the high resolution region in a zoom
+                # will have no low res DM particles).
+                for ii in range(self.nfiles):
+                    with h5py.File(self.multi_filename.format(ii), 'r') as file:
+                        if parttype_str in file:
+                            for key in file[parttype_str]:
+                                p_key = f'{parttype}_{key}'
+                                self._part_avail_load[parttype].append(p_key)
+                                shape = list(file[parttype_str][key].shape)
+                                if len(shape) > 1:
+                                    shape[0] = self.npart[parttype]
+                                dtype = file[parttype_str][key].dtype
+                                self._part_specs[parttype][key] = {'shape': tuple(shape),
+                                                                   'dtype': dtype}
+                            # print(f'found parttype in partfile {ii}, breaking out')
+                            break
+
+            self._all_avail_load += self._part_avail_load[parttype]
 
     def _identify_parttypes(self):
         """
@@ -319,7 +347,7 @@ class Snapshot(PaicosReader):
     def info(self, parttype, verbose=True):
         """
         This function provides information about the keys of a certain
-        particle type in a snapshot file.
+        particle type in a snapshot.
 
         Args: PartType (int): An integer representing the particle type of
         interest. verbose (bool, optional): A flag indicating whether or not
@@ -327,56 +355,138 @@ class Snapshot(PaicosReader):
 
         Returns: list or None : If the PartType exists in the file, a list of
         keys for that PartType is returned, otherwise None.
-
-        This function opens the snapshot file and checks if the PartType
-        passed as an argument exists in the file. If it does, it retrieves the
-        keys of that PartType and if verbose is True, prints the keys to the
-        console, otherwise it returns the keys. If the PartType does not exist
-        in the file, the function will print "PartType not in hdf5 file" to
-        the console.
-
-        The function can be useful for examining the contents of a snapshot
-        file and determining what data is available for a given particle
-        type.
         """
         parttype_str = f'PartType{parttype}'
-        with h5py.File(self.filename, 'r') as file:
-            if parttype_str in file:
-                load_keys = [f'{parttype}_{key}' for key in file[parttype_str]]
-                if verbose:
-                    print('\nKeys for ' + parttype_str + ' in the hdf5 file:')
-                    for key in (sorted(load_keys)):
-                        if settings.use_aliases:
-                            if key in settings.aliases:
-                                alias = settings.aliases[key]
-                                msg = alias + '\t' * 5 + '(an alias of {})'
-                                print(msg.format(key))
-                            else:
-                                print(key)
-                        else:
-                            print(key)
+        if parttype >= self.nspecies:
+            err_msg = (f"Parttype {self.nspecies-1} is the largest contained"
+                       + f" in the snapshot which has nspecies={self.nspecies}.")
+            raise RuntimeError(err_msg)
 
-                    print('\nPossible derived variables are:')
-                    dkeys = self.get_variable_function(f'{parttype}_', True)
+        load_keys = self._part_avail_load[parttype]
+        if verbose:
+            print('\nKeys for ' + parttype_str + ' in the hdf5 file:')
+            for key in (sorted(load_keys)):
+                print_key = key
+                if settings.use_aliases:
+                    if key in settings.aliases:
+                        alias = settings.aliases[key]
+                        msg = alias + '\t' * 5 + '(an alias of {})'
+                        print_key = msg.format(key)
 
-                    for key in (sorted(dkeys)):
-                        if settings.use_aliases:
-                            if key in settings.aliases:
-                                alias = settings.aliases[key]
-                                msg = alias + '\t' * 5 + '(an alias of {})'
-                                print(msg.format(key))
-                            else:
-                                print(key)
-                        else:
-                            print(key)
-                    return None
-                else:
-                    return load_keys
+                print(print_key)
+
+            print('\nPossible derived variables are:')
+            dkeys = self.get_variable_function(f'{parttype}_', True)
+
+            for key in (sorted(dkeys)):
+                print_key = key
+                if settings.use_aliases:
+                    if key in settings.aliases:
+                        alias = settings.aliases[key]
+                        msg = alias + '\t' * 5 + '(an alias of {})'
+                        print_key = msg.format(key)
+
+                print(print_key)
+        else:
+            return load_keys
+
+    def load_data_experimental(self, parttype, blockname):
+        """
+        Load data from hdf5 file(s). Example usage:
+
+        snap = Snapshot(...)
+
+        snap.load_data(0, 'Density')
+
+        Note that subsequent calls does not reload the data. Reloading
+        the data can be done explicitly:
+
+        snap.remove_data(0, 'Density')
+        snap.load_data(0, 'Density')
+
+        """
+
+        assert parttype < self.nspecies
+
+        p_key = f'{parttype}_{blockname}'
+        alias_key = p_key
+
+        if settings.use_aliases:
+            if p_key in settings.aliases:
+                alias_key = settings.aliases[p_key]
+
+        if p_key not in self.info(parttype, False):
+            msg = (f'Unable to load parttype {parttype}, blockname '
+                   + f'{blockname} as this field is not in the hdf5 file')
+            raise RuntimeError(msg)
+
+        if alias_key in self:
+            if self.verbose:
+                print(blockname, "for species",
+                      parttype, "already in memory")
+            return
+
+        if self.verbose:
+            print("loading block", blockname,
+                  "for species", parttype, "...")
+            start_time = time.time()
+
+        def read_hdf5_file(filename, parttype, blockname):
+            """
+            This helper function does the actual data loading
+            """
+            parttype_str = f'PartType{parttype}'
+            with h5py.File(filename, 'r') as f:
+                # Load a dataset
+                dataset = f[parttype_str][blockname][()]
+
+            if settings.double_precision:
+                # Load all variables with double precision
+                if not issubclass(dataset.dtype.type, numbers.Integral):
+                    dataset = dataset.astype(np.float64)
             else:
-                if verbose:
-                    print('PartType not in hdf5 file')
+                warnings.warn('\n\nThe cython routines expect double precision '
+                              + 'and will fail unless settings.double_precision '
+                              + 'is True.\n\n')
+
+            if settings.use_units:
+                if parttype in self._type_info:
+                    ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
+                    dataset = self.get_paicos_quantity(dataset, blockname,
+                                                       field=ptype)
                 else:
-                    return []
+                    # Assume dark matter for the units
+                    dataset = self.get_paicos_quantity(dataset, blockname,
+                                                       field='dark_matter')
+            return dataset
+
+        if self.multi_file:
+            filenames = [self.multi_filename.format(ii) for ii in range(self.nfiles)]
+            shape = self._part_specs[parttype][blockname]['shape']
+            if len(shape) == 1:
+                self[alias_key] = np.hstack([read_hdf5_file(filename, parttype, blockname)
+                                             for filename in filenames])
+            elif len(shape) == 2:
+                self[alias_key] = np.vstack([read_hdf5_file(filename, parttype, blockname)
+                                             for filename in filenames])
+            else:
+                raise RuntimeError(f"Unexpected shape={shape} for {parttype}_{blockname}")
+        else:
+            self[alias_key] = read_hdf5_file(self.filename, parttype, blockname)
+
+        # Only keep the cells with True in the selection index array
+        if parttype in self.dic_selection_index:
+            selection_index = self.dic_selection_index[parttype]
+            shape = self[alias_key].shape
+            if len(shape) == 1:
+                self[alias_key] = self[alias_key][selection_index]
+            elif len(shape) == 2:
+                self[alias_key] = self[alias_key][selection_index, :]
+            else:
+                raise RuntimeError('Data has unexpected shape!')
+
+        if self.verbose:
+            print("... done! (took", time.time() - start_time, "s)")
 
     def load_data(self, parttype, blockname):
         """
@@ -409,7 +519,6 @@ class Snapshot(PaicosReader):
             raise RuntimeError(msg)
 
         datname = f'PartType{parttype}/{blockname}'
-        parttype_str = f'PartType{parttype}'
         if alias_key in self:
             if self.verbose:
                 print(blockname, "for species",
@@ -437,19 +546,15 @@ class Snapshot(PaicosReader):
             np_file = f["Header"].attrs["NumPart_ThisFile"][parttype]
 
             if ifile == 0:   # initialize array
-                if len(f[datname].shape) == 1:
-                    self[alias_key] = np.empty(
-                        self.npart[parttype], dtype=f[datname].dtype)
+                shape = self._part_specs[parttype][blockname]['shape']
+                dtype = self._part_specs[parttype][blockname]['dtype']
+                if len(shape) == 1:
+                    self[alias_key] = np.empty(self.npart[parttype], dtype=dtype)
                 else:
-                    self[alias_key] = np.empty(
-                        (self.npart[parttype], f[datname].shape[1]),
-                        dtype=f[datname].dtype)
-                # Load attributes
-                data_attributes = dict(f[parttype_str][blockname].attrs)
-
-                self.P_attrs[alias_key] = data_attributes
-
-            self[alias_key][skip_part:skip_part + np_file] = f[datname]
+                    self[alias_key] = np.empty((self.npart[parttype], shape[1]),
+                                               dtype=dtype)
+            if np_file > 0:
+                self[alias_key][skip_part:skip_part + np_file] = f[datname]
 
             skip_part += np_file
 
@@ -593,9 +698,7 @@ class Snapshot(PaicosReader):
         """
         Pre-compute a list for auto-completion.
         """
-        self._auto_list = []
-
-        self._auto_list = self._all_avail_load
+        self._auto_list = list(self._all_avail_load)
         for key in self._this_snap_funcs:
             self._auto_list.append(key)
 
@@ -607,8 +710,6 @@ class Snapshot(PaicosReader):
     def _ipython_key_completions_(self):
         """
         Auto-completion of dictionary.
-
-        Only works with variables that can directly loaded.
         """
 
         return self._auto_list
@@ -623,16 +724,22 @@ class Snapshot(PaicosReader):
         if p_key in self.P_attrs:
             del self.P_attrs[p_key]
 
-    def select(self, selection_index, parttype=0):
+    def select(self, selection_index, parttype=None):
         """
         Create a new snapshot object which will only contain
         cells with a selection_index.
 
         Example use:
         index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
-        selected_snap = snap.select(index)
+        selected_snap = snap.select(index, parttype=0)
 
         """
+        if parttype is None:
+            parttype = 0
+            msg = ("You have not specified the parttype that the selection index"
+                   + " corresponds to. The code will assume parttype=0. Future versions"
+                   + " of this method will likely have parttype as a required input")
+            warnings.warn(msg)
 
         s_index = selection_index
 

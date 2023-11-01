@@ -24,31 +24,34 @@ for use_units in [False, True]:
 
     plt.figure(1)
     plt.clf()
-    fig, axes = plt.subplots(num=1, ncols=3)
+    fig, axes = plt.subplots(nrows=2, ncols=3)
     for ii, direction in enumerate(['x', 'y', 'z']):
+        print(ii)
         widths = width_vec[ii]
-        projector = pa.Projector(snap, center, widths, direction, npix=512)
+
+        projector = pa.Projector(snap, center, widths, direction, npix=512,
+                                 parttype=1, make_snap_with_selection=True)
+        treeprojector = pa.TreeProjector(snap, center, widths, direction,
+                                         npix=512, parttype=1, verbose=True)
 
         image_file = pa.ArepoImage(projector, basedir=root_dir + 'test_data/',
                                    basename=f'projection_{direction}')
 
-        Masses = projector.project_variable('0_Masses')
-        print(Masses[0, 0])
-        Volume = projector.project_variable('0_Volume')
+        Density = projector.project_variable('1_SubfindDMDensity')
+        Density_tree = treeprojector.project_variable('1_SubfindDMDensity',
+                                                      extrinsic=False)
 
-        image_file.save_image('0_Masses', Masses)
-        image_file.save_image('0_Volume', Volume)
-
-        # snap.get_temperatures()
-        TemperaturesTimesMasses = projector.project_variable(
-            snap['0_Temperatures'] * snap['0_Masses'])
-        image_file.save_image('0_TemperaturesTimesMasses', TemperaturesTimesMasses)
+        image_file.save_image('1_SubfindDMDensity', Density)
 
         # Move from temporary filename to final filename
         image_file.finalize()
 
         # Make a plot
-        axes[ii].imshow(np.array((Masses / Volume)), origin='lower',
-                        extent=np.array(projector.extent), norm=LogNorm())
+        axes[0, ii].imshow(np.array(Density), origin='lower',
+                           extent=np.array(projector.extent), norm=LogNorm())
+        axes[0, 1].set_title('SPH projector')
+        axes[1, ii].imshow(np.array(Density_tree), origin='lower',
+                           extent=np.array(projector.extent), norm=LogNorm())
+        axes[1, 1].set_title('Tree projector')
 
     plt.show()

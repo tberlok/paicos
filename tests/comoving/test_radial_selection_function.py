@@ -21,7 +21,7 @@ def test_radial_selection():
     # Check that we get the same result
     np.testing.assert_array_equal(index_slow, index)
 
-    selected_snap = snap.select(index)
+    selected_snap = snap.select(index, parttype=0)
 
     selected_snap.save_new_snapshot('very_small_snap')
 

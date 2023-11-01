@@ -15,8 +15,8 @@ class TreeProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, npix_depth=None, make_snap_with_selection=False,
-                 tol=0.2):
+                 npix=512, npix_depth=None, parttype=0, make_snap_with_selection=False,
+                 tol=1, verbose=False):
 
         """
         Initialize the Slicer object.
@@ -41,9 +41,18 @@ class TreeProjector(ImageCreator):
             Number of pixels in the horizontal direction of the image,
             by default 512.
 
+        parttype : int, optional
+            The particle type to project, by default gas (PartType 0).
+
         npix_depth: int, optional
             Number of pixels in the depth direction, by default set
-            automatically based on the smallest cell sizes in the region.
+            automatically based on the smallest cell sizes in the region
+            and the tolerance parameter, tol (see below).
+
+        tol: float, optional
+            Smaller values of tol adds more slices to the integration.
+            Convergence is expected for tol ≤ 1 but you can experiment with
+            higher values.
 
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
@@ -54,13 +63,26 @@ class TreeProjector(ImageCreator):
         if make_snap_with_selection:
             raise RuntimeError('make_snap_with_selection not yet implemented!')
 
-        super().__init__(snap, center, widths, direction, npix=npix)
+        super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
+
+        parttype = self.parttype
 
         # Pre-select a narrow region around the region-of-interest
-        thickness = 4.0 * np.cbrt((snap["0_Volume"]) / (4.0 * np.pi / 3.0))
+        avail_list = (list(snap.keys()) + snap._auto_list)
+        if f'{parttype}_Volume' in avail_list:
+            thickness = 4.0 * np.cbrt((snap[f"{parttype}_Volume"]) / (4.0 * np.pi / 3.0))
+        elif f'{parttype}_SubfindHsml' in avail_list:
+            thickness = snap[f'{parttype}_SubfindHsml']
+        else:
+            err_msg = ("There is no smoothing length or volume for calculating"
+                       + "the thickness of the slice")
+            raise RuntimeError(err_msg)
         get_index = util.get_index_of_cubic_region_plus_thin_layer
-        self.box_selection = get_index(snap["0_Coordinates"], center, widths, thickness,
-                                       snap.box)
+        self.box_selection = get_index(snap[f"{parttype}_Coordinates"],
+                                       center, widths, thickness, snap.box)
+
+        if verbose:
+            print('Sub-selection [DONE]')
 
         min_thickness = np.min(thickness)
 
@@ -73,16 +95,20 @@ class TreeProjector(ImageCreator):
 
         # Automatically set numbers of pixels in depth direction based on cell sizes
         if npix_depth is None:
-            npix_depth = int(depth / min_thickness)
+            npix_depth = int(np.ceil(depth / min_thickness / tol))
+            if verbose:
+                print(f'npix_depth is {npix_depth}')
 
         self.npix_depth = npix_depth
 
-        self.index_in_box_region = np.arange(snap["0_Coordinates"].shape[0]
+        self.index_in_box_region = np.arange(snap[f"{self.parttype}_Coordinates"].shape[0]
                                              )[self.box_selection]
 
         # Construct a tree
-        self.pos = snap["0_Coordinates"][self.box_selection]
+        self.pos = snap[f"{parttype}_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
+        if verbose:
+            print('Tree construction [DONE]')
 
         # Now construct the image grid
         w, h = self._get_width_and_height_arrays()
@@ -112,9 +138,9 @@ class TreeProjector(ImageCreator):
             slice_index = self._unflatten(self.index_in_box_region[i])
             self.distance_to_nearest_cell = self._unflatten(d)
 
-            if min_thickness < tol * self.delta_depth:
+            if min_thickness < self.delta_depth / tol:
                 print(f'Warning: Minimum cell size {min_thickness} is '
-                      + f'less than {tol} of the depth '
+                      + f'less than {tol} of delta_depth '
                       + f'{self.delta_depth}. You should probably increase '
                       + f'npix_depth from its current value of {npix_depth}. '
                       + 'Image convergence is expected for npix_depth='
@@ -127,14 +153,14 @@ class TreeProjector(ImageCreator):
         Get width and height coordinates in the image as 1D arrays
         of total length npix_width × npix_height.
         """
+
+        # TODO: Make this part of the image_creator class
         extent = self.extent
 
-        self.npix_width = npix_width = self.npix
-        width = extent[1] - extent[0]
-        height = extent[3] - extent[2]
-
-        # TODO: Make assertion that dx=dy
-        self.npix_height = npix_height = int(height / width * npix_width)
+        npix_width = self.npix_width
+        npix_height = self.npix_height
+        width = self.width
+        height = self.height
 
         w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
         h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
@@ -160,24 +186,25 @@ class TreeProjector(ImageCreator):
         """
         return arr.flatten().reshape((self.npix_height, self.npix_width))
 
-    def project_variable(self, variable, extrinsic=True):
+    def project_variable(self, variable, additive=True, extrinsic=None):
         """
         Project gas variable based on the Voronoi cells closest to each
         line of sight.
 
         The behavior of this method depends on whether the variable to be
-        projected is extrinsic or intrinsic
+        projected is additive (extrinsic) or not (intrinsic).
         (see e.g. https://en.wikipedia.org/wiki/Intensive_and_extensive_properties).
 
-        For intrinsic properties, e.g. the density ρ, the returned projection, P,
-        is
+        For non-additive (intrinsic) properties, e.g. the density ρ, the returned
+        projection, P, is
 
         P = 1/L ∫ ρ dl ,
 
         where L is the depth of the projection. That is, it is simply the mean
         of a number of slices.
 
-        For extrinsic properties, e.g. mass M, the returned projection is instead
+        For additive (extrinsic) properties, e.g. mass M, the returned projection
+        is instead
 
         P = 1 / dA ∫ dM
 
@@ -188,17 +215,18 @@ class TreeProjector(ImageCreator):
         variable: a string or an array of shape (N, )
                   representing the gas variable to project
 
-        extrinsic (bool): A boolean indicating whether the variable to be
-                    projected is extrinsic (e.g. Masses, Volumes)
-                    or intrinsic (e.g. Temperature, density, achieved by
-                    setting extrinsic=False).
+        additive (bool): A boolean indicating whether the variable to be
+                    projected is additive (e.g. Masses, Volumes)
+                    or not (e.g. Temperature, density, achieved by
+                    setting additive=False). This parameter was previously
+                    named 'extrinsic'.
 
         Returns:
             An array of shape (npix, npix) representing the projected gas variable
 
-            For intrinsic variables, the unit of the projection is identical
-            to the unit of the input variable. For extrinsic variables,
-            the projection unit is the input variable unit divided by area.
+            For non-additive (intrinsic) variables, the unit of the projection is
+            identical to the unit of the input variable. For additive (extrinsic)
+            variables, the projection unit is the input variable unit divided by area.
 
         Examples
         ----------
@@ -218,18 +246,34 @@ class TreeProjector(ImageCreator):
             rho = tree_projector.project_variable('0_Density', extrinsic=False)
 
         """
+        if extrinsic is not None:
+            import warnings
+            warnings.warn("The keyword 'extrinsic' has been replaced by 'additive'."
+                          + " The support for 'extrinsic' will be removed eventually.")
+            additive = extrinsic
+
+        parttype = self.parttype
 
         if isinstance(variable, str):
+            assert int(variable[0]) == parttype, 'projector uses a different parttype'
             variable = self.snap[variable]
         else:
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
-        area_per_pixel = self.area / (self.npix_width * self.npix_height)
 
-        if extrinsic:
+        area_per_pixel = self.area_per_pixel
+
+        if additive:
             dV = area_per_pixel * self.delta_depth
-            variable = variable[self.index] * (dV / self.snap['0_Volume'][self.index])
-            projection = np.sum(variable, axis=2) / area_per_pixel
+            avail_list = (list(self.snap.keys()) + self.snap._auto_list)
+            if f'{parttype}_Volume' in avail_list:
+                weight = dV / self.snap[f'{parttype}_Volume'][self.index]
+                variable = variable[self.index] * weight
+                projection = np.sum(variable, axis=2) / area_per_pixel
+            else:
+                err_msg = (f"The volume field for parttype {parttype} is required when"
+                           + "using additive=True")
+                raise RuntimeError(err_msg)
         else:
             variable = variable[self.index]
             projection = np.mean(variable, axis=2)
