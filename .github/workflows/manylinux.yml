@@ -6,10 +6,11 @@ on:
     types: [created]
   # Trigger the workflow on push or pull request,
   # but only for the main branch and the pypi branch
-  # push:
-  #   branches:
-  #     - main
-  #     - pypi
+  push:
+    branches:
+      - pypi
+
+      # - main
 
 jobs:
   deploy:
@@ -19,7 +20,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
-        python-version: 3.10.9
+        python-version: 3.10.13
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -31,10 +32,17 @@ jobs:
         build-requirements: 'cython numpy astropy h5py scipy'
     - name: Publish distribution 📦 to Test PyPI
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        # TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        # TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
         twine check dist/*
         ls dist/
-        #twine upload --repository-url https://test.pypi.org/legacy/ dist/*tar.gz
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
+        # Commands for uploading to https://test.pypi.org
+        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*tar.gz
+        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
+
+        # Commands for uploading to pypi
+        #twine upload dist/*tar.gz
+        twine upload dist/*manylinux*
