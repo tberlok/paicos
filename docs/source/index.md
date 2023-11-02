@@ -6,6 +6,7 @@ maxdepth: 2
 caption: Getting started
 ---
 installation
+examples
 ```
 
 ```{toctree}
