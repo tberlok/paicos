@@ -32,8 +32,10 @@ jobs:
         build-requirements: 'cython numpy astropy h5py scipy'
     - name: Publish distribution 📦 to Test PyPI
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        # TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        # TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
         twine check dist/*
         ls dist/
