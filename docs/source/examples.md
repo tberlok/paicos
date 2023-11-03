@@ -1,12 +1,13 @@
-# Running the examples
+# Running the examples and notebooks
 
 We provide a number of examples in the subdirectories `examples/` and `ipython-notebooks`.
-These all require some example data which can be downloaded as follows:
 
-## Downloading the example data files
+## Downloading sample data
 
-Open a terminal at the root directory of the repo, then run
+This requires some example data which can be downloaded as follows. Open a terminal at
+the root directory of the Paicos repo, then run
 ```
 wget -O data/fof_subhalo_tab_247.hdf5 https://sid.erda.dk/share_redirect/BmILDaDPPz
 wget -O data/snap_247.hdf5 https://sid.erda.dk/share_redirect/G4pUGFJUpq
 ```
+
