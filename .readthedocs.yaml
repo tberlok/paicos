@@ -6,7 +6,8 @@ build:
     python: "3.12"
   jobs:
     pre_build:
-      - export PYTHONPATH=$PYTHONPATH:./
+      # - export PYTHONPATH=$PYTHONPATH:./
+      - make
       - sphinx-apidoc -f -o docs/source .
 
 # Build from the docs/ directory with Sphinx
