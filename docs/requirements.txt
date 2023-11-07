@@ -113,6 +113,8 @@ pickleshare==0.7.5
     # via ipython
 platformdirs==3.11.0
     # via jupyter-core
+pockets==0.9.1
+    # via sphinxcontrib-napoleon
 prompt-toolkit==3.0.39
     # via ipython
 ptyprocess==0.7.0
@@ -144,7 +146,9 @@ six==1.16.0
     # via
     #   asttokens
     #   bleach
+    #   pockets
     #   python-dateutil
+    #   sphinxcontrib-napoleon
 snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.5
@@ -176,6 +180,8 @@ sphinxcontrib-jquery==4.1
     # via sphinx-rtd-theme
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
+sphinxcontrib-napoleon==0.7
+    # via -r requirements.in
 sphinxcontrib-qthelp==1.0.6
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.9
