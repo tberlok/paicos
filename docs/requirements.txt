@@ -52,7 +52,7 @@ executing==2.0.1
     # via stack-data
 fastjsonschema==2.18.1
     # via nbformat
-h5py==3.9.0
+h5py
     # via -r requirements.in
 idna==3.4
     # via requests
