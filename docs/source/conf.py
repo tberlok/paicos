@@ -19,6 +19,8 @@ then go to docs and run
 make html
 ```
 """
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join("..", "..")))
 
 project = 'Paicos'
 copyright = '2023, Thomas Berlok'
