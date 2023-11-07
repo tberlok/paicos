@@ -584,25 +584,32 @@ class PaicosQuantity(Quantity):
         return super().__truediv__(value)
 
     def dump(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def dumps(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tobytes(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tofile(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tolist(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tostring(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def choose(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
 
 class PaicosTimeSeries(PaicosQuantity):

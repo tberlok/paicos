@@ -154,6 +154,7 @@ sphinx==7.2.6
     #   -r requirements.in
     #   myst-parser
     #   nbsphinx
+    #   sphinx-copybutton
     #   sphinx-rtd-theme
     #   sphinxcontrib-applehelp
     #   sphinxcontrib-devhelp
@@ -161,6 +162,8 @@ sphinx==7.2.6
     #   sphinxcontrib-jquery
     #   sphinxcontrib-qthelp
     #   sphinxcontrib-serializinghtml
+sphinx-copybutton==0.5.2
+    # via -r requirements.in
 sphinx-rtd-theme==1.3.0
     # via -r requirements.in
 sphinxcontrib-applehelp==1.0.7

@@ -67,7 +67,8 @@ install_requires = ['scipy',
                     'astropy']
 
 
-with open('README.md') as f:
+cur = os.path.abspath(__file__).replace('setup.py', '')
+with open(cur + 'README.md') as f:
     long_description = f.read()
 
 setup(

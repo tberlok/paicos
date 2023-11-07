@@ -12,6 +12,15 @@ examples
 ```{toctree}
 ---
 maxdepth: 2
+caption: Python scripts and tests
+---
+scripts
+tests
+```
+
+```{toctree}
+---
+maxdepth: 2
 caption: Notebook examples
 ---
 
@@ -30,4 +39,12 @@ caption: Notebook examples
 /notebooks/histogram2d.ipynb
 /notebooks/histogram2d_plotting.ipynb
 
+```
+
+```{toctree}
+---
+maxdepth: 2
+caption: Documentation strings
+---
+autodoc
 ```
