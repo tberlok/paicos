@@ -5,3 +5,4 @@ myst-parser==2.0.0
 ipython==8.16.1
 sphinx-copybutton==0.5.2
 sphinxcontrib-napoleon==0.7
+autodoc==0.5.0

@@ -23,7 +23,7 @@ make html
 project = 'Paicos'
 copyright = '2023, Thomas Berlok'
 author = 'Thomas Berlok'
-release = '0.1.0'
+release = '0.1.5'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
