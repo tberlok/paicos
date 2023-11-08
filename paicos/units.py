@@ -73,7 +73,7 @@ def construct_unit_from_dic(dic):
     Construct unit from a dictionary with the format returned
     from __get_unit_dictionaries
     """
-    return np.product([unit**dic[unit] for unit in dic])
+    return np.prod([unit**dic[unit] for unit in dic])
 
 
 def separate_units(unit):
@@ -101,7 +101,7 @@ def get_new_unit(unit, remove_list=[]):
         if base not in remove_list:
             unit_list.append(base**power)
 
-    return np.product(unit_list)
+    return np.prod(unit_list)
 
 
 class PaicosQuantity(Quantity):
@@ -584,25 +584,32 @@ class PaicosQuantity(Quantity):
         return super().__truediv__(value)
 
     def dump(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def dumps(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tobytes(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tofile(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tolist(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def tostring(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
     def choose(self):
-        pass
+        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        raise RuntimeError("not implemented")
 
 
 class PaicosTimeSeries(PaicosQuantity):

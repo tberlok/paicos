@@ -42,6 +42,43 @@ def get_project_root_dir():
 root_dir = get_project_root_dir()
 
 
+def _split_filename(filenamewithpath):
+    """
+    A convenience function for getting the basedir, basename and snapsnum
+    from a filename including its path.
+
+    Example usage:
+        print(split_filename('data/small_non_comoving_007.hdf5'))
+        print(split_filename('small_non_comoving.hdf5'))
+        print(split_filename('small_non_comoving.0.hdf5'))
+
+    """
+    err_msg = "needs to be a hdf5 file, .e.g. filenamewithpath = 'data/snap_010.hdf5'"
+
+    assert filenamewithpath[-5:] == '.hdf5', err_msg
+
+    snapnum = None
+
+    index = filenamewithpath[::-1].find('_')
+    if index != -1:
+        underscore_loc = -index - 1
+
+    if filenamewithpath[underscore_loc] == '_':
+        snapnum_str = filenamewithpath[underscore_loc + 1:underscore_loc + 4]
+        if np.char.isdigit(snapnum_str):
+            snapnum = int(snapnum_str)
+
+    filename = os.path.basename(filenamewithpath)
+    basedir = filenamewithpath.replace(filename, '')
+
+    if snapnum is None:
+        basename = filename[:-5]
+    else:
+        basename = filename[:underscore_loc]
+
+    return basedir, basename, snapnum
+
+
 def save_dataset(hdf5file, name, data=None, data_attrs={},
                  group=None, group_attrs={}):
     """

@@ -20,12 +20,7 @@ class Projector(ImageCreator):
 
     It takes in several parameters such as a snapshot object, center and
     widths of the region, direction of projection, and various optional
-    parameters for number of pixels, smoothing length and number of threads
-    for parallelization. It then calls various functions from the paicos
-    package, including get_index_of_region, load_data, and get_volumes. This
-    class also has a function called _check_if_omp_has_issues which checks if
-    the parallelization via OpenMP works, and sets the number of threads
-    accordingly.
+    parameters for number of pixels, smoothing length.
     """
 
     def __init__(self, snap, center, widths, direction,
@@ -165,7 +160,7 @@ class Projector(ImageCreator):
         assert projection.shape[0] == self.npix_height
         assert projection.shape[1] == self.npix_width
 
-        area_per_pixel = self.area / np.product(projection.shape)
+        area_per_pixel = self.area / np.prod(projection.shape)
 
         if isinstance(variable, units.PaicosQuantity):
             projection = projection * variable.unit_quantity

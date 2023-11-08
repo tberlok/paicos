@@ -49,56 +49,66 @@ class PaicosReader(dict):
 
         verbose (bool): whether to print information, default is False
         """
-
-        self.basedir = basedir
-        self.snapnum = snapnum
-        self.basename = basename
-
         assert to_physical is False, 'to_physical not yet implemented!'
 
         self.to_physical = to_physical
-        self.basesubdir = basesubdir
         self.verbose = verbose
 
-        # Add a forward slash at the end of basedir if not already present
-        if basedir[-1] != '/':
-            basedir += '/'
-
-        # If snapnum is None, filename is basedir + basename + '.hdf5'
-        if snapnum is None:
-            self.filename = basedir + basename + '.hdf5'
-            err_msg = f'File: {self.filename} not found'
-            if not os.path.exists(self.filename):
-                raise FileNotFoundError(err_msg)
+        if '.hdf5' in basedir:
+            # User is trying to load a single hdf5 file directly, let's see if
+            # that can work
+            self.filename = str(basedir)
+            self.multi_file = False
+            basedir, basename, snapnum = util._split_filename(self.filename)
+            self.basedir = basedir
+            self.snapnum = snapnum
+            self.basename = basename
         else:
-            # Set filenames for single_file and multi_file cases
-            single_file = basename + "_{:03d}.hdf5"
-            multi_file = basesubdir + '_{:03d}/' + basename + '_{:03d}.{}.hdf5'
-            multi_wo_dir = basename + '_{:03d}.{}.hdf5'
+            self.basedir = basedir
+            self.snapnum = snapnum
+            self.basename = basename
 
-            single_file = basedir + single_file.format(snapnum)
-            multi_file = basedir + multi_file.format(snapnum, snapnum, '{}')
-            multi_wo_dir = basedir + multi_wo_dir.format(snapnum, '{}')
+            self.basesubdir = basesubdir
 
-            # Check if single_file exists
-            if os.path.exists(single_file):
-                self.multi_file = False
-                self.filename = single_file
-            elif os.path.exists(multi_file.format(0)):
-                self.multi_file = True
-                self.first_file_name = self.filename = multi_file.format(0)
-                self.multi_filename = multi_file
-                self.no_subdir = False
-            elif os.path.exists(multi_wo_dir.format(0)):
-                self.multi_file = True
-                self.first_file_name = self.filename = multi_wo_dir.format(0)
-                self.multi_filename = multi_file
-                self.no_subdir = True
+            # Add a forward slash at the end of basedir if not already present
+            if basedir[-1] != '/':
+                basedir += '/'
+
+            # If snapnum is None, filename is basedir + basename + '.hdf5'
+            if snapnum is None:
+                self.filename = basedir + basename + '.hdf5'
+                err_msg = f'File: {self.filename} not found'
+                if not os.path.exists(self.filename):
+                    raise FileNotFoundError(err_msg)
             else:
-                err_msg = "File not found. Tried locations:\n{}\n{}\n{}"
-                err_msg = err_msg.format(single_file, multi_file.format(0),
-                                         multi_wo_dir.format(0))
-                raise FileNotFoundError(err_msg)
+                # Set filenames for single_file and multi_file cases
+                single_file = basename + "_{:03d}.hdf5"
+                multi_file = basesubdir + '_{:03d}/' + basename + '_{:03d}.{}.hdf5'
+                multi_wo_dir = basename + '_{:03d}.{}.hdf5'
+
+                single_file = basedir + single_file.format(snapnum)
+                multi_file = basedir + multi_file.format(snapnum, snapnum, '{}')
+                multi_wo_dir = basedir + multi_wo_dir.format(snapnum, '{}')
+
+                # Check if single_file exists
+                if os.path.exists(single_file):
+                    self.multi_file = False
+                    self.filename = single_file
+                elif os.path.exists(multi_file.format(0)):
+                    self.multi_file = True
+                    self.first_file_name = self.filename = multi_file.format(0)
+                    self.multi_filename = multi_file
+                    self.no_subdir = False
+                elif os.path.exists(multi_wo_dir.format(0)):
+                    self.multi_file = True
+                    self.first_file_name = self.filename = multi_wo_dir.format(0)
+                    self.multi_filename = multi_file
+                    self.no_subdir = True
+                else:
+                    err_msg = "File not found. Tried locations:\n{}\n{}\n{}"
+                    err_msg = err_msg.format(single_file, multi_file.format(0),
+                                             multi_wo_dir.format(0))
+                    raise FileNotFoundError(err_msg)
 
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)

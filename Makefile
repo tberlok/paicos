@@ -6,7 +6,10 @@ python:
 clean:
 	python3 setup.py clean
 	rm -rf paicos/cython/*.{c,so,html}
-	rm -rf paicos/__pycache__ paicos/cython/__pycache__
+	rm -rf __pycache__ paicos/__pycache__ paicos/cython/__pycache__
+	rm -rf dist
+	rm -rf build
+	rm -rf paicos.egg-info
 
 cleanup:
 	rm -rf test_data
