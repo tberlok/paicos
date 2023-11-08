@@ -56,7 +56,7 @@ class Snapshot(PaicosReader):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, basedir, snapnum, basename="snap", load_all=False,
+    def __init__(self, basedir, snapnum=None, basename="snap", load_all=False,
                  to_physical=False, load_catalog=None, verbose=False):
         """
         Initialize the Snapshot class.
@@ -85,6 +85,8 @@ class Snapshot(PaicosReader):
         super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
                          load_all=load_all, to_physical=to_physical,
                          basesubdir='snapdir', verbose=verbose)
+
+        assert self.snapnum is not None
 
         self.load_catalog = load_catalog
 
