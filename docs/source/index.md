@@ -1,4 +1,4 @@
-# Paicos - A Python package for handling Arepo simulation data
+# Paicos - a Python package for analysis of (cosmological) simulations performed with Arepo
 
 ```{toctree}
 ---
