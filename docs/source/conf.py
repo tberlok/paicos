@@ -32,7 +32,10 @@ release = '0.1.5'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ['sphinx_rtd_theme', "nbsphinx", "myst_parser",
-              "sphinx.ext.napoleon", "sphinx_copybutton"]
+              "sphinx.ext.napoleon", "sphinx_copybutton",
+              "sphinx_rtd_dark_mode"]
+
+default_dark_mode = False
 
 nbsphinx_execute = 'never'
 
