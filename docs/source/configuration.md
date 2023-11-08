@@ -31,7 +31,21 @@ i.e. at the top of your analysis scripts or in your `user_settings.py` file (see
 
 ## Custom user units
 
-dfdf
+You can set your own units, which is useful if you have implemented a new output
+option in Arepo or if your simulations include some non-standard physics options.
+
+```
+# Define a unitless tracer
+pa.add_user_unit('voronoi_cells', 'JetTracer', '')
+```
+
+This let's Paicos know that your Arepo snapshots contain a block
+name JetTracer in the gas cells. You can get the full documentation
+by running
+```
+import paicos as pa
+pa.add_user_unit?
+```
 
 ## Custom user functions
 
@@ -58,6 +72,23 @@ snap = pa.Snapshot(root_dir + '/data', 247)
 # Automatically compute temperature times masses^2 using the user supplied function
 snap['0_TM2']
 ```
+
+## Openmp parallel execution of code
+
+Paicos will check upon startup how many cores are available on your system,
+which might be limited to the number set in the environment variable OMP_NUM_THREADS.
+
+It is therefore sometimes useful to set the environment variable OMP_NUM_THREADS,
+which will then be the maximum number of threads that Paicos can use.
+```
+export OMP_NUM_THREADS=16
+```
+
+You can also let Paicos know how many cores you would like to use, for instance
+```
+pa.numthreads(24)
+```
+would use 24 cores in the parts of the code that are parallelized.
 
 ## Setting up user settings
 
@@ -97,15 +128,4 @@ def TemperaturesTimesMassesSquared(snap, get_dependencies=False):
 
 pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
 
-```
-
-## Openmp parallel execution of code
-
-Paicos will check upon startup how many cores are available on your system.
-
-
-It is sometimes useful to set the environment variable OMP_NUM_THREADS,
-which will then be the maximum number of threads that Paicos uses.
-```
-export OMP_NUM_THREADS=16
 ```
