@@ -7,6 +7,24 @@ caption: Getting started
 ---
 installation
 examples
+configuration
+```
+
+```{toctree}
+---
+maxdepth: 2
+caption: Notebook examples
+---
+
+/notebooks/paicos_examples.ipynb
+
+/notebooks/creating_radial_profiles.ipynb
+
+/notebooks/reading_radial_profiles.ipynb
+
+/notebooks/histogram2d.ipynb
+/notebooks/histogram2d_plotting.ipynb
+
 ```
 
 ```{toctree}
@@ -16,29 +34,6 @@ caption: Python scripts and tests
 ---
 scripts
 tests
-```
-
-```{toctree}
----
-maxdepth: 2
-caption: Notebook examples
----
-
-## Tutorial 1
-
-/notebooks/paicos_examples.ipynb
-
-## Tutorial 2
-
-/notebooks/creating_radial_profiles.ipynb
-
-/notebooks/reading_radial_profiles.ipynb
-
-## Tutorial 3
-
-/notebooks/histogram2d.ipynb
-/notebooks/histogram2d_plotting.ipynb
-
 ```
 
 ```{toctree}

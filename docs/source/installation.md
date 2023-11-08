@@ -72,11 +72,3 @@ pip install paicos
 # Check if installation worked and that you can import Paicos 
 python -c "import paicos"
 ```
-
-## Using openmp parallel execution of code
-
-It is sometimes useful to set the environment variable OMP_NUM_THREADS,
-which will then be the maximum number of threads that Paicos uses.
-```
-export OMP_NUM_THREADS=16
-```

@@ -18,7 +18,6 @@ compiler_directives = {"boundscheck": False, "cdivision": True,
                        "wraparound": False, 'language_level': "3"}
 
 
-
 include_dirs = ['paicos/cython/', numpy.get_include()]
 extra_compile_args = ['-fopenmp', "-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION",
                       "-Wno-unused-function"]
@@ -84,9 +83,8 @@ setup(
     license='BSD 3-clause',
     packages=setuptools.find_packages(),
     install_requires=install_requires,
-    package_data = {'paicos/cython': ['*.c', '*.so']},
+    package_data={'paicos/cython': ['*.c', '*.so']},
     classifiers=['Programming Language :: Python :: 3'],
     ext_modules=cythonize(ext_modules,
                           compiler_directives=compiler_directives),
-    cmdclass={'build_ext': Cython.Build.build_ext},
-    )
+    cmdclass={'build_ext': Cython.Build.build_ext})
