@@ -12,7 +12,7 @@ from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
 from .cython.get_index_of_region import get_cube_plus_thin_layer
-from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
+from .cython.get_index_of_region import get_rotated_cube_plus_thin_layer
 from .cython.openmp_info import simple_reduction, get_openmp_settings
 
 # These will be set by the user using the add_user_unit function
@@ -244,35 +244,27 @@ def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, bo
 
 
 @remove_astro_units
-def get_index_of_slice_region(pos, center, widths, thickness, box):
+def get_index_of_rotated_cubic_region_plus_thin_layer(pos, center, widths, thickness,
+                                                      box, orientation):
     """
-    Get a boolean array to the position array, pos, which are inside a thin
-    slice region with width thickness.
+    Get a boolean array to the position array, pos, which are inside a cubic
+    region plus a think layer with a cell-dependent thickness
 
     pos (array): position array with dimensions = (n, 3)
     center (array with length 3): the center of the box (x, y, z)
-    widths (array with length 3): the widths of the box (one of which should
-                                  contain a zero, the selection will be
-                                  perpendicular to the corresponding direction)
+    widths (array with length 3): the widths of the box
     thickness: (array): array with same length as the position array
     box: the box size of the simulation (e.g. snap.box)
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    numthreads = settings.numthreads
-
-    if widths[0] == 0.:
-        index = get_x_slice(pos, x_c, y_c, z_c, width_y, width_z, thickness,
-                            box, numthreads)
-    elif widths[1] == 0.:
-        index = get_y_slice(pos, x_c, y_c, z_c, width_x, width_z, thickness,
-                            box, numthreads)
-    elif widths[2] == 0.:
-        index = get_z_slice(pos, x_c, y_c, z_c, width_x, width_y, thickness,
-                            box, numthreads)
-    else:
-        raise RuntimeError('width={} should have length 3 and contain a zero!')
-
+    unit_vectors = orientation.cartesian_unit_vectors
+    index = get_rotated_cube_plus_thin_layer(pos, x_c, y_c, z_c, width_x, width_y,
+                                             width_z, thickness, box,
+                                             unit_vectors['x'],
+                                             unit_vectors['y'],
+                                             unit_vectors['z'],
+                                             settings.numthreads)
     return index
 
 

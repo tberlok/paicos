@@ -7,6 +7,7 @@ from scipy.spatial import KDTree
 from .image_creator import ImageCreator
 from .. import util
 from .. import settings
+from ..orientation import Orientation
 
 
 class Slicer(ImageCreator):
@@ -72,8 +73,17 @@ class Slicer(ImageCreator):
         else:
             raise RuntimeError(
                 'There is no smoothing length or volume for the thickness of the slice')
-        self.slice = util.get_index_of_slice_region(snap[f"{parttype}_Coordinates"],
-                                                    center, widths, thickness, snap.box)
+
+        if isinstance(direction, str):
+            get_index = util.get_index_of_cubic_region_plus_thin_layer
+            self.slice = get_index(snap[f"{parttype}_Coordinates"],
+                                   center, widths, thickness,
+                                   snap.box)
+        else:
+            get_index = util.get_index_of_rotated_cubic_region_plus_thin_layer
+            self.slice = get_index(snap[f"{parttype}_Coordinates"],
+                                   center, widths, thickness, snap.box,
+                                   self.orientation)
 
         self.index_in_slice_region = np.arange(snap[f"{parttype}_Coordinates"].shape[0]
                                                )[self.slice]
@@ -93,6 +103,14 @@ class Slicer(ImageCreator):
             image_points = np.vstack([w, ones * center[1], h]).T
         elif direction == 'z':
             image_points = np.vstack([w, h, ones * center[2]]).T
+        elif isinstance(direction, Orientation):
+            orientation = direction
+            image_points = np.vstack([w, h, ones * center[2]]).T - self.center
+            image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \
+                + self.center
+            # image_points = image_points.T
+        else:
+            raise RuntimeError(f"Problem with direction={direction} input")
 
         # Query the tree to obtain closest Voronoi cell indices
         d, i = tree.query(image_points, workers=settings.numthreads)

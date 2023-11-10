@@ -46,6 +46,9 @@ from .histograms.histogram2D import Histogram2D
 # Derived variables
 from .derived_variables import derived_variables
 
+# Orientation class
+from .orientation import Orientation
+
 # Cython functions
 from . import cython
 

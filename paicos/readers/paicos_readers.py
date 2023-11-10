@@ -10,6 +10,7 @@ from astropy.cosmology import LambdaCDM
 from .. import util
 from .. import units as pu
 from .. import settings
+from ..orientation import Orientation
 
 
 class PaicosReader(dict):
@@ -524,6 +525,15 @@ class ImageReader(PaicosReader):
             self.direction = direction = f['image_info'].attrs['direction']
             self.image_creator = f['image_info'].attrs['image_creator']
 
+            # Recreate orientation object if it is saved
+            if direction == 'orientation':
+                normal_vector = f['image_info'].attrs['normal_vector']
+                perp_vector1 = f['image_info'].attrs['perp_vector1']
+                self.orientation = Orientation(normal_vector=normal_vector,
+                                               perp_vector1=perp_vector1)
+            else:
+                self.orientation = None
+
         self.x_c = self.center[0]
         self.y_c = self.center[1]
         self.z_c = self.center[2]
@@ -545,7 +555,7 @@ class ImageReader(PaicosReader):
             self.height = self.width_z
             self.depth = self.width_y
 
-        elif direction == 'z':
+        elif direction == 'z' or direction == 'orientation':
 
             self.width = self.width_x
             self.height = self.width_y

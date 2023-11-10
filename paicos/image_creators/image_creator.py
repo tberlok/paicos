@@ -6,6 +6,7 @@ import numpy as np
 from .. import util
 from .. import settings
 from .. import units
+from ..orientation import Orientation
 
 
 class ImageCreator:
@@ -57,13 +58,18 @@ class ImageCreator:
         self.width_y = self.widths[1]
         self.width_z = self.widths[2]
 
-        self.direction = direction
+        if isinstance(direction, str):
+            self.direction = direction
+            self.orientation = None
+        elif isinstance(direction, Orientation):
+            self.direction = 'orientation'
+            self.orientation = direction
 
         self.npix = self.npix_width = npix
 
         self.parttype = parttype
 
-        if direction == 'x':
+        if self.direction == 'x':
             extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
                       self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
@@ -74,7 +80,7 @@ class ImageCreator:
             self.height = self.width_z
             self.depth = self.width_x
 
-        elif direction == 'y':
+        elif self.direction == 'y':
             extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
                       self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
@@ -85,7 +91,7 @@ class ImageCreator:
             self.height = self.width_z
             self.depth = self.width_y
 
-        elif direction == 'z':
+        elif self.direction == 'z' or self.direction == 'orientation':
             extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
                       self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
 
