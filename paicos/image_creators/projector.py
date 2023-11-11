@@ -65,8 +65,15 @@ class Projector(ImageCreator):
         self.nvol = nvol
 
         # get the index of the region of projection
-        self.index = util.get_index_of_cubic_region(self.snap[f"{parttype}_Coordinates"],
-                                                    center, widths, snap.box)
+        if self.orientation is None:
+            get_index = util.get_index_of_cubic_region
+            self.index = get_index(self.snap[f"{parttype}_Coordinates"],
+                                   center, widths, snap.box)
+        else:
+            get_index = util.get_index_of_rotated_cubic_region
+            self.index = get_index(snap[f"{parttype}_Coordinates"],
+                                   center, widths, snap.box,
+                                   self.orientation)
 
         # Reduce the snapshot to only contain region of interest
         if make_snap_with_selection:
@@ -80,7 +87,8 @@ class Projector(ImageCreator):
         elif f'{parttype}_SubfindHsml' in avail_list:
             self.hsml = self.snap[f'{parttype}_SubfindHsml']
         else:
-            raise RuntimeError('There is no smoothing length or volume for the projector')
+            raise RuntimeError(
+                'There is no smoothing length or volume for the projector')
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
 
@@ -95,8 +103,10 @@ class Projector(ImageCreator):
         """
         if settings.openMP_has_issues:
             from ..cython.sph_projectors import project_image as project
+            from ..cython.sph_projectors import project_oriented_image as project_oriented
         else:
             from ..cython.sph_projectors import project_image_omp as project
+            from ..cython.sph_projectors import project_oriented_image_omp as project_oriented
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -123,6 +133,20 @@ class Projector(ImageCreator):
                                  self.hsml, self.npix,
                                  x_c, y_c, width_x, width_y,
                                  boxsize, settings.numthreads_reduction)
+        elif self.direction == 'orientation':
+            unit_vectors = self.orientation.cartesian_unit_vectors
+
+            projection = project_oriented(self.pos[:, 0],
+                                          self.pos[:, 1],
+                                          self.pos[:, 2],
+                                          variable,
+                                          self.hsml, self.npix,
+                                          x_c, y_c, z_c, width_x, width_y,
+                                          boxsize,
+                                          unit_vectors['x'],
+                                          unit_vectors['y'],
+                                          unit_vectors['z'],
+                                          settings.numthreads_reduction)
 
         return projection
 

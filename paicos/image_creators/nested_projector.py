@@ -22,7 +22,6 @@ class NestedProjector(Projector):
                  npix=512, nvol=8, factor=3, npix_min=128,
                  verbose=False, make_snap_with_selection=True,
                  store_subimages=False):
-
         """
         This is the constructor for the NestedProjector class. It initializes
         the properties inherited from the Projector class, as well as the
@@ -91,7 +90,8 @@ class NestedProjector(Projector):
             if self.verbose:
                 print(f'n_grid={n_grid} contains {np.sum(index)} particles')
 
-        assert n_particles == count, 'need to include all cells!'
+        err_msg = f'n_particles={n_particles}, count={count}, need to include all cells!'
+        assert n_particles == count, err_msg
 
         self.n_grids = n_grids
         self.i_digit = i_digit
@@ -119,8 +119,10 @@ class NestedProjector(Projector):
         def log2int(x):
             return int(np.log2(x))
 
-        npix_low = nearest_power_of_two(width / np.max(self.hsml) * self.factor)
-        npix_high = nearest_power_of_two(width / np.min(self.hsml) * self.factor)
+        npix_low = nearest_power_of_two(
+            width / np.max(self.hsml) * self.factor)
+        npix_high = nearest_power_of_two(
+            width / np.min(self.hsml) * self.factor)
 
         npix_high = min(npix_high, self.npix)
         npix_low = max(npix_low, self.npix_min)
@@ -173,8 +175,10 @@ class NestedProjector(Projector):
         """
         if settings.openMP_has_issues:
             from ..cython.sph_projectors import project_image as project
+            from ..cython.sph_projectors import project_oriented_image as project_oriented
         else:
             from ..cython.sph_projectors import project_image_omp as project
+            from ..cython.sph_projectors import project_oriented_image_omp as project_oriented
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -208,6 +212,22 @@ class NestedProjector(Projector):
                                  hsml_n, n_grid,
                                  x_c, y_c, width_x, width_y,
                                  boxsize, settings.numthreads_reduction)
+            elif self.direction == 'orientation':
+                unit_vectors = self.orientation.cartesian_unit_vectors
+
+                proj_n = project_oriented(pos_n[:, 0],
+                                          pos_n[:, 1],
+                                          pos_n[:, 2],
+                                          variable_n,
+                                          hsml_n, n_grid,
+                                          x_c, y_c, z_c, width_x, width_y,
+                                          boxsize,
+                                          unit_vectors['x'],
+                                          unit_vectors['y'],
+                                          unit_vectors['z'],
+                                          settings.numthreads_reduction)
+            else:
+                raise RuntimeError(f'invalid input for direction={self.direction}')
             images.append(proj_n)
 
         projection = self.sum_contributions(images)
