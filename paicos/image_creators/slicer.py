@@ -74,7 +74,7 @@ class Slicer(ImageCreator):
             raise RuntimeError(
                 'There is no smoothing length or volume for the thickness of the slice')
 
-        if isinstance(direction, str):
+        if self.orientation is None:
             get_index = util.get_index_of_cubic_region_plus_thin_layer
             self.slice = get_index(snap[f"{parttype}_Coordinates"],
                                    center, widths, thickness,
@@ -103,12 +103,11 @@ class Slicer(ImageCreator):
             image_points = np.vstack([w, ones * center[1], h]).T
         elif direction == 'z':
             image_points = np.vstack([w, h, ones * center[2]]).T
-        elif isinstance(direction, Orientation):
-            orientation = direction
+        elif self.orientation is not None:
+            orientation = self.orientation
             image_points = np.vstack([w, h, ones * center[2]]).T - self.center
             image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \
                 + self.center
-            # image_points = image_points.T
         else:
             raise RuntimeError(f"Problem with direction={direction} input")
 

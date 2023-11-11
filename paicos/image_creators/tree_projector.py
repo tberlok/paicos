@@ -77,25 +77,26 @@ class TreeProjector(ImageCreator):
             err_msg = ("There is no smoothing length or volume for calculating"
                        + "the thickness of the slice")
             raise RuntimeError(err_msg)
-        get_index = util.get_index_of_cubic_region_plus_thin_layer
-        self.box_selection = get_index(snap[f"{parttype}_Coordinates"],
-                                       center, widths, thickness, snap.box)
+
+        if self.orientation is None:
+            get_index = util.get_index_of_cubic_region_plus_thin_layer
+            self.box_selection = get_index(snap[f"{parttype}_Coordinates"],
+                                           center, widths, thickness,
+                                           snap.box)
+        else:
+            get_index = util.get_index_of_rotated_cubic_region_plus_thin_layer
+            self.box_selection = get_index(snap[f"{parttype}_Coordinates"],
+                                           center, widths, thickness, snap.box,
+                                           self.orientation)
 
         if verbose:
             print('Sub-selection [DONE]')
 
         min_thickness = np.min(thickness)
 
-        if direction == 'x':
-            depth = self.widths[0]
-        elif direction == 'y':
-            depth = self.widths[1]
-        elif direction == 'z':
-            depth = self.widths[2]
-
         # Automatically set numbers of pixels in depth direction based on cell sizes
         if npix_depth is None:
-            npix_depth = int(np.ceil(depth / min_thickness / tol))
+            npix_depth = int(np.ceil(self.depth / min_thickness / tol))
             if verbose:
                 print(f'npix_depth is {npix_depth}')
 
@@ -120,9 +121,9 @@ class TreeProjector(ImageCreator):
         self.index = np.empty((self.npix_height, self.npix_width, self.npix_depth),
                               dtype=np.int64)
 
-        self.delta_depth = depth / npix_depth
+        self.delta_depth = self.depth / npix_depth
         depth_vector = np.arange(npix_depth) * self.delta_depth \
-            + self.delta_depth / 2 - depth / 2
+            + self.delta_depth / 2 - self.depth / 2
 
         for ii, dep in enumerate(depth_vector):
             if direction == 'x':
@@ -131,6 +132,13 @@ class TreeProjector(ImageCreator):
                 image_points = np.vstack([w, ones * (center[1] + dep), h]).T
             elif direction == 'z':
                 image_points = np.vstack([w, h, ones * (center[2] + dep)]).T
+            elif self.orientation is not None:
+                orientation = self.orientation
+                image_points = np.vstack([w, h, ones * (center[2] + dep)]).T - self.center
+                image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \
+                    + self.center
+            else:
+                raise RuntimeError(f"Problem with direction={direction} input")
 
             # Query the tree to obtain closest Voronoi cell indices
             d, i = tree.query(image_points, workers=settings.numthreads)
