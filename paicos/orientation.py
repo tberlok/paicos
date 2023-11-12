@@ -112,22 +112,97 @@ class Orientation:
         self.perp_vector1 = e2
         self.perp_vector2 = e3
 
-    def rotate_orientation_around_x(degrees=None, radians=None):
-        """
-        This should update all the unit vectors and the rotation matrix.
-        Since these are properties, I guess updating 
-        self.perp_vector2
-        self.perp_vector1
-        self.normal_vector
-        should be enough?
-        """
-        pass
+    def _get_radians(self, degrees=None, radians=None):
+        if radians is not None:
+            return radians
+        return 2.0 * np.pi * degrees / 360.
 
-    def rotate_orientation_around_y(degrees=None, radians=None):
-        pass
+    def _get_rotation_matrix(self, axis, degrees=None, radians=None):
+        """
+        Standard implementation of rotation matrices around the
+        x, y, and z coordinate axes. Rotation matrices for rotation
+        around the coordinate axes in the right-handed
+        coordinate system (perp_vector1, perp_vector2, normal_vector)
+        is done by transforming this system to a coordinate
+        system where these three axes are aligned along x, y and z,
+        respectively, applying the either Rx, Ry or Rz and
+        then transforming back.
+        """
 
-    def rotate_orientation_around_z(degrees=None, radians=None):
-        pass
+        radians = self._get_radians(degrees)
+
+        if axis == 'x':
+            R = np.array([[1, 0, 0],
+                         [0, np.cos(radians), -np.sin(radians)],
+                         [0, np.sin(radians), np.cos(radians)]])
+        elif axis == 'y':
+            R = np.array([[np.cos(radians), 0, np.sin(radians)],
+                         [0, 1, 0],
+                         [-np.sin(radians), 0, np.cos(radians)]])
+        elif axis == 'z':
+            R = np.array([[np.cos(radians), -np.sin(radians), 0],
+                         [np.sin(radians), np.cos(radians), 0],
+                         [0, 0, 1]])
+        elif 'perp_vector1':
+            Rx = self._get_rotation_matrix('x', degrees, radians)
+            Rtmp = np.matmul(Rx, self.inverse_rotation_matrix)
+            R = np.matmul(self.rotation_matrix, Rtmp)
+
+        elif 'perp_vector2':
+            Ry = self._get_rotation_matrix('y', degrees, radians)
+            Rtmp = np.matmul(Ry, self.inverse_rotation_matrix)
+            R = np.matmul(self.rotation_matrix, Rtmp)
+
+        elif 'normal_vector':
+            Rz = self._get_rotation_matrix('z', degrees, radians)
+            Rtmp = np.matmul(Rz, self.inverse_rotation_matrix)
+            R = np.matmul(self.rotation_matrix, Rtmp)
+
+        else:
+            raise RuntimeError("invalid input")
+
+        return R
+
+    def _apply_rotation_matrix(self, R):
+        self.normal_vector = np.matmul(R, self.normal_vector)
+        self.perp_vector1 = np.matmul(R, self.perp_vector1)
+        self.perp_vector2 = np.matmul(R, self.perp_vector2)
+
+    def rotate_around_x(self, degrees=None, radians=None):
+        """
+        """
+        R = self._get_rotation_matrix('x', degrees, radians)
+        self._apply_rotation_matrix(R)
+
+    def rotate_around_y(self, degrees=None, radians=None):
+        """
+        """
+        R = self._get_rotation_matrix('y', degrees, radians)
+        self._apply_rotation_matrix(R)
+
+    def rotate_around_z(self, degrees=None, radians=None):
+        """
+        """
+        R = self._get_rotation_matrix('z', degrees, radians)
+        self._apply_rotation_matrix(R)
+
+    def rotate_around_normal_vector(self, degrees=None, radians=None):
+        """
+        """
+        R = self._get_rotation_matrix('normal_vector', degrees, radians)
+        self._apply_rotation_matrix(R)
+
+    def rotate_around_perp_vector1(self, degrees=None, radians=None):
+        """
+        """
+        R = self._get_rotation_matrix('perp_vector1', degrees, radians)
+        self._apply_rotation_matrix(R)
+
+    def rotate_around_perp_vector2(self, degrees=None, radians=None):
+        """
+        """
+        R = self._get_rotation_matrix('perp_vector2', degrees, radians)
+        self._apply_rotation_matrix(R)
 
     @property
     def inverse_rotation_matrix(self):
