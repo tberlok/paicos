@@ -143,17 +143,17 @@ class Orientation:
             R = np.array([[np.cos(radians), -np.sin(radians), 0],
                          [np.sin(radians), np.cos(radians), 0],
                          [0, 0, 1]])
-        elif 'perp_vector1':
+        elif axis == 'perp_vector1':
             Rx = self._get_rotation_matrix('x', degrees, radians)
             Rtmp = np.matmul(Rx, self.inverse_rotation_matrix)
             R = np.matmul(self.rotation_matrix, Rtmp)
 
-        elif 'perp_vector2':
+        elif axis == 'perp_vector2':
             Ry = self._get_rotation_matrix('y', degrees, radians)
             Rtmp = np.matmul(Ry, self.inverse_rotation_matrix)
             R = np.matmul(self.rotation_matrix, Rtmp)
 
-        elif 'normal_vector':
+        elif axis == 'normal_vector':
             Rz = self._get_rotation_matrix('z', degrees, radians)
             Rtmp = np.matmul(Rz, self.inverse_rotation_matrix)
             R = np.matmul(self.rotation_matrix, Rtmp)
@@ -275,3 +275,15 @@ class Orientation:
     def euler_angles(self):
         # TODO: intrinsic and extrinsic version?
         raise RuntimeError('not implemented')
+
+    def __print__(self):
+        print('normal_vector:', self.normal_vector)
+        print('perp_vector1: ', self.perp_vector1)
+        print('perp_vector2: ', self.perp_vector2)
+
+    def __repr__(self):
+        s = 'Paicos Orientation instance\n'
+        s += f'normal_vector: {self.normal_vector}\n'
+        s += f'perp_vector1:  {self.perp_vector1}\n'
+        s += f'perp_vector2:  {self.perp_vector2}'
+        return s

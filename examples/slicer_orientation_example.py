@@ -24,8 +24,6 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     elif direction == 'z':
         orientation = pa.Orientation(normal_vector=[0, 0, 1], perp_vector1=[1, 0, 0])
 
-    print(direction, orientation.cartesian_unit_vectors)
-
     widths = [20000, 20000, 0.0]
     slicer = pa.Slicer(snap, center, widths, orientation, npix=512)
     slicer_dir = pa.Slicer(snap, center, width_vec[ii], direction, npix=512)
