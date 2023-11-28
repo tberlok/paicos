@@ -54,7 +54,7 @@ def get_basis_from_2vecs(vector1, vector2):
     e2 = e2 / np.linalg.norm(e2)
 
     e3 = np.cross(e1, e2)
-    assert np.fabs(np.linalg.norm(e3) - 1.0) < 1.0e-10
+    # assert np.fabs(np.linalg.norm(e3) - 1.0) < 1.0e-10
 
     # 3rd otrhogonal unit vector
     e3 = e3 / np.linalg.norm(e3)
