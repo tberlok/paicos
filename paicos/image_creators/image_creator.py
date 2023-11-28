@@ -59,8 +59,20 @@ class ImageCreator:
         self.width_z = self.widths[2]
 
         if isinstance(direction, str):
+
             self.direction = direction
-            self.orientation = None
+            if direction == 'x':
+                self.orientation = Orientation(normal_vector=[1, 0, 0],
+                                               perp_vector1=[0, 1, 0])
+            elif direction == 'y':
+                # Somewhat weird orientation of the standard y-image,
+                # TODO: change that before merge into master
+                self.orientation = Orientation(normal_vector=[0, -1, 0],
+                                               perp_vector1=[1, 0, 0])
+            elif direction == 'z':
+                self.orientation = Orientation(normal_vector=[0, 0, 1],
+                                               perp_vector1=[1, 0, 0])
+
         elif isinstance(direction, Orientation):
             self.direction = 'orientation'
             self.orientation = direction

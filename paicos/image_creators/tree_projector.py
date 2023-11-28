@@ -78,7 +78,7 @@ class TreeProjector(ImageCreator):
                        + "the thickness of the slice")
             raise RuntimeError(err_msg)
 
-        if self.orientation is None:
+        if self.direction != 'orientation':
             get_index = util.get_index_of_cubic_region_plus_thin_layer
             self.box_selection = get_index(snap[f"{parttype}_Coordinates"],
                                            center, widths, thickness,
@@ -126,13 +126,13 @@ class TreeProjector(ImageCreator):
             + self.delta_depth / 2 - self.depth / 2
 
         for ii, dep in enumerate(depth_vector):
-            if direction == 'x':
+            if self.direction == 'x':
                 image_points = np.vstack([ones * (center[0] + dep), w, h]).T
-            elif direction == 'y':
+            elif self.direction == 'y':
                 image_points = np.vstack([w, ones * (center[1] + dep), h]).T
-            elif direction == 'z':
+            elif self.direction == 'z':
                 image_points = np.vstack([w, h, ones * (center[2] + dep)]).T
-            elif self.orientation is not None:
+            elif self.direction == 'orientation':
                 orientation = self.orientation
                 image_points = np.vstack([w, h, ones * (center[2] + dep)]).T - self.center
                 image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \

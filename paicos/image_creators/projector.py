@@ -65,7 +65,7 @@ class Projector(ImageCreator):
         self.nvol = nvol
 
         # get the index of the region of projection
-        if self.orientation is None:
+        if self.direction != 'orientation':
             get_index = util.get_index_of_cubic_region
             self.index = get_index(self.snap[f"{parttype}_Coordinates"],
                                    center, widths, snap.box)
