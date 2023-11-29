@@ -221,7 +221,7 @@ def enable_gpu_functionality():
                    'cupy and numba for installation procedure. Note that you need '
                    ' a cuda-enabled GPU.\n')
         raise RuntimeError(err_msg)
-
+    global GpuSphProjector
     from .image_creators.gpu_sph_projector import GpuSphProjector
 
 
