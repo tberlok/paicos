@@ -65,7 +65,18 @@ class TreeProjector(ImageCreator):
 
         super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
+        self.npix_depth = npix_depth
+        self.tol = tol
+        self.verbose = verbose
+
+        self._do_region_selection()
+
+    def _do_region_selection(self):
+        # print('_do_region_selection was called from Slicer')
         parttype = self.parttype
+        snap = self.snap
+        center = self.center
+        widths = self.widths
 
         # Pre-select a narrow region around the region-of-interest
         avail_list = (list(snap.keys()) + snap._auto_list)
@@ -89,18 +100,18 @@ class TreeProjector(ImageCreator):
                                            center, widths, thickness, snap.box,
                                            self.orientation)
 
-        if verbose:
+        if self.verbose:
             print('Sub-selection [DONE]')
 
         min_thickness = np.min(thickness)
 
         # Automatically set numbers of pixels in depth direction based on cell sizes
-        if npix_depth is None:
-            npix_depth = int(np.ceil(self.depth / min_thickness / tol))
-            if verbose:
+        if self.npix_depth is None:
+            npix_depth = int(np.ceil(self.depth / min_thickness / self.tol))
+            if self.verbose:
                 print(f'npix_depth is {npix_depth}')
 
-        self.npix_depth = npix_depth
+            self.npix_depth = npix_depth
 
         self.index_in_box_region = np.arange(snap[f"{self.parttype}_Coordinates"].shape[0]
                                              )[self.box_selection]
@@ -108,7 +119,7 @@ class TreeProjector(ImageCreator):
         # Construct a tree
         self.pos = snap[f"{parttype}_Coordinates"][self.box_selection]
         tree = KDTree(self.pos)
-        if verbose:
+        if self.verbose:
             print('Tree construction [DONE]')
 
         # Now construct the image grid
@@ -121,8 +132,8 @@ class TreeProjector(ImageCreator):
         self.index = np.empty((self.npix_height, self.npix_width, self.npix_depth),
                               dtype=np.int64)
 
-        self.delta_depth = self.depth / npix_depth
-        depth_vector = np.arange(npix_depth) * self.delta_depth \
+        self.delta_depth = self.depth / self.npix_depth
+        depth_vector = np.arange(self.npix_depth) * self.delta_depth \
             + self.delta_depth / 2 - self.depth / 2
 
         for ii, dep in enumerate(depth_vector):
@@ -138,7 +149,7 @@ class TreeProjector(ImageCreator):
                 image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \
                     + self.center
             else:
-                raise RuntimeError(f"Problem with direction={direction} input")
+                raise RuntimeError(f"Problem with direction={self.direction} input")
 
             # Query the tree to obtain closest Voronoi cell indices
             d, i = tree.query(image_points, workers=settings.numthreads)
@@ -146,13 +157,13 @@ class TreeProjector(ImageCreator):
             slice_index = self._unflatten(self.index_in_box_region[i])
             self.distance_to_nearest_cell = self._unflatten(d)
 
-            if min_thickness < self.delta_depth / tol:
+            if min_thickness < self.delta_depth / self.tol:
                 print(f'Warning: Minimum cell size {min_thickness} is '
-                      + f'less than {tol} of delta_depth '
+                      + f'less than {self.tol} of delta_depth '
                       + f'{self.delta_depth}. You should probably increase '
-                      + f'npix_depth from its current value of {npix_depth}. '
+                      + f'npix_depth from its current value of {self.npix_depth}. '
                       + 'Image convergence is expected for npix_depth='
-                      + f'{int(depth/min_thickness)}.')
+                      + f'{int(self.depth/min_thickness)}.')
 
             self.index[:, :, ii] = slice_index
 
@@ -254,6 +265,10 @@ class TreeProjector(ImageCreator):
             rho = tree_projector.project_variable('0_Density', extrinsic=False)
 
         """
+        # This calls _do_region_selection if resolution, Orientation,
+        # widths or center changed
+        self._check_if_properties_changed()
+
         if extrinsic is not None:
             import warnings
             warnings.warn("The keyword 'extrinsic' has been replaced by 'additive'."

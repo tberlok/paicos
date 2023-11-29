@@ -54,7 +54,7 @@ def get_basis_from_2vecs(vector1, vector2):
     e2 = e2 / np.linalg.norm(e2)
 
     e3 = np.cross(e1, e2)
-    # assert np.fabs(np.linalg.norm(e3) - 1.0) < 1.0e-10
+    assert np.fabs(np.linalg.norm(e3) - 1.0) < 1.0e-10
 
     # 3rd otrhogonal unit vector
     e3 = e3 / np.linalg.norm(e3)
@@ -275,6 +275,27 @@ class Orientation:
     def euler_angles(self):
         # TODO: intrinsic and extrinsic version?
         raise RuntimeError('not implemented')
+
+    @property
+    def copy(self):
+        """
+        Return a copy of the current Orientation instance.
+        """
+        return Orientation(normal_vector=self.normal_vector,
+                           perp_vector1=self.perp_vector1)
+
+    def _are_equal(self, orientation2):
+        """
+        Compare the current orientation instance with a
+        different one. Returns True if they are identical
+        and False if not.
+        """
+        u1 = self.cartesian_unit_vectors
+        u2 = orientation2.cartesian_unit_vectors
+        identical = True
+        for key in u1:
+            identical = np.allclose(u1[key], u2[key], atol=1e-15) and identical
+        return identical
 
     def __print__(self):
         print('normal_vector:', self.normal_vector)

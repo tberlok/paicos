@@ -63,7 +63,14 @@ class Slicer(ImageCreator):
         if self.direction == 'orientation':
             assert self.widths[2] == 0.
 
+        self._do_region_selection()
+
+    def _do_region_selection(self):
+        # print('_do_region_selection was called from Slicer')
         parttype = self.parttype
+        snap = self.snap
+        center = self.center
+        widths = self.widths
 
         # Pre-select a narrow region around the region-of-interest
         avail_list = (list(snap.keys()) + snap._auto_list)
@@ -111,7 +118,7 @@ class Slicer(ImageCreator):
             image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \
                 + self.center
         else:
-            raise RuntimeError(f"Problem with direction={direction} input")
+            raise RuntimeError(f"Problem with direction={self.direction} input")
 
         # Query the tree to obtain closest Voronoi cell indices
         d, i = tree.query(image_points, workers=settings.numthreads)
@@ -171,6 +178,10 @@ class Slicer(ImageCreator):
         An array of shape (npix, npix) representing the sliced gas variable
         """
 
+        # This calls _do_region_selection if resolution, Orientation,
+        # widths or center changed
+        self._check_if_properties_changed()
+
         if isinstance(variable, str):
             err_msg = 'slicer uses a different parttype'
             assert int(variable[0]) == self.parttype, err_msg
@@ -180,3 +191,19 @@ class Slicer(ImageCreator):
                 raise RuntimeError('Unexpected type for variable')
 
         return variable[self.index]
+
+    @property
+    def depth(self):
+        if self.direction == 'x':
+            return self.width_x
+
+        elif self.direction == 'y':
+            return self.width_y
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            return self.width_z
+
+    @depth.setter
+    def depth(self, value):
+        err_msg = "You can't change the depth of a slicer, as it is zero by definition"
+        raise RuntimeError(err_msg)

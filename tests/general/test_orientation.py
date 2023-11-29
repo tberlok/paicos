@@ -42,3 +42,6 @@ for ii in range(4):
         raise RuntimeError('not checked')
 
     assert_equal_orientation(o1, o2)
+    o2.rotate_around_normal_vector(30)
+    assert o1._are_equal(o2) is False
+    assert o1._are_equal(o1.copy)

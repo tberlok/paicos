@@ -27,7 +27,8 @@ for use_units in [False, True]:
     fig, axes = plt.subplots(num=1, ncols=3)
     for ii, direction in enumerate(['x', 'y', 'z']):
         widths = width_vec[ii]
-        projector = pa.Projector(snap, center, widths, direction, npix=512)
+        projector = pa.Projector(snap, center, widths, direction, npix=512,
+                                 make_snap_with_selection=False)
 
         image_file = pa.ArepoImage(projector, basedir=root_dir + 'test_data/',
                                    basename=f'projection_{direction}')

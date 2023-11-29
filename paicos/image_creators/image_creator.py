@@ -31,32 +31,27 @@ class ImageCreator:
             npix (int): Number of pixels in the image (default is 512)
         """
 
+        self._obervers = []
+
         self.snap = snap
 
         code_length = self.snap.length
 
         if hasattr(center, 'unit'):
-            self.center = center
+            self._center = center.copy
             assert center.unit == code_length.unit
         elif settings.use_units:
-            self.center = np.array(center) * code_length
+            self._center = np.array(center) * code_length
         else:
-            self.center = np.array(center)
+            self._center = np.array(center)
 
         if hasattr(widths, 'unit'):
-            self.widths = widths
+            self._widths = widths.copy
             assert widths.unit == code_length.unit
         elif settings.use_units:
-            self.widths = np.array(widths) * code_length
+            self._widths = np.array(widths) * code_length
         else:
-            self.widths = np.array(widths)
-
-        self.x_c = self.center[0]
-        self.y_c = self.center[1]
-        self.z_c = self.center[2]
-        self.width_x = self.widths[0]
-        self.width_y = self.widths[1]
-        self.width_z = self.widths[2]
+            self._widths = np.array(widths)
 
         if isinstance(direction, str):
 
@@ -77,59 +72,290 @@ class ImageCreator:
             self.direction = 'orientation'
             self.orientation = direction
 
-        self.npix = self.npix_width = npix
+        self._npix = self._npix_width = npix
 
-        self.parttype = parttype
+        self._parttype = parttype
 
+        # For checking if properties changes
+        self._old_orientation = self.orientation.copy
+        self.properties_changed = False
+
+    def _check_if_properties_changed(self):
+
+        # Check if orientation changed compared to last
+        # time _do_region_selection was called
+        orientation_changed = not self.orientation._are_equal(self._old_orientation)
+
+        print('_check_if_properties_changed called')
+        if self.properties_changed or orientation_changed:
+            self._do_region_selection()
+            self.properties_changed = False
+            self._old_orientation = self.orientation.copy
+
+    def _do_region_selection(self):
+        err_msg = ("_do_region_selection was called from ImageCreator. "
+                   + "This should never happen as the Subclasses of "
+                   + "ImageCreator should implement this method")
+        raise RuntimeError(err_msg)
+
+    def info(self):
+        """
+        Prints some information about the image creator instance
+        TODO: Add things like the number of cells/particles
+        in the current instance.
+        """
+        s = f'Paicos ImageCreator instance of type: {str(self)}\n'
+        s += f'widths: {self.widths}\n'
+        s += f'center:  {self.center}\n'
+        s += f'orientation:  {self.orientation}'
+        print(s)
+
+    @property
+    def center(self):
+        return self._center
+
+    @property
+    def widths(self):
+        return self._widths
+
+    @widths.setter
+    def widths(self, value):
+        """
+        TODO: ensure that nx, ny
+        remain consistent with widths
+        """
+        assert value.shape[0] == 3
+        if settings.use_units:
+            assert hasattr(value, 'unit')
+            self._widths = value.copy
+        else:
+            self._widths = np.array(value)
+        self.properties_changed = True
+
+    @center.setter
+    def center(self, value):
+        assert value.shape[0] == 3
+        if settings.use_units:
+            assert hasattr(value, 'unit')
+            self._center = value.copy
+        else:
+            self._center = np.array(value)
+        self.properties_changed = True
+
+    @property
+    def npix(self):
+        return self._npix
+
+    @npix.setter
+    def npix(self, value):
+        self._npix = value
+        self._npix_width = value
+        # TODO: Not always needed to do this...
+        self.properties_changed = True
+
+    @property
+    def npix_width(self):
+        return self._npix_width
+
+    @npix_width.setter
+    def npix_width(self, value):
+        self._npix = value
+        self._npix_width = value
+        # TODO: Not always needed to do this...
+        self.properties_changed = True
+
+    @property
+    def parttype(self):
+        return self._parttype
+
+    @property
+    def foo(self):
+        return self._foo
+
+    @property
+    def x_c(self):
+        return self.center[0]
+
+    @property
+    def y_c(self):
+        return self.center[1]
+
+    @property
+    def z_c(self):
+        return self.center[2]
+
+    @property
+    def width_x(self):
+        return self.widths[0]
+
+    @property
+    def width_y(self):
+        return self.widths[1]
+
+    @property
+    def width_z(self):
+        return self.widths[2]
+
+    @property
+    def extent(self):
         if self.direction == 'x':
             extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
                       self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
-
-            centered_extent = [- self.width_y / 2, self.width_y / 2,
-                               - self.width_z / 2, self.width_z / 2]
-
-            self.width = self.width_y
-            self.height = self.width_z
-            self.depth = self.width_x
 
         elif self.direction == 'y':
             extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
                       self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
 
-            centered_extent = [- self.width_x / 2, self.width_x / 2,
-                               - self.width_z / 2, self.width_z / 2]
-
-            self.width = self.width_x
-            self.height = self.width_z
-            self.depth = self.width_y
-
         elif self.direction == 'z' or self.direction == 'orientation':
             extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
                       self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
 
+        if settings.use_units:
+            extent = units.paicos_quantity_list_to_array(extent)
+        else:
+            extent = np.array(extent)
+        return extent
+
+    @property
+    def centered_extent(self):
+        if self.direction == 'x':
+            centered_extent = [- self.width_y / 2, self.width_y / 2,
+                               - self.width_z / 2, self.width_z / 2]
+
+        elif self.direction == 'y':
+            centered_extent = [- self.width_x / 2, self.width_x / 2,
+                               - self.width_z / 2, self.width_z / 2]
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+
             centered_extent = [- self.width_x / 2, self.width_x / 2,
                                - self.width_y / 2, self.width_y / 2]
 
-            self.width = self.width_x
-            self.height = self.width_y
-            self.depth = self.width_z
-
         if settings.use_units:
-            a = snap._Time
-            h = snap.h
-            comoving = snap.comoving_sim
-            self.extent = units.PaicosQuantity(extent, a=a, h=h, comoving_sim=comoving)
-
-            self.centered_extent = units.PaicosQuantity(centered_extent, a=a, h=h,
-                                                        comoving_sim=comoving)
-            self.npix_height = int((self.height / self.width).value * self.npix_width)
+            centered_extent = units.paicos_quantity_list_to_array(centered_extent)
         else:
-            self.extent = np.array(extent)
-            self.centered_extent = np.array(centered_extent)
-            self.npix_height = int((self.height / self.width) * self.npix_width)
+            centered_extent = np.array(centered_extent)
+        return centered_extent
 
-        area = (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
-        self.area = area
-        self.area_per_pixel = self.area / (self.npix_width * self.npix_height)
-        self.volume = self.width_x * self.width_y * self.width_z
-        self.volume_per_pixel = self.volume / (self.npix_width * self.npix_height)
+    @property
+    def width(self):
+        if self.direction == 'x':
+            return self.width_y
+
+        elif self.direction == 'y':
+            return self.width_x
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            return self.width_x
+
+    @property
+    def height(self):
+        if self.direction == 'x':
+            return self.width_z
+
+        elif self.direction == 'y':
+            return self.width_z
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            return self.width_y
+
+    @property
+    def depth(self):
+        if self.direction == 'x':
+            return self.width_x
+
+        elif self.direction == 'y':
+            return self.width_y
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            return self.width_z
+
+    @width.setter
+    def width(self, value):
+        if settings.use_units:
+            assert hasattr(value, 'unit')
+        if self.direction == 'x':
+            self._widths[1] = value.copy
+
+        elif self.direction == 'y':
+            self._widths[0] = value.copy
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            self._widths[0] = value.copy
+        self.properties_changed = True
+
+    @height.setter
+    def height(self, value):
+        if settings.use_units:
+            assert hasattr(value, 'unit')
+        if self.direction == 'x':
+            self._widths[2] = value.copy
+
+        elif self.direction == 'y':
+            self._widths[2] = value.copy
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            self._widths[1] = value.copy
+        self.properties_changed = True
+
+    @depth.setter
+    def depth(self, value):
+        if settings.use_units:
+            assert hasattr(value, 'unit')
+        if self.direction == 'x':
+            self._widths[0] = value.copy
+
+        elif self.direction == 'y':
+            self._widths[1] = value.copy
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            self._widths[2] = value.copy
+        self.properties_changed = True
+
+    def double_resolution(self):
+        self.npix = self.npix * 2
+
+    def half_resolution(self):
+        self.npix = self.npix / 2
+
+    def zoom(self, factor):
+        self.width = self.width / factor
+        self.height = self.height / factor
+
+        self.properties_changed = True
+
+    def move_up(self, factor):
+        """
+        """
+        raise RuntimeError("Convenience function for moving up in the image")
+        # That is, along the perp2 vector.
+
+    def move_backwards(self, factor):
+        """
+        Probably will look good to move backwards while simultaneously changing
+        the center, depth and width of the image...
+        """
+        raise RuntimeError("Convenience function TBI")
+
+    @property
+    def npix_height(self):
+        if settings.use_units:
+            return int((self.height / self.width).value * self.npix_width)
+        else:
+            return int((self.height / self.width) * self.npix_width)
+
+    @property
+    def area(self):
+        return (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
+
+    @property
+    def area_per_pixel(self):
+        return self.area / (self.npix_width * self.npix_height)
+
+    @property
+    def volume(self):
+        return self.width_x * self.width_y * self.width_z
+
+    @property
+    def volume_per_pixel(self):
+        return self.volume / (self.npix_width * self.npix_height)

@@ -71,10 +71,16 @@ class NestedProjector(Projector):
 
         self.verbose = verbose
         self.store_subimages = store_subimages
-
-        # Code specific for nested functionality below
         self.factor = factor
         self.npix_min = npix_min
+
+        self._bind_to(self._initialize_nested)
+
+        self._initialize_nested()
+
+    def _initialize_nested(self):
+
+        # Code specific for nested functionality below
 
         # Find required grid resolutions and the binning in smoothing (hsml)
         bins, n_grids = self._get_bins(self.extent[1] - self.extent[0])
@@ -94,6 +100,7 @@ class NestedProjector(Projector):
         assert n_particles == count, err_msg
 
         self.n_grids = n_grids
+        self.bins = bins
         self.i_digit = i_digit
 
     @remove_astro_units
@@ -175,10 +182,10 @@ class NestedProjector(Projector):
         """
         if settings.openMP_has_issues:
             from ..cython.sph_projectors import project_image as project
-            from ..cython.sph_projectors import project_oriented_image as project_oriented
+            from ..cython.sph_projectors import project_oriented_image as project_orie
         else:
             from ..cython.sph_projectors import project_image_omp as project
-            from ..cython.sph_projectors import project_oriented_image_omp as project_oriented
+            from ..cython.sph_projectors import project_oriented_image_omp as project_orie
 
         x_c, y_c, z_c = center[0], center[1], center[2]
         width_x, width_y, width_z = widths
@@ -215,17 +222,17 @@ class NestedProjector(Projector):
             elif self.direction == 'orientation':
                 unit_vectors = self.orientation.cartesian_unit_vectors
 
-                proj_n = project_oriented(pos_n[:, 0],
-                                          pos_n[:, 1],
-                                          pos_n[:, 2],
-                                          variable_n,
-                                          hsml_n, n_grid,
-                                          x_c, y_c, z_c, width_x, width_y,
-                                          boxsize,
-                                          unit_vectors['x'],
-                                          unit_vectors['y'],
-                                          unit_vectors['z'],
-                                          settings.numthreads_reduction)
+                proj_n = project_orie(pos_n[:, 0],
+                                      pos_n[:, 1],
+                                      pos_n[:, 2],
+                                      variable_n,
+                                      hsml_n, n_grid,
+                                      x_c, y_c, z_c, width_x, width_y,
+                                      boxsize,
+                                      unit_vectors['x'],
+                                      unit_vectors['y'],
+                                      unit_vectors['z'],
+                                      settings.numthreads_reduction)
             else:
                 raise RuntimeError(f'invalid input for direction={self.direction}')
             images.append(proj_n)
