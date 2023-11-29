@@ -20,3 +20,5 @@ use_aliases = False
 
 # Strictly enforce units
 strict_units = True
+# Whether to give cuda import warnings
+disable_cuda_import_warnings = True

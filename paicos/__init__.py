@@ -194,36 +194,36 @@ if user_settings_exists():
     import user_settings
 
 
-def enable_gpu_functionality():
-    """
+# Import of GPU functionality only if
+# a simple test with cupy and numba works.
+try:
+    import cupy as cp
+    from numba import cuda
 
-    """
-    try:
-        import cupy as cp
-        from numba import cuda
+    @cuda.jit
+    def my_kernel(io_array):
+        pos = cuda.grid(1)
+        if pos < io_array.size:
+            io_array[pos] *= 2
 
-        @cuda.jit
-        def my_kernel(io_array):
-            pos = cuda.grid(1)
-            if pos < io_array.size:
-                io_array[pos] *= 2
+    data = cp.ones(10**6)
+    threadsperblock = 256
+    blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
+    my_kernel[blockspergrid, threadsperblock](data)
 
-        data = cp.ones(10**6)
-        threadsperblock = 256
-        blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
-        my_kernel[blockspergrid, threadsperblock](data)
+    del data
 
-        del data
-    except Exception as e:
+    # Test above worked, do the imports
+    from .image_creators.gpu_sph_projector import GpuSphProjector
+except Exception as e:
+    if not settings.disable_cuda_import_warnings:
+        import warnings
         print(e)
         err_msg = ('\nPaicos: The simple cuda example using cupy and numba failed '
                    'with the error above. Please check the official documentation for '
                    'cupy and numba for installation procedure. Note that you need '
                    ' a cuda-enabled GPU.\n')
-        raise RuntimeError(err_msg)
-    global GpuSphProjector
-    from .image_creators.gpu_sph_projector import GpuSphProjector
-
+    warnings.warn(err_msg)
 
 # Do this at start up
 util.check_if_omp_has_issues()
