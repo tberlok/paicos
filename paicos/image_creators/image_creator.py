@@ -319,7 +319,7 @@ class ImageCreator:
         self.npix = self.npix * 2
 
     def half_resolution(self):
-        self.npix = self.npix / 2
+        self.npix = self.npix // 2
 
     def zoom(self, factor):
         self.width = self.width / factor
