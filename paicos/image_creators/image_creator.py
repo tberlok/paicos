@@ -78,7 +78,7 @@ class ImageCreator:
 
         # For checking if properties changes
         self._old_orientation = self.orientation.copy
-        self.properties_changed = False
+        self._properties_changed = False
 
     def _check_if_properties_changed(self):
 
@@ -86,11 +86,14 @@ class ImageCreator:
         # time _do_region_selection was called
         orientation_changed = not self.orientation._are_equal(self._old_orientation)
 
-        print('_check_if_properties_changed called')
-        if self.properties_changed or orientation_changed:
+        # print('_check_if_properties_changed called')
+        if self._properties_changed or orientation_changed:
             self._do_region_selection()
-            self.properties_changed = False
+            self._properties_changed = False
             self._old_orientation = self.orientation.copy
+            return True
+        else:
+            return False
 
     def _do_region_selection(self):
         err_msg = ("_do_region_selection was called from ImageCreator. "
@@ -130,7 +133,7 @@ class ImageCreator:
             self._widths = value.copy
         else:
             self._widths = np.array(value)
-        self.properties_changed = True
+        self._properties_changed = True
 
     @center.setter
     def center(self, value):
@@ -140,7 +143,7 @@ class ImageCreator:
             self._center = value.copy
         else:
             self._center = np.array(value)
-        self.properties_changed = True
+        self._properties_changed = True
 
     @property
     def npix(self):
@@ -151,7 +154,7 @@ class ImageCreator:
         self._npix = value
         self._npix_width = value
         # TODO: Not always needed to do this...
-        self.properties_changed = True
+        self._properties_changed = True
 
     @property
     def npix_width(self):
@@ -162,7 +165,7 @@ class ImageCreator:
         self._npix = value
         self._npix_width = value
         # TODO: Not always needed to do this...
-        self.properties_changed = True
+        self._properties_changed = True
 
     @property
     def parttype(self):
@@ -282,7 +285,7 @@ class ImageCreator:
 
         elif self.direction == 'z' or self.direction == 'orientation':
             self._widths[0] = value.copy
-        self.properties_changed = True
+        self._properties_changed = True
 
     @height.setter
     def height(self, value):
@@ -296,7 +299,7 @@ class ImageCreator:
 
         elif self.direction == 'z' or self.direction == 'orientation':
             self._widths[1] = value.copy
-        self.properties_changed = True
+        self._properties_changed = True
 
     @depth.setter
     def depth(self, value):
@@ -310,7 +313,7 @@ class ImageCreator:
 
         elif self.direction == 'z' or self.direction == 'orientation':
             self._widths[2] = value.copy
-        self.properties_changed = True
+        self._properties_changed = True
 
     def double_resolution(self):
         self.npix = self.npix * 2
@@ -322,7 +325,7 @@ class ImageCreator:
         self.width = self.width / factor
         self.height = self.height / factor
 
-        self.properties_changed = True
+        self._properties_changed = True
 
     def move_up(self, factor):
         """

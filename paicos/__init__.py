@@ -193,5 +193,37 @@ if user_settings_exists():
     # pylint: disable=E0401
     import user_settings
 
+
+def enable_gpu_functionality():
+    """
+
+    """
+    try:
+        import cupy as cp
+        from numba import cuda
+
+        @cuda.jit
+        def my_kernel(io_array):
+            pos = cuda.grid(1)
+            if pos < io_array.size:
+                io_array[pos] *= 2
+
+        data = cp.ones(10**6)
+        threadsperblock = 256
+        blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
+        my_kernel[blockspergrid, threadsperblock](data)
+
+        del data
+    except Exception as e:
+        print(e)
+        err_msg = ('\nPaicos: The simple cuda example using cupy and numba failed '
+                   'with the error above. Please check the official documentation for '
+                   'cupy and numba for installation procedure. Note that you need '
+                   ' a cuda-enabled GPU.\n')
+        raise RuntimeError(err_msg)
+
+    from .image_creators.gpu_sph_projector import GpuSphProjector
+
+
 # Do this at start up
 util.check_if_omp_has_issues()
