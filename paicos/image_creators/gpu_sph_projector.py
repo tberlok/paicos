@@ -171,7 +171,7 @@ class GpuSphProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, parttype=0, nvol=8, do_pre_selection=False):
+                 npix=512, parttype=0, nvol=8, threadsperblock=256, do_pre_selection=False):
         """
         Initialize the Projector class.
 
@@ -210,6 +210,8 @@ class GpuSphProjector(ImageCreator):
         assert self.npix_height % 32 == 0, err_msg
 
         parttype = self.parttype
+
+        self.threadsperblock = threadsperblock
 
         self.do_pre_selection = do_pre_selection
 
@@ -346,7 +348,7 @@ class GpuSphProjector(ImageCreator):
         ny = self.npix_height
         variable = self.gpu_variables[variable_str]
 
-        threadsperblock = 256
+        threadsperblock = self.threadsperblock
         blockspergrid = (x.size + (threadsperblock - 1)) // threadsperblock
         image1 = cp.zeros((nx, ny))
         image2 = cp.zeros((nx // 2, ny // 2))
