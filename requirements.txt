@@ -4,6 +4,7 @@ cython
 matplotlib
 h5py
 astropy >= 4.3
+numba
 
 # For testing
 pytest

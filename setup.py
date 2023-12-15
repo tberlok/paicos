@@ -71,7 +71,8 @@ ext_modules = [
 install_requires = ['scipy',
                     'numpy',
                     'h5py',
-                    'astropy']
+                    'astropy',
+                    'numba']
 
 
 cur = os.path.abspath(__file__).replace('setup.py', '')
