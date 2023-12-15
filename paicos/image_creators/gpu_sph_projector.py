@@ -152,6 +152,8 @@ def deposit(nx, ny, x, y, z, hsml, variable, image1, image2, image4, image8, ima
                         cuda.atomic.add(image4, (ix, iy), weight / norm)
                     elif im == 8:
                         cuda.atomic.add(image8, (ix, iy), weight / norm)
+                    elif im == 16:
+                        cuda.atomic.add(image16, (ix, iy), weight / norm)
 
 
 class GpuSphProjector(ImageCreator):

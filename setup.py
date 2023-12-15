@@ -57,7 +57,15 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
+    ),
+    Extension(
+        name='paicos.trees.bvh_tree',
+        sources=['paicos/trees/bvh_tree.pyx'],
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args
     )
+
 ]
 
 install_requires = ['scipy',
