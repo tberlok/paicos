@@ -1,7 +1,7 @@
 import numba
 import math
 import numpy as np
-from bvh_tree import leading_zeros_cython as count_leading_zeros
+from .bvh_tree import leading_zeros_cython as count_leading_zeros
 
 # Hardcoded for uint64 coordinates (don't change without also changing morton
 # code functions)
@@ -365,7 +365,7 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
             point_in_B = is_point_in_box(query_point, tree_bounds[childB])
 
             # Do explicit check if in a leaf
-            print(f'node_id: {node_id}\t childA: {childA}\t childB: {childB}\t')
+            # print(f'node_id: {node_id}\t childA: {childA}\t childB: {childB}\t')
             # if node_id == 6:
             #     print('node_id, point_in_A, point_in_B, is_leaf, is_leafB', node_id, point_in_A, point_in_B, is_leafA, is_leafB)
             #     print(query_point)
@@ -503,56 +503,3 @@ class BinaryTree:
                                    query_points), dists, ids,
                                start_id=start_id)
         return dists / self.conversion_factor, self._tree_node_ids_to_data_ids(ids)
-
-
-if __name__ == '__main__':
-    import paicos as pa
-    from scipy.spatial import KDTree
-    pa.use_units(False)
-    snap = pa.Snapshot(pa.root_dir + 'data/snap_247.hdf5')
-    center = snap.Cat.Group['GroupPos'][0]
-    widths = np.array([15000, 15000, 15000])
-
-    index = pa.util.get_index_of_cubic_region_plus_thin_layer(
-        snap['0_Coordinates'], center, widths,
-        snap['0_Diameters'], snap.box)
-
-    snap = snap.select(index, parttype=0)
-
-    pos = snap['0_Coordinates']
-    sizes = snap['0_Diameters']
-    bvh_tree = BinaryTree(pos, 1.2 * sizes)
-
-    bvh_dist, bvh_ids = bvh_tree.nearest_neighbor(pos[:1])
-
-    # Construct a scipy kd tree
-    kd_tree = KDTree(pos)
-
-    kd_dist, kd_ids = kd_tree.query(pos)
-
-    np.testing.assert_array_equal(kd_ids, bvh_ids)
-
-    # # Random query positions
-    # pos2 = np.random.rand(10000, 3) * widths[None, :]
-    # pos2 += (center - widths / 2)[None, :]
-
-    # bvh_dist2, bvh_ids2 = bvh_tree.nearest_neighbor(pos2)
-    # kd_dist2, kd_ids2 = kd_tree.query(pos2)
-
-    # np.testing.assert_array_equal(kd_ids2, bvh_ids2)
-
-    # # Playing around with walking up the tree from last nearest neighbor
-    # n_queries = 1
-    # ids = np.zeros(n_queries, dtype=np.int64)
-    # dists = np.zeros(n_queries, dtype=np.float64)
-    # find_nearest_neighbors(bvh_tree._pos, bvh_tree.parents, bvh_tree.children,
-    #                        bvh_tree.bounds, bvh_tree._pos[0:1], dists, ids, start_id=0)
-    # new_post = bvh_tree._pos[0:1] + 20 * \
-    #     bvh_tree.bounds[bvh_tree.num_internal_nodes, :, 1]
-
-    # d, i = find_nearest_neighbors(bvh_tree._pos, bvh_tree.parents,
-    #                               bvh_tree.children, bvh_tree.bounds, new_post, dists, ids, start_id=0)
-    # new_post = bvh_tree._pos[0:1] + 2 * \
-    #     bvh_tree.bounds[bvh_tree.num_internal_nodes, :, 1]
-    # find_nearest_neighbors(bvh_tree._pos, bvh_tree.parents, bvh_tree.children,
-    #                        bvh_tree.bounds, new_post, dists, ids, start_id=i[0] + bvh_tree.num_internal_nodes)

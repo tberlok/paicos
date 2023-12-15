@@ -20,6 +20,7 @@ checks:
 	make cleanup
 	pytest tests/comoving
 	pytest tests/non-comoving
+	pytest tests/general
 
 linting:
 	flake8 ./
