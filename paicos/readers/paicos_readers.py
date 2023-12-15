@@ -423,7 +423,18 @@ class PaicosReader(dict):
 
     def find_unit(self, name, field):
         """
-        Find unit for a given quantity
+        Find unit for a given quantity.
+
+        Parameters:
+
+            name: corresponds to a block name in Arepo snapshots,
+                  i.e., a key in one of the dictionaries defined
+                  in unit_specifications.py
+
+            field: the name of of one of the dictionaries defined in the
+                   unit specifications, e.g,:
+                    ['default', 'voronoi_cells', 'dark_matter',
+                    'stars', 'black_holes', 'groups', 'subhalos']
         """
         # pylint: disable=import-outside-toplevel
 

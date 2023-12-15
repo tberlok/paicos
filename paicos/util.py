@@ -201,6 +201,7 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
     Get a boolean array of positions, pos, which are inside the spherical
     shell with inner radius r_min and outer radius r_max, centered at center.
     """
+    assert center.shape[0] == 3
     x_c, y_c, z_c = center[0], center[1], center[2]
     index = get_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
                              settings.numthreads)

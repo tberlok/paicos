@@ -229,6 +229,9 @@ class GpuSphProjector(ImageCreator):
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
 
+        # TODO: add split into GPU and CPU based on cell sizes here.
+        # Perhaps make the CPU do everything above grid8.
+
         # Call selection
         self.has_do_region_selection_been_called = False
         self._do_region_selection()
