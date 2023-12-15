@@ -5,9 +5,10 @@ def test_binary_tree():
     from scipy.spatial import KDTree
     pa.use_units(False)
     from paicos.trees.bvh_cpu import BinaryTree
-    snap = pa.Snapshot(pa.root_dir + 'data/snap_247.hdf5')
-    center = snap.Cat.Group['GroupPos'][0]
-    widths = np.array([15000, 15000, 15000])
+    snap = pa.Snapshot(pa.root_dir + '/data/', 247, basename='reduced_snap',
+                       load_catalog=False)
+    center = np.array([398968.4, 211682.6, 629969.9])
+    widths = np.array([2000, 2000, 2000])
 
     # Select a cube
     index = pa.util.get_index_of_cubic_region_plus_thin_layer(
@@ -32,7 +33,8 @@ def test_binary_tree():
     np.testing.assert_array_equal(kd_ids, bvh_ids)
 
     # Random query positions
-    pos2 = np.random.rand(10000, 3) * widths[None, :]
+    # Limit to well inside the tree, due to holes in cutout...
+    pos2 = (0.1 + 0.8 * np.random.rand(10000, 3)) * widths[None, :]
     pos2 += (center - widths / 2)[None, :]
 
     bvh_dist2, bvh_ids2 = bvh_tree.nearest_neighbor(pos2)
