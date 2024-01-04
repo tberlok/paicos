@@ -215,6 +215,7 @@ try:
 
     # Test above worked, do the imports
     from .image_creators.gpu_sph_projector import GpuSphProjector
+    from .image_creators.gpu_ray_projector import GpuRayProjector
 except Exception as e:
     if not settings.disable_cuda_import_warnings:
         import warnings
