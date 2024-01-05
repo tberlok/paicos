@@ -135,31 +135,48 @@ class Orientation:
             R = np.array([[1, 0, 0],
                          [0, np.cos(radians), -np.sin(radians)],
                          [0, np.sin(radians), np.cos(radians)]])
+            return R
         elif axis == 'y':
             R = np.array([[np.cos(radians), 0, np.sin(radians)],
                          [0, 1, 0],
                          [-np.sin(radians), 0, np.cos(radians)]])
+            return R
         elif axis == 'z':
             R = np.array([[np.cos(radians), -np.sin(radians), 0],
                          [np.sin(radians), np.cos(radians), 0],
                          [0, 0, 1]])
+            return R
         elif axis == 'perp_vector1':
-            Rx = self._get_rotation_matrix('x', degrees, radians)
-            Rtmp = np.matmul(Rx, self.inverse_rotation_matrix)
-            R = np.matmul(self.rotation_matrix, Rtmp)
-
+            u = self.perp_vector1
         elif axis == 'perp_vector2':
-            Ry = self._get_rotation_matrix('y', degrees, radians)
-            Rtmp = np.matmul(Ry, self.inverse_rotation_matrix)
-            R = np.matmul(self.rotation_matrix, Rtmp)
-
+            u = self.perp_vector2
         elif axis == 'normal_vector':
-            Rz = self._get_rotation_matrix('z', degrees, radians)
-            Rtmp = np.matmul(Rz, self.inverse_rotation_matrix)
-            R = np.matmul(self.rotation_matrix, Rtmp)
+            u = self.normal_vector
+        #     Rx = self._get_rotation_matrix('x', degrees, radians)
+        #     Rtmp = np.matmul(Rx, self.inverse_rotation_matrix)
+        #     R = np.matmul(self.rotation_matrix, Rtmp)
+
+        # elif axis == 'perp_vector2':
+        #     Ry = self._get_rotation_matrix('y', degrees, radians)
+        #     Rtmp = np.matmul(Ry, self.inverse_rotation_matrix)
+        #     R = np.matmul(self.rotation_matrix, Rtmp)
+
+        # elif axis == 'normal_vector':
+        #     Rz = self._get_rotation_matrix('z', degrees, radians)
+        #     Rtmp = np.matmul(Rz, self.inverse_rotation_matrix)
+        #     R = np.matmul(self.rotation_matrix, Rtmp)
 
         else:
             raise RuntimeError("invalid input")
+
+        # Construct rotation matrix that rotates radians around
+        # unit vector 'u'
+        # see e.g. https://en.wikipedia.org/w/index.php?title=Rotation_matrix
+        u_cross = np.array([[0, -u[2], u[1]],
+                            [u[2], 0, -u[0]],
+                            [-u[1], u[0], 0]])
+        R = np.cos(radians) * np.identity(3) + np.sin(radians) * u_cross \
+            + (1 - np.cos(radians)) * np.outer(u, u)
 
         return R
 
