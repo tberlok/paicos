@@ -13,6 +13,10 @@ from ..trees.bvh_gpu import nearest_neighbor_device
 from ..trees.bvh_gpu import is_point_in_box, distance
 
 
+def get_blocks(size, threadsperblock):
+    return (size + (threadsperblock - 1)) // threadsperblock
+
+
 @cuda.jit(device=True, inline=True)
 def rotate_point_around_center(point, tmp_point, center, rotation_matrix):
     """
@@ -259,19 +263,15 @@ class GpuRayProjector(ImageCreator):
         ny = self.npix_height
         variable = self.gpu_variables[variable_str]
 
-        image_width = nx
-
-        # TODO: blocks should not be hardcoded
-        blocks_2d = 128
-        threads_per_block2d = image_width // blocks_2d
-
         tree_scale_factor = self.tree.conversion_factor
         tree_offsets = self.tree.off_sets
 
         image = cp.zeros((nx, ny))
 
-        btuple = (blocks_2d, blocks_2d)
-        ttuple = (threads_per_block2d, threads_per_block2d)
+        blocks_x = get_blocks(nx, self.threadsperblock)
+        blocks_y = get_blocks(ny, self.threadsperblock)
+        btuple = (blocks_x, blocks_y)
+        ttuple = (self.threadsperblock, self.threadsperblock)
         trace_rays[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
                                    self.tree.bounds, variable, hsml, widths, center,
                                    tree_scale_factor, tree_offsets, image,
