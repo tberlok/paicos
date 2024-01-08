@@ -45,6 +45,12 @@ class ImageCreator:
         else:
             self._center = np.array(center)
 
+        # Difference from original center of image
+        if settings.use_units:
+            self._diff_center = self._center.copy * 0
+        else:
+            self._diff_center = np.array(self._center) * 0
+
         if hasattr(widths, 'unit'):
             self._widths = widths.copy
             assert widths.unit == code_length.unit
@@ -326,6 +332,46 @@ class ImageCreator:
         self.height = self.height / factor
 
         self._properties_changed = True
+
+    def _move_center_along_unit_vector(self, shift, unit_vector):
+        """
+        Helper function for moving center along unit vector.
+        """
+        if settings.use_units:
+            assert hasattr(shift, 'unit')
+
+        # Calculate new center
+        new_center = self._center + shift * unit_vector
+        # Keep track of changes to center (offset from initialized center)
+        self._diff_center += new_center - self._center
+
+        # Store new center and set bool for re-calculation of image
+        self._center = new_center
+        self._properties_changed = True
+
+    def move_center_along_normal_vector(self, shift):
+        """
+        Moves the center of the image along its depth direction.
+        Value can be positive or negative and must have same units
+        as the center (TODO: In principle we would just convert the distance).
+        """
+        self._move_center_along_unit_vector(shift, self.orientation.normal_vector)
+
+    def move_center_along_perp_vector1(self, shift):
+        """
+        Moves the center of the image along its horizontal direction.
+        Value can be positive or negative and must have same units
+        as the center (TODO: In principle we would just convert the distance).
+        """
+        self._move_center_along_unit_vector(shift, self.orientation.perp_vector1)
+
+    def move_center_along_perp_vector2(self, shift):
+        """
+        Moves the center of the image along its vertical direction.
+        Value can be positive or negative and must have same units
+        as the center (TODO: In principle we would just convert the distance).
+        """
+        self._move_center_along_unit_vector(shift, self.orientation.perp_vector2)
 
     def move_up(self, factor):
         """
