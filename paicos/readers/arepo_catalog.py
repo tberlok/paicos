@@ -3,6 +3,8 @@ import numpy as np
 import h5py
 from .paicos_readers import PaicosReader
 from .. import settings
+import numbers
+import warnings
 
 
 class Catalog(PaicosReader):
@@ -138,6 +140,21 @@ class Catalog(PaicosReader):
             skip_sub += ns
 
             file.close()
+
+        # Load all variables with double precision
+        if settings.double_precision:
+
+            for ikey in self.Group:
+                if not issubclass(self.Group[ikey].dtype.type, numbers.Integral):
+                    self.Group[ikey] = self.Group[ikey].astype(np.float64)
+
+            for ikey in self.Sub:
+                if not issubclass(self.Sub[ikey].dtype.type, numbers.Integral):
+                    self.Sub[ikey] = self.Sub[ikey].astype(np.float64)
+        else:
+            warnings.warn('\n\nThe cython routines expect double precision '
+                          + 'and will fail unless settings.double_precision '
+                          + 'is True.\n\n')
 
         if settings.use_units:
             for key in list(self.Group.keys()):
