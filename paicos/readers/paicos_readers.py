@@ -517,7 +517,7 @@ class ImageReader(PaicosReader):
     then it will automatically divide them to obtain the MagneticFieldSquared.
     """
 
-    def __init__(self, basedir, snapnum=None, basename="projection", load_all=True):
+    def __init__(self, basedir='.', snapnum=None, basename="projection", load_all=True):
         """
         See documentation for the PaicosReader.
 
@@ -661,7 +661,7 @@ class Histogram2DReader(PaicosReader):
     logscale, hist2d, centers_x, centers_y.
     """
 
-    def __init__(self, basedir, snapnum, basename='2d_histogram'):
+    def __init__(self, basedir='.', snapnum=None, basename='2d_histogram'):
         """
         See documentation for the PaicosReader.
 
