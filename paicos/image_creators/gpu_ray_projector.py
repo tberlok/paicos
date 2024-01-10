@@ -110,7 +110,8 @@ class GpuRayProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, parttype=0, tol=1, threadsperblock=8, do_pre_selection=False):
+                 npix=512, parttype=0, tol=0.25, threadsperblock=8,
+                 do_pre_selection=False):
         """
         Initialize the Projector class.
 
