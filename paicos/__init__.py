@@ -4,7 +4,8 @@ simulations performed with Arepo. Its main feature is that it includes
 handling of units, derived variables, loading of data upon request.
 
 The module includes a way of writing and reading data with units.
-The code is parallel with an OpenMP Cython implementation.
+The code is parallel with an OpenMP Cython implementation
+and a CUDA GPU implementation for visualization.
 """
 
 __version__ = "0.1.5"
@@ -161,6 +162,13 @@ def give_openMP_warnings(option):
     settings.give_openMP_warnings = option
 
 
+def give_cuda_import_warnings(option):
+    """
+    Turns on/off cuda import warnings on startup
+    """
+    settings.give_cuda_import_warnings = option
+
+
 def set_aliases(aliases):
     """
     Assign a list of aliases for use as keys in snapshot objects.
@@ -217,14 +225,14 @@ try:
     from .image_creators.gpu_sph_projector import GpuSphProjector
     from .image_creators.gpu_ray_projector import GpuRayProjector
 except Exception as e:
-    if not settings.disable_cuda_import_warnings:
+    if settings.give_cuda_import_warnings:
         import warnings
         print(e)
         err_msg = ('\nPaicos: The simple cuda example using cupy and numba failed '
                    'with the error above. Please check the official documentation for '
                    'cupy and numba for installation procedure. Note that you need '
                    ' a cuda-enabled GPU.\n')
-    warnings.warn(err_msg)
+        warnings.warn(err_msg)
 
 # Do this at start up
 util.check_if_omp_has_issues()

@@ -281,7 +281,7 @@ class GpuRayProjector(ImageCreator):
         projection = cp.asnumpy(image)
         return projection
 
-    def project_variable(self, variable):
+    def project_variable(self, variable, additive=False):
         """
         projects a given variable onto a 2D plane.
 
@@ -299,6 +299,10 @@ class GpuRayProjector(ImageCreator):
         # This calls _do_region_selection if resolution, Orientation,
         # widths or center changed
         self._check_if_properties_changed()
+
+        if additive:
+            err_msg = "GPU ray tracer does not yet support additive=True"
+            raise RuntimeError(err_msg)
 
         if isinstance(variable, str):
             variable_str = str(variable)
@@ -336,12 +340,11 @@ class GpuRayProjector(ImageCreator):
         assert projection.shape[0] == self.npix_height
         assert projection.shape[1] == self.npix_width
 
-        area_per_pixel = self.area / np.prod(projection.shape)
-
         if isinstance(variable, units.PaicosQuantity):
-            projection = projection * variable.unit_quantity
+            unit_length = self.snap['0_Coordinates'].uq
+            projection = projection * variable.unit_quantity * unit_length
 
-        return projection / area_per_pixel
+        return projection / self.depth
 
     def __del__(self):
         """

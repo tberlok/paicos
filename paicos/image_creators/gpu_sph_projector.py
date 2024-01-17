@@ -418,12 +418,10 @@ class GpuSphProjector(ImageCreator):
         assert projection.shape[0] == self.npix_height
         assert projection.shape[1] == self.npix_width
 
-        area_per_pixel = self.area / np.prod(projection.shape)
-
         if isinstance(variable, units.PaicosQuantity):
             projection = projection * variable.unit_quantity
 
-        return projection / area_per_pixel
+        return projection / self.area_per_pixel
 
     def __del__(self):
         """

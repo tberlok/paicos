@@ -284,21 +284,17 @@ class TreeProjector(ImageCreator):
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
 
-        area_per_pixel = self.area_per_pixel
-
         if additive:
-            dV = area_per_pixel * self.delta_depth
             avail_list = (list(self.snap.keys()) + self.snap._auto_list)
             if f'{parttype}_Volume' in avail_list:
-                weight = dV / self.snap[f'{parttype}_Volume'][self.index]
-                variable = variable[self.index] * weight
-                projection = np.sum(variable, axis=2) / area_per_pixel
+                variable_density = variable[self.index] / self.snap[f'{parttype}_Volume'][self.index]
+                projection = np.sum(variable_density * self.delta_depth, axis=2) / self.depth
             else:
                 err_msg = (f"The volume field for parttype {parttype} is required when"
                            + "using additive=True")
                 raise RuntimeError(err_msg)
         else:
             variable = variable[self.index]
-            projection = np.mean(variable, axis=2)
+            projection = np.sum(variable * self.delta_depth, axis=2) / self.depth
 
         return projection
