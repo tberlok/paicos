@@ -161,20 +161,16 @@ class ImageCreator:
     @npix.setter
     def npix(self, value):
         self._npix = value
-        self._npix_width = value
         # TODO: Not always needed to do this...
         self._properties_changed = True
 
     @property
     def npix_width(self):
-        return self._npix_width
+        return self._npix
 
     @npix_width.setter
     def npix_width(self, value):
-        self._npix = value
-        self._npix_width = value
-        # TODO: Not always needed to do this...
-        self._properties_changed = True
+        self.npix = value
 
     @property
     def parttype(self):
@@ -210,17 +206,28 @@ class ImageCreator:
 
     @property
     def extent(self):
-        if self.direction == 'x':
-            extent = [self.y_c - self.width_y / 2, self.y_c + self.width_y / 2,
-                      self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
+        if self.direction == 'orientation':
+
+            # This is the extent of the image-plane pre-rotation
+            # into the orientation of the image...
+            # Use centered_extent for showing rotated images.
+            center_width = self.x_c
+            center_height = self.y_c
+
+        elif self.direction == 'x':
+            center_width = self.y_c
+            center_height = self.z_c
 
         elif self.direction == 'y':
-            extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
-                      self.z_c - self.width_z / 2, self.z_c + self.width_z / 2]
+            center_width = self.z_c
+            center_height = self.x_c
 
-        elif self.direction == 'z' or self.direction == 'orientation':
-            extent = [self.x_c - self.width_x / 2, self.x_c + self.width_x / 2,
-                      self.y_c - self.width_y / 2, self.y_c + self.width_y / 2]
+        elif self.direction == 'z':
+            center_width = self.x_c
+            center_height = self.y_c
+
+        extent = [center_width - self.width / 2, center_width + self.width / 2,
+                  center_height - self.height / 2, center_height + self.height / 2]
 
         if settings.use_units:
             extent = units.paicos_quantity_list_to_array(extent)
@@ -230,18 +237,8 @@ class ImageCreator:
 
     @property
     def centered_extent(self):
-        if self.direction == 'x':
-            centered_extent = [- self.width_y / 2, self.width_y / 2,
-                               - self.width_z / 2, self.width_z / 2]
-
-        elif self.direction == 'y':
-            centered_extent = [- self.width_x / 2, self.width_x / 2,
-                               - self.width_z / 2, self.width_z / 2]
-
-        elif self.direction == 'z' or self.direction == 'orientation':
-
-            centered_extent = [- self.width_x / 2, self.width_x / 2,
-                               - self.width_y / 2, self.width_y / 2]
+        centered_extent = [- self.width / 2, self.width / 2,
+                           - self.height / 2, self.height / 2]
 
         if settings.use_units:
             centered_extent = units.paicos_quantity_list_to_array(centered_extent)
@@ -255,7 +252,7 @@ class ImageCreator:
             return self.width_y
 
         elif self.direction == 'y':
-            return self.width_x
+            return self.width_z
 
         elif self.direction == 'z' or self.direction == 'orientation':
             return self.width_x
@@ -266,7 +263,7 @@ class ImageCreator:
             return self.width_z
 
         elif self.direction == 'y':
-            return self.width_z
+            return self.width_x
 
         elif self.direction == 'z' or self.direction == 'orientation':
             return self.width_y
@@ -290,7 +287,7 @@ class ImageCreator:
             self._widths[1] = value.copy
 
         elif self.direction == 'y':
-            self._widths[0] = value.copy
+            self._widths[2] = value.copy
 
         elif self.direction == 'z' or self.direction == 'orientation':
             self._widths[0] = value.copy
@@ -304,7 +301,7 @@ class ImageCreator:
             self._widths[2] = value.copy
 
         elif self.direction == 'y':
-            self._widths[2] = value.copy
+            self._widths[0] = value.copy
 
         elif self.direction == 'z' or self.direction == 'orientation':
             self._widths[1] = value.copy

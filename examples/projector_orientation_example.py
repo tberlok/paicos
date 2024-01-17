@@ -13,7 +13,7 @@ R200c = snap.Cat.Group['Group_R_Crit200'][0].value
 widths = [10000, 10000, 10000]
 width_vec = (
     [2 * R200c, 20000, 10000],
-    [20000, 2 * R200c, 10000],
+    [10000, 2 * R200c, 20000],
     [20000, 10000, 2 * R200c],
 )
 
@@ -21,11 +21,11 @@ plt.figure(1)
 plt.clf()
 fig, axes = plt.subplots(num=1, ncols=3, nrows=3)
 for ii, direction in enumerate(['x', 'y', 'z']):
+    print(direction)
     if direction == 'x':
         orientation = pa.Orientation(normal_vector=[1, 0, 0], perp_vector1=[0, 1, 0])
     elif direction == 'y':
-        # Somewhat weird orientation of the standard y-image, perhaps change that?
-        orientation = pa.Orientation(normal_vector=[0, -1, 0], perp_vector1=[1, 0, 0])
+        orientation = pa.Orientation(normal_vector=[0, 1, 0], perp_vector1=[0, 0, 1])
     elif direction == 'z':
         orientation = pa.Orientation(normal_vector=[0, 0, 1], perp_vector1=[1, 0, 0])
 

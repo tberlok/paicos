@@ -11,6 +11,7 @@ from .. import util
 from .. import units as pu
 from .. import settings
 from ..orientation import Orientation
+from ..image_creators.image_creator import ImageCreator
 
 
 class PaicosReader(dict):
@@ -545,6 +546,11 @@ class ImageReader(PaicosReader):
             else:
                 self.orientation = None
 
+        if self.direction == 'orientation':
+            self._im = ImageCreator(self, self.center, self.widths, self.orientation)
+        else:
+            self._im = ImageCreator(self, self.center, self.widths, self.direction)
+
         self.x_c = self.center[0]
         self.y_c = self.center[1]
         self.z_c = self.center[2]
@@ -554,39 +560,19 @@ class ImageReader(PaicosReader):
 
         self.direction = direction
 
-        if direction == 'x':
-
-            self.width = self.width_y
-            self.height = self.width_z
-            self.depth = self.width_x
-
-        elif direction == 'y':
-
-            self.width = self.width_x
-            self.height = self.width_z
-            self.depth = self.width_y
-
-        elif direction == 'z' or direction == 'orientation':
-
-            self.width = self.width_x
-            self.height = self.width_y
-            self.depth = self.width_z
-
-        self.centered_extent = self.extent.copy
-        self.centered_extent[0] = -self.width / 2
-        self.centered_extent[1] = +self.width / 2
-        self.centered_extent[2] = -self.height / 2
-        self.centered_extent[3] = +self.height / 2
-
-        area = (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
-        self.area = area
+        self.width = self._im.width
+        self.height = self._im.height
+        self.depth = self._im.depth
+        self.centered_extent = self._im.centered_extent
+        self.area = self._im.area
+        self.volume = self._im.volume
 
         if len(list(self.keys())) > 0:
             arr_shape = self[list(self.keys())[0]].shape
             self.npix = self.npix_width = arr_shape[0]
             self.npix_height = arr_shape[1]
+
         self.area_per_pixel = self.area / (self.npix_width * self.npix_height)
-        self.volume = self.width_x * self.width_y * self.width_z
         self.volume_per_pixel = self.volume / (self.npix_width * self.npix_height)
 
         self.dw = self.width / self.npix_width
@@ -610,7 +596,6 @@ class ImageReader(PaicosReader):
                 self[p + 'Density'] = self[p + 'Masses'] / self[p + 'Volume']
 
     def get_image_coordinates(self):
-
         extent = self.extent
         npix_width = self.npix_width
         npix_height = self.npix_height

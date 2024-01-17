@@ -18,7 +18,7 @@ for use_units in [False, True]:
     widths = [10000, 10000, 10000]
     width_vec = (
         [2 * R200c, 10000, 20000],
-        [10000, 2 * R200c, 20000],
+        [20000, 2 * R200c, 10000],
         [10000, 20000, 2 * R200c],
     )
 
@@ -26,7 +26,6 @@ for use_units in [False, True]:
     plt.clf()
     fig, axes = plt.subplots(nrows=2, ncols=3)
     for ii, direction in enumerate(['x', 'y', 'z']):
-        print(ii)
         widths = width_vec[ii]
 
         projector = pa.Projector(snap, center, widths, direction, npix=512,

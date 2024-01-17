@@ -140,7 +140,7 @@ class TreeProjector(ImageCreator):
             if self.direction == 'x':
                 image_points = np.vstack([ones * (center[0] + dep), w, h]).T
             elif self.direction == 'y':
-                image_points = np.vstack([w, ones * (center[1] + dep), h]).T
+                image_points = np.vstack([h, ones * (center[1] + dep), w]).T
             elif self.direction == 'z':
                 image_points = np.vstack([w, h, ones * (center[2] + dep)]).T
             elif self.direction == 'orientation':

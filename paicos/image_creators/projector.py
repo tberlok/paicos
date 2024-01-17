@@ -150,11 +150,11 @@ class Projector(ImageCreator):
                                  y_c, z_c, width_y, width_z,
                                  boxsize, settings.numthreads_reduction)
         elif self.direction == 'y':
-            projection = project(self.pos[:, 0],
-                                 self.pos[:, 2],
+            projection = project(self.pos[:, 2],
+                                 self.pos[:, 0],
                                  variable,
                                  self.hsml, self.npix,
-                                 x_c, z_c, width_x, width_z,
+                                 z_c, x_c, width_z, width_x,
                                  boxsize, settings.numthreads_reduction)
         elif self.direction == 'z':
             projection = project(self.pos[:, 0],
@@ -215,8 +215,11 @@ class Projector(ImageCreator):
         # Transpose
         projection = projection.T
 
-        assert projection.shape[0] == self.npix_height
-        assert projection.shape[1] == self.npix_width
+        assert projection.shape[1] == self.npix_width, (projection.shape,
+                                                        self.npix_width)
+
+        assert projection.shape[0] == self.npix_height, (projection.shape,
+                                                         self.npix_height)
 
         area_per_pixel = self.area / np.prod(projection.shape)
 

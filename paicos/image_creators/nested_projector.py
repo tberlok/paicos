@@ -206,11 +206,11 @@ class NestedProjector(Projector):
                                  y_c, z_c, width_y, width_z,
                                  boxsize, settings.numthreads_reduction)
             elif self.direction == 'y':
-                proj_n = project(pos_n[:, 0],
-                                 pos_n[:, 2],
+                proj_n = project(pos_n[:, 2],
+                                 pos_n[:, 0],
                                  variable_n,
                                  hsml_n, n_grid,
-                                 x_c, z_c, width_x, width_z,
+                                 z_c, x_c, width_z, width_x,
                                  boxsize, settings.numthreads_reduction)
             elif self.direction == 'z':
                 proj_n = project(pos_n[:, 0],
