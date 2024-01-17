@@ -92,6 +92,9 @@ class ImageCreator:
         # time _do_region_selection was called
         orientation_changed = not self.orientation._are_equal(self._old_orientation)
 
+        if orientation_changed:
+            self.direction == 'orientation'
+
         # print('_check_if_properties_changed called')
         if self._properties_changed or orientation_changed:
             self._do_region_selection()
@@ -373,19 +376,6 @@ class ImageCreator:
         """
         self._move_center_along_unit_vector(shift, self.orientation.perp_vector2)
 
-    def move_up(self, factor):
-        """
-        """
-        raise RuntimeError("Convenience function for moving up in the image")
-        # That is, along the perp2 vector.
-
-    def move_backwards(self, factor):
-        """
-        Probably will look good to move backwards while simultaneously changing
-        the center, depth and width of the image...
-        """
-        raise RuntimeError("Convenience function TBI")
-
     @property
     def npix_height(self):
         if settings.use_units:
@@ -403,7 +393,7 @@ class ImageCreator:
 
     @property
     def volume(self):
-        return self.width_x * self.width_y * self.width_z
+        return self.width * self.height * self.depth
 
     @property
     def volume_per_pixel(self):
