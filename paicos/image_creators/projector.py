@@ -209,6 +209,9 @@ class Projector(ImageCreator):
 
         if variable.shape == self.index.shape:
             variable = variable[self.index]
+
+        assert len(variable.shape) == 1, 'only scalars can be projected'
+
         # Do the projection
         projection = self._cython_project(self.center, self.widths, variable)
 

@@ -284,6 +284,8 @@ class TreeProjector(ImageCreator):
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
 
+        assert len(variable.shape) == 1, 'only scalars can be projected'
+
         if additive:
             avail_list = (list(self.snap.keys()) + self.snap._auto_list)
             if f'{parttype}_Volume' in avail_list:

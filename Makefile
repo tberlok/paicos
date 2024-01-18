@@ -29,3 +29,8 @@ linting:
 make dev_checks:
 	make checks
 	make linting
+
+# Tests that can only run on some systems
+make gpu_checks:
+	python tests/cuda-gpu/test_gpu_binary_tree.py
+	python tests/cuda-gpu/test_gpu_ray_projector.py

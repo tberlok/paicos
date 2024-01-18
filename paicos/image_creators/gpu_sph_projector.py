@@ -171,7 +171,8 @@ class GpuSphProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, parttype=0, nvol=8, threadsperblock=256, do_pre_selection=False):
+                 npix=512, parttype=0, nvol=8, threadsperblock=8,
+                 do_pre_selection=False):
         """
         Initialize the Projector class.
 
@@ -395,6 +396,8 @@ class GpuSphProjector(ImageCreator):
             variable_str = 'projection_variable'
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
+
+        assert len(variable.shape) == 1, 'only scalars can be projected'
 
         # Select same part of array that the projector has selected
         if self.do_pre_selection:

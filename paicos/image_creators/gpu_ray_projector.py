@@ -314,6 +314,8 @@ class GpuRayProjector(ImageCreator):
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
 
+        assert len(variable.shape) == 1, 'only scalars can be projected'
+
         # Select same part of array that the projector has selected
         if self.do_pre_selection:
             variable = variable[self.index]
