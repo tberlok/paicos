@@ -27,21 +27,21 @@ def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         y = pos[ip, 1] - yc
         z = pos[ip, 2] - zc
 
-        # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        # # box_wrap_diff function
+        # if x < -0.5*boxsize:
+        #     x = x + boxsize
+        # elif x > 0.5*boxsize:
+        #     x = x - boxsize
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        # if y < -0.5*boxsize:
+        #     y = y + boxsize
+        # elif y > 0.5*boxsize:
+        #     y = y - boxsize
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        # if z < -0.5*boxsize:
+        #     z = z + boxsize
+        # elif z > 0.5*boxsize:
+        #     z = z - boxsize
 
         # Index calculation
         index[ip] = 0
@@ -75,21 +75,21 @@ def get_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         y = pos[ip, 1] - yc
         z = pos[ip, 2] - zc
 
-        # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        # # box_wrap_diff function
+        # if x < -0.5*boxsize:
+        #     x = x + boxsize
+        # elif x > 0.5*boxsize:
+        #     x = x - boxsize
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        # if y < -0.5*boxsize:
+        #     y = y + boxsize
+        # elif y > 0.5*boxsize:
+        #     y = y - boxsize
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        # if z < -0.5*boxsize:
+        #     z = z + boxsize
+        # elif z > 0.5*boxsize:
+        #     z = z - boxsize
 
         # Index calculation
         index[ip] = 0
@@ -127,21 +127,21 @@ def get_rotated_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
         y = pos[ip, 1] - yc
         z = pos[ip, 2] - zc
 
-        # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        # # box_wrap_diff function
+        # if x < -0.5*boxsize:
+        #     x = x + boxsize
+        # elif x > 0.5*boxsize:
+        #     x = x - boxsize
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        # if y < -0.5*boxsize:
+        #     y = y + boxsize
+        # elif y > 0.5*boxsize:
+        #     y = y - boxsize
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        # if z < -0.5*boxsize:
+        #     z = z + boxsize
+        # elif z > 0.5*boxsize:
+        #     z = z - boxsize
 
         x_dot_ex = x * unit_vector_x[0] + y * unit_vector_x[1] + z * unit_vector_x[2]
         x_dot_ey = x * unit_vector_y[0] + y * unit_vector_y[1] + z * unit_vector_y[2]
@@ -183,21 +183,21 @@ def get_rotated_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, re
         y = pos[ip, 1] - yc
         z = pos[ip, 2] - zc
 
-        # box_wrap_diff function
-        if x < -0.5*boxsize:
-            x = x + boxsize
-        elif x > 0.5*boxsize:
-            x = x - boxsize
+        # # box_wrap_diff function
+        # if x < -0.5*boxsize:
+        #     x = x + boxsize
+        # elif x > 0.5*boxsize:
+        #     x = x - boxsize
 
-        if y < -0.5*boxsize:
-            y = y + boxsize
-        elif y > 0.5*boxsize:
-            y = y - boxsize
+        # if y < -0.5*boxsize:
+        #     y = y + boxsize
+        # elif y > 0.5*boxsize:
+        #     y = y - boxsize
 
-        if z < -0.5*boxsize:
-            z = z + boxsize
-        elif z > 0.5*boxsize:
-            z = z - boxsize
+        # if z < -0.5*boxsize:
+        #     z = z + boxsize
+        # elif z > 0.5*boxsize:
+        #     z = z - boxsize
 
         x_dot_ex = x * unit_vector_x[0] + y * unit_vector_x[1] + z * unit_vector_x[2]
         x_dot_ey = x * unit_vector_y[0] + y * unit_vector_y[1] + z * unit_vector_y[2]
