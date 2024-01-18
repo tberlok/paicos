@@ -159,13 +159,15 @@ class GpuSphProjector(ImageCreator):
     A class that allows creating an image of a given variable by projecting
     it onto a 2D plane.
 
-    The Projector class is a subclass of the ImageCreator class.
-    The Projector class creates an image of a given variable by projecting
-    it onto a 2D plane.
+    This GPU implementation of SPH-like projection splits the particles
+    to be deposited into five nested grids. The current implementation
+    gives visual artifacts when the number of pixels is chosen to be too
+    large compared to the gas cell sizes (i.e. when trying
+    to make a high-resolution image of a low resolution simulation).
+    This projector class is therefore for the moment only recommended
+    for interactive exploration or for creating movies.
 
-    It takes in several parameters such as a snapshot object, center and
-    widths of the region, direction of projection, and various optional
-    parameters for number of pixels, smoothing length.
+    The input pixel size needs to be a power of 2 in the horizontal direction.
     """
 
     def __init__(self, snap, center, widths, direction,
@@ -233,7 +235,7 @@ class GpuSphProjector(ImageCreator):
         # TODO: add split into GPU and CPU based on cell sizes here.
         # Perhaps make the CPU do everything above grid8.
 
-        self._sph_kernel_radius = 3
+        self._sph_kernel_radius = 4
 
         # Call selection
         self.has_do_region_selection_been_called = False
@@ -253,7 +255,7 @@ class GpuSphProjector(ImageCreator):
                 err_msg = ("It looks like you are changing projector ",
                            + " properties after the fact, i.e. changing widths ",
                            + "center, orientation, resolution etc. This might be "
-                           + "slow with with the option do_pre_selection, which "
+                           + "slow with the option do_pre_selection, which "
                            + "you have turned on. If your GPU has enough memory "
                            + "then it is probably better to set do_pre_selection "
                            + "to False.")
