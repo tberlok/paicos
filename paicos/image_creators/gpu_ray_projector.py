@@ -165,12 +165,17 @@ class GpuRayProjector(ImageCreator):
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
 
+        if settings.use_units:
+            self.hsml = self.hsml.to(self.pos.unit)
+
         # Call selection
         self.has_do_region_selection_been_called = False
         self._do_region_selection()
         self.has_do_region_selection_been_called = True
 
     def _do_region_selection(self):
+
+        self.do_unit_consistency_check()
 
         center = self.center
         widths = self.widths

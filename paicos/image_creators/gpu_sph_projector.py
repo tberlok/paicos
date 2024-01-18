@@ -232,6 +232,9 @@ class GpuSphProjector(ImageCreator):
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
 
+        if settings.use_units:
+            self.hsml = self.hsml.to(self.pos.unit)
+
         # TODO: add split into GPU and CPU based on cell sizes here.
         # Perhaps make the CPU do everything above grid8.
 
@@ -243,6 +246,8 @@ class GpuSphProjector(ImageCreator):
         self.has_do_region_selection_been_called = True
 
     def _do_region_selection(self):
+
+        self.do_unit_consistency_check()
 
         center = self.center
         widths = self.widths
@@ -384,6 +389,8 @@ class GpuSphProjector(ImageCreator):
         numpy array
             The image of the projected variable
         """
+
+        self.do_unit_consistency_check()
 
         # This calls _do_region_selection if resolution, Orientation,
         # widths or center changed

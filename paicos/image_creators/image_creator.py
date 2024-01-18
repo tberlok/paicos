@@ -39,7 +39,7 @@ class ImageCreator:
 
         if hasattr(center, 'unit'):
             self._center = center.copy
-            assert center.unit == code_length.unit
+            assert center.unit == code_length.unit, 'this restriction applies'
         elif settings.use_units:
             self._center = np.array(center) * code_length
         else:
@@ -53,7 +53,7 @@ class ImageCreator:
 
         if hasattr(widths, 'unit'):
             self._widths = widths.copy
-            assert widths.unit == code_length.unit
+            assert widths.unit == code_length.unit, 'this restriction applies'
         elif settings.use_units:
             self._widths = np.array(widths) * code_length
         else:
@@ -86,6 +86,12 @@ class ImageCreator:
         self._old_orientation = self.orientation.copy
         self._properties_changed = False
 
+        # Check that units are consistent
+        self.do_unit_consistency_check()
+
+        # Check if image region exceeds simulation domain
+        # TODO
+
     def _check_if_properties_changed(self):
 
         # Check if orientation changed compared to last
@@ -103,6 +109,23 @@ class ImageCreator:
             return True
         else:
             return False
+
+    def do_unit_consistency_check(self):
+        """
+        This function is called inside image creators to ensure
+        that length units are consistent.
+        """
+
+        if settings.use_units:
+            if hasattr(self, 'hsml'):
+                assert self.hsml.unit.is_equivalent(self.widths.unit)
+            if hasattr(self, 'pos'):
+                assert self.pos.unit == self.widths.unit, (self.pos.unit, self.widths.unit)
+            assert self.center.unit == self.widths.unit, (self.center.unit, self.widths.unit)
+            if f"{self.parttype}_Coordinates" in self.snap:
+                assert self.center.unit == self.snap[f"{self.parttype}_Coordinates"].unit
+            if hasattr(self.snap, 'box_size'):
+                assert self.center.unit == self.snap.box_size.unit
 
     def _do_region_selection(self):
         err_msg = ("_do_region_selection was called from ImageCreator. "

@@ -66,7 +66,9 @@ class Slicer(ImageCreator):
         self._do_region_selection()
 
     def _do_region_selection(self):
-        # print('_do_region_selection was called from Slicer')
+
+        self.do_unit_consistency_check()
+
         parttype = self.parttype
         snap = self.snap
         center = self.center
@@ -82,6 +84,9 @@ class Slicer(ImageCreator):
         else:
             raise RuntimeError(
                 'There is no smoothing length or volume for the thickness of the slice')
+
+        if hasattr(thickness, 'unit'):
+            thickness = thickness.to(center.unit)
 
         if self.direction != 'orientation':
             get_index = util.get_index_of_cubic_region_plus_thin_layer

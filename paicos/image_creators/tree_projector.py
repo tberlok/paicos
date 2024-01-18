@@ -72,6 +72,9 @@ class TreeProjector(ImageCreator):
         self._do_region_selection()
 
     def _do_region_selection(self):
+
+        self.do_unit_consistency_check()
+
         # print('_do_region_selection was called from Slicer')
         parttype = self.parttype
         snap = self.snap
@@ -88,6 +91,9 @@ class TreeProjector(ImageCreator):
             err_msg = ("There is no smoothing length or volume for calculating"
                        + "the thickness of the slice")
             raise RuntimeError(err_msg)
+
+        if hasattr(thickness, 'unit'):
+            thickness = thickness.to(center.unit)
 
         if self.direction != 'orientation':
             get_index = util.get_index_of_cubic_region_plus_thin_layer

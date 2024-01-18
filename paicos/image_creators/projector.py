@@ -76,6 +76,8 @@ class Projector(ImageCreator):
 
     def _do_region_selection(self):
 
+        self.do_unit_consistency_check()
+
         if self.has_do_region_selection_been_called:
             if self.make_snap_with_selection:
                 err_msg = ("It looks like you are changing projector ",
@@ -116,6 +118,9 @@ class Projector(ImageCreator):
                 'There is no smoothing length or volume for the projector')
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
+
+        if settings.use_units:
+            self.hsml = self.hsml.to(self.pos.unit)
 
         if not self.make_snap_with_selection:
             self.hsml = self.hsml[self.index]
@@ -194,7 +199,7 @@ class Projector(ImageCreator):
         numpy array
             The image of the projected variable
         """
-
+        self.do_unit_consistency_check()
         # This calls _do_region_selection if resolution, Orientation,
         # widths or center changed
         self._check_if_properties_changed()
