@@ -131,6 +131,18 @@ class PaicosReader(dict):
             for key in keys:
                 self.load_data(key)
 
+        self.load_org_info()
+
+    def load_org_info(self):
+        """
+        Load some extra info about original data
+        """
+        with h5py.File(self.filename, 'r') as f:
+            if 'org_info' in f:
+                self['org_info'] = {}
+                for key in f['org_info'].attrs.keys():
+                    self['org_info'][key] = f['org_info'].attrs[key]
+
     def get_units_and_other_parameters(self):
         """
         Define arepo units, scale factor (a) and h (HubbleParam).
