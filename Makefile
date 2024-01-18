@@ -34,3 +34,4 @@ make dev_checks:
 make gpu_checks:
 	python tests/cuda-gpu/test_gpu_binary_tree.py
 	python tests/cuda-gpu/test_gpu_ray_projector.py
+	python tests/cuda-gpu/test_sph_ray_projector.py
