@@ -131,7 +131,7 @@ class NestedProjector(Projector):
         npix_high = nearest_power_of_two(
             width / np.min(self.hsml) * self.factor)
 
-        npix_high = min(npix_high, self.npix)
+        npix_high = self.npix
         npix_low = max(npix_low, self.npix_min)
         npix_low = min(npix_low, npix_high)
 
