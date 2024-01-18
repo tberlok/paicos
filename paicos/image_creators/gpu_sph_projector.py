@@ -53,11 +53,9 @@ def get_weight(ix, iy, xp, yp, hp, varp):
 
 @cuda.jit(max_registers=64)
 def deposit(nx, ny, x, y, z, hsml, variable, image1, image2, image4, image8, image16,
-            widths, center, unit_vector_x, unit_vector_y, unit_vector_z):
+            widths, center, unit_vector_x, unit_vector_y, unit_vector_z, extra):
     # threadindex
     ip = cuda.grid(1)
-
-    extra = 3
 
     # particle properties
     hp = hsml[ip]
@@ -235,6 +233,8 @@ class GpuSphProjector(ImageCreator):
         # TODO: add split into GPU and CPU based on cell sizes here.
         # Perhaps make the CPU do everything above grid8.
 
+        self._sph_kernel_radius = 3
+
         # Call selection
         self.has_do_region_selection_been_called = False
         self._do_region_selection()
@@ -362,7 +362,7 @@ class GpuSphProjector(ImageCreator):
                                                 widths, center,
                                                 unit_vector_x,
                                                 unit_vector_y,
-                                                unit_vector_z)
+                                                unit_vector_z, self._sph_kernel_radius)
 
         projection = self._get_full_image_as_numpy(
             image1, image2, image4, image8, image16)
