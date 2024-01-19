@@ -48,19 +48,13 @@ for ii, direction in enumerate(['x', 'y', 'z']):
 
     # Make a plot
     extent = slicer.centered_extent
-    # if pa.settings.use_units:
-    #     axes[ii].imshow(Density.value, origin='lower',
-    #                     extent=extent.value, norm=LogNorm())
-    # else:
-    #     axes[ii].imshow(Density, origin='lower',
-    #                     extent=extent, norm=LogNorm())
 
     Density_dir = slicer_dir.slice_variable('0_Density')
     axes[0, ii].imshow(Density_dir.value,
                        origin='lower', norm=LogNorm())
     axes[1, ii].imshow(Density.value, origin='lower', norm=LogNorm())
     axes[2, ii].imshow(np.abs(Density_dir.value - Density.value),
-                       origin='lower')#, norm=LogNorm())
+                       origin='lower')  # , norm=LogNorm())
 
 # Example of how to read the image files
 im = pa.ImageReader(pa.root_dir + 'test_data', 247, 'slice_x')
