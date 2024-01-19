@@ -86,6 +86,10 @@ def save_dataset(hdf5file, name, data=None, data_attrs={},
     Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'w') )
     If the data has units then they are saved as an attribute.
     """
+    assert isinstance(data_attrs, dict)
+    data_attrs = dict(data_attrs)
+    assert isinstance(group_attrs, dict)
+    group_attrs = dict(group_attrs)
 
     # Allow for storing data sets in groups or nested groups
     if group is None:

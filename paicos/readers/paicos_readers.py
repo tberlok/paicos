@@ -51,7 +51,6 @@ class PaicosReader(dict):
 
         verbose (bool): whether to print information, default is False
         """
-        assert to_physical is False, 'to_physical not yet implemented!'
 
         self.to_physical = to_physical
         self.verbose = verbose
@@ -262,9 +261,21 @@ class PaicosReader(dict):
             phys_type = unit_name.split('_')[1]
             u.def_physical_type(unit, phys_type)
 
-        self.length = self.get_paicos_quantity(1, 'Coordinates')
-        self.mass = self.get_paicos_quantity(1, 'Masses')
-        self.velocity = self.get_paicos_quantity(1, 'Velocities')
+        self._length = self.get_paicos_quantity(1, 'Coordinates')
+        self._mass = self.get_paicos_quantity(1, 'Masses')
+        self._velocity = self.get_paicos_quantity(1, 'Velocities')
+
+    @property
+    def length(self):
+        return self._length
+    
+    @property
+    def mass(self):
+        return self._mass
+
+    @property
+    def velocity(self):
+        return self._velocity
 
     def add_user_units(self):
         """
@@ -485,6 +496,22 @@ class PaicosReader(dict):
 
         return self._sanitize_unit(unit)
 
+    def unit_quantity(self, astropy_unit_str):
+        """
+        Return a Paicos quantity with value 1 and any
+        astropy unit.
+        """
+        unit = u.Unit(astropy_unit_str)
+        return pu.PaicosQuantity(1.0, unit, a=self._Time, h=self.h,
+                                         comoving_sim=self.comoving_sim,
+                                         dtype=float)
+
+    def uq(self, astropy_unit_str):
+        """
+        A short hand for the unit_quantity method.
+        """
+        return self.unit_quantity(astropy_unit_str)
+
     def _sanitize_unit(self, unit):
         """
         Removes 'a' factors for non-comoving simulations,
@@ -514,12 +541,17 @@ class PaicosReader(dict):
         with h5py.File(self.filename, 'r') as f:
             if isinstance(f[name], h5py.Dataset):
                 self[name] = util.load_dataset(f, name, group=group)
+                if isinstance(self[name], pu.PaicosQuantity) and self.to_physical:
+                    self[name] = self[name].to_physical
             elif isinstance(f[name], h5py.Group):
                 for data_name in f[name].keys():
                     data = util.load_dataset(f, data_name, group=name)
                     if name not in self:
                         self[name] = {}
-                    self[name][data_name] = data
+                    if isinstance(data, pu.PaicosQuantity) and self.to_physical:
+                        self[name][data_name] = data.to_physical
+                    else:
+                        self[name][data_name] = data
 
 
 class ImageReader(PaicosReader):
