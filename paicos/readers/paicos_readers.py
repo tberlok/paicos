@@ -468,8 +468,16 @@ class PaicosReader(dict):
             unit = u.Unit(unit)
 
         if unit is False:
-            msg = '\n\nUnit for {}, {} not implemented!'
-            msg += '\nPlease add it to unit_specifications'
+            msg = ('\n\nUnit for field:{}, blockname:{} not implemented!'
+                   + '\nPlease add it to unit_specifications '
+                   + 'by using the pa.add_user_units '
+                   + 'function. You can also add the pa.add_user_units call to your'
+                   + 'Paicos user settings to avoid having to do this more than once. '
+                   + 'Alternatively, please create an issue on GitHub if you think '
+                   + 'others could benefit from that.'
+                   + '\nFurther instructions can be '
+                   + 'found by runnning pa.add_user_units? '
+                   + 'in a terminal or notebook.')
 
             if settings.strict_units:
                 raise RuntimeError(msg.format(field, name))
