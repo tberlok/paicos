@@ -257,8 +257,8 @@ class GpuSphProjector(ImageCreator):
         if self.has_do_region_selection_been_called:
             if self.do_pre_selection:
                 import warnings
-                err_msg = ("It looks like you are changing projector ",
-                           + " properties after the fact, i.e. changing widths ",
+                err_msg = ("It looks like you are changing projector "
+                           + " properties after the fact, i.e. changing widths "
                            + "center, orientation, resolution etc. This might be "
                            + "slow with the option do_pre_selection, which "
                            + "you have turned on. If your GPU has enough memory "

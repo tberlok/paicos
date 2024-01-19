@@ -19,7 +19,8 @@ for frame in range(201):
     orientation = pa.Orientation(normal_vector=[0, 0, 1], perp_vector1=[1, 0, 0])
     angle = step_degrees * frame
     orientation.rotate_around_z(degrees=angle)
-    projector = pa.NestedProjector(snap, center, widths, orientation, npix=512, make_snap_with_selection=False)
+    projector = pa.NestedProjector(snap, center, widths, orientation,
+                                   npix=512, make_snap_with_selection=False)
     extent = projector.extent.to('Mpc')
     rho = projector.project_variable('0_Masses') / projector.project_variable('0_Volume')
     rho = rho.to_physical.to('g cm^-3')
@@ -30,7 +31,7 @@ for frame in range(201):
         plt.figure(num=1)
         plt.clf()
         fig, axes = plt.subplots(num=1)
-        ima = axes.imshow(rho.value, cmap='YlGnBu', extent=extent.value, norm=LogNorm()) #vmin=vmin, vmax=vmax))
+        ima = axes.imshow(rho.value, cmap='YlGnBu', extent=extent.value, norm=LogNorm())  # vmin=vmin, vmax=vmax))
         plt.xlabel(extent.label(r'\mathrm{Perp vector1}'))
         plt.ylabel(extent.label(r'\mathrm{Perp vector2}'))
         cbar = fig.colorbar(ima, fraction=0.025, pad=0.04, label=rho.label(r'\rho'))

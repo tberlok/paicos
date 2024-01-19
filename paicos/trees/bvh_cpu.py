@@ -367,7 +367,8 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
             # Do explicit check if in a leaf
             # print(f'node_id: {node_id}\t childA: {childA}\t childB: {childB}\t')
             # if node_id == 6:
-            #     print('node_id, point_in_A, point_in_B, is_leaf, is_leafB', node_id, point_in_A, point_in_B, is_leafA, is_leafB)
+            #     print('node_id, point_in_A, point_in_B, is_leaf,
+            # is_leafB', node_id, point_in_A, point_in_B, is_leafA, is_leafB)
             #     print(query_point)
             #     print(tree_bounds[childA])
             #     print(tree_bounds[childB])

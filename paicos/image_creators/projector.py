@@ -80,8 +80,8 @@ class Projector(ImageCreator):
 
         if self.has_do_region_selection_been_called:
             if self.make_snap_with_selection:
-                err_msg = ("It looks like you are changing projector ",
-                           + "properties after the fact, i.e. changing widths ",
+                err_msg = ("It looks like you are changing projector "
+                           + "properties after the fact, i.e. changing widths "
                            + "center, orientation, resolution etc. This does not "
                            + "work with the option make_snap_with_selection, which "
                            + "you have turned on.")

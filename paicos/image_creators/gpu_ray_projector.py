@@ -185,12 +185,12 @@ class GpuRayProjector(ImageCreator):
         if self.has_do_region_selection_been_called:
             if self.do_pre_selection:
                 import warnings
-                err_msg = ("It looks like you are changing projector ",
-                           + " properties after the fact, i.e. changing widths ",
-                           + "center, orientation, resolution etc. This might be ",
-                           + "slow with with the option do_pre_selection, which ",
-                           + "you have turned on. If your GPU has enough memory ",
-                           + "then it is probably better to set do_pre_selection ",
+                err_msg = ("It looks like you are changing projector "
+                           + " properties after the fact, i.e. changing widths "
+                           + "center, orientation, resolution etc. This might be "
+                           + "slow with with the option do_pre_selection, which "
+                           + "you have turned on. If your GPU has enough memory "
+                           + "then it is probably better to set do_pre_selection "
                            + "to False.")
                 warnings.warn(err_msg)
 
