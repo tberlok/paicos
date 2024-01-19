@@ -10,6 +10,8 @@ from astropy.cosmology import LambdaCDM
 from .. import util
 from .. import units as pu
 from .. import settings
+from ..orientation import Orientation
+from ..image_creators.image_creator import ImageCreator
 
 
 class PaicosReader(dict):
@@ -128,6 +130,18 @@ class PaicosReader(dict):
         if load_all:
             for key in keys:
                 self.load_data(key)
+
+        self.load_org_info()
+
+    def load_org_info(self):
+        """
+        Load some extra info about original data
+        """
+        with h5py.File(self.filename, 'r') as f:
+            if 'org_info' in f:
+                self['org_info'] = {}
+                for key in f['org_info'].attrs.keys():
+                    self['org_info'][key] = f['org_info'].attrs[key]
 
     def get_units_and_other_parameters(self):
         """
@@ -347,6 +361,13 @@ class PaicosReader(dict):
             raise RuntimeError(msg)
         return self._Time * self.arepo_units['unit_time']
 
+    def rho_crit(self, z):
+        """
+        Returns the physical critical density (no a or h factors)
+        """
+        rho_crit = self.cosmo.critical_density(z).to('arepo_density')
+        return self.__convert_to_paicos(rho_crit, z)
+
     def get_lookback_time(self, z):
         """
         Returns the lookback time for a given redshift, z.
@@ -415,7 +436,18 @@ class PaicosReader(dict):
 
     def find_unit(self, name, field):
         """
-        Find unit for a given quantity
+        Find unit for a given quantity.
+
+        Parameters:
+
+            name: corresponds to a block name in Arepo snapshots,
+                  i.e., a key in one of the dictionaries defined
+                  in unit_specifications.py
+
+            field: the name of of one of the dictionaries defined in the
+                   unit specifications, e.g,:
+                    ['default', 'voronoi_cells', 'dark_matter',
+                    'stars', 'black_holes', 'groups', 'subhalos']
         """
         # pylint: disable=import-outside-toplevel
 
@@ -436,8 +468,16 @@ class PaicosReader(dict):
             unit = u.Unit(unit)
 
         if unit is False:
-            msg = '\n\nUnit for {}, {} not implemented!'
-            msg += '\nPlease add it to unit_specifications'
+            msg = ('\n\nUnit for field:{}, blockname:{} not implemented!'
+                   + '\nPlease add it to unit_specifications '
+                   + 'by using the pa.add_user_units '
+                   + 'function. You can also add the pa.add_user_units call to your'
+                   + 'Paicos user settings to avoid having to do this more than once. '
+                   + 'Alternatively, please create an issue on GitHub if you think '
+                   + 'others could benefit from that.'
+                   + '\nFurther instructions can be '
+                   + 'found by runnning pa.add_user_units? '
+                   + 'in a terminal or notebook.')
 
             if settings.strict_units:
                 raise RuntimeError(msg.format(field, name))
@@ -498,7 +538,7 @@ class ImageReader(PaicosReader):
     then it will automatically divide them to obtain the MagneticFieldSquared.
     """
 
-    def __init__(self, basedir, snapnum, basename="projection", load_all=True):
+    def __init__(self, basedir='.', snapnum=None, basename="projection", load_all=True):
         """
         See documentation for the PaicosReader.
 
@@ -517,6 +557,20 @@ class ImageReader(PaicosReader):
             self.direction = direction = f['image_info'].attrs['direction']
             self.image_creator = f['image_info'].attrs['image_creator']
 
+            # Recreate orientation object if it is saved
+            if direction == 'orientation':
+                normal_vector = f['image_info'].attrs['normal_vector']
+                perp_vector1 = f['image_info'].attrs['perp_vector1']
+                self.orientation = Orientation(normal_vector=normal_vector,
+                                               perp_vector1=perp_vector1)
+            else:
+                self.orientation = None
+
+        if self.direction == 'orientation':
+            self._im = ImageCreator(self, self.center, self.widths, self.orientation)
+        else:
+            self._im = ImageCreator(self, self.center, self.widths, self.direction)
+
         self.x_c = self.center[0]
         self.y_c = self.center[1]
         self.z_c = self.center[2]
@@ -526,39 +580,19 @@ class ImageReader(PaicosReader):
 
         self.direction = direction
 
-        if direction == 'x':
-
-            self.width = self.width_y
-            self.height = self.width_z
-            self.depth = self.width_x
-
-        elif direction == 'y':
-
-            self.width = self.width_x
-            self.height = self.width_z
-            self.depth = self.width_y
-
-        elif direction == 'z':
-
-            self.width = self.width_x
-            self.height = self.width_y
-            self.depth = self.width_z
-
-        self.centered_extent = self.extent.copy
-        self.centered_extent[0] = -self.width / 2
-        self.centered_extent[1] = +self.width / 2
-        self.centered_extent[2] = -self.height / 2
-        self.centered_extent[3] = +self.height / 2
-
-        area = (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
-        self.area = area
+        self.width = self._im.width
+        self.height = self._im.height
+        self.depth = self._im.depth
+        self.centered_extent = self._im.centered_extent
+        self.area = self._im.area
+        self.volume = self._im.volume
 
         if len(list(self.keys())) > 0:
             arr_shape = self[list(self.keys())[0]].shape
             self.npix = self.npix_width = arr_shape[0]
             self.npix_height = arr_shape[1]
+
         self.area_per_pixel = self.area / (self.npix_width * self.npix_height)
-        self.volume = self.width_x * self.width_y * self.width_z
         self.volume_per_pixel = self.volume / (self.npix_width * self.npix_height)
 
         self.dw = self.width / self.npix_width
@@ -582,7 +616,6 @@ class ImageReader(PaicosReader):
                 self[p + 'Density'] = self[p + 'Masses'] / self[p + 'Volume']
 
     def get_image_coordinates(self):
-
         extent = self.extent
         npix_width = self.npix_width
         npix_height = self.npix_height
@@ -633,7 +666,7 @@ class Histogram2DReader(PaicosReader):
     logscale, hist2d, centers_x, centers_y.
     """
 
-    def __init__(self, basedir, snapnum, basename='2d_histogram'):
+    def __init__(self, basedir='.', snapnum=None, basename='2d_histogram'):
         """
         See documentation for the PaicosReader.
 

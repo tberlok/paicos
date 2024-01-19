@@ -8,6 +8,7 @@ from .. import util
 from .paicos_writer import PaicosWriter
 from .. import settings
 from .. import units
+from ..orientation import Orientation
 
 
 class ArepoImage(PaicosWriter):
@@ -56,6 +57,7 @@ class ArepoImage(PaicosWriter):
         self.widths = image_creator.widths
         self.extent = image_creator.extent
         self.direction = image_creator.direction
+        self.orientation = image_creator.orientation
 
         # This creates an image at self.tmp_filename (if mode='w')
         super().__init__(image_creator.snap, basedir, basename=basename,
@@ -69,6 +71,10 @@ class ArepoImage(PaicosWriter):
                 util.save_dataset(file, 'extent', self.extent, group='image_info')
                 file['image_info'].attrs['direction'] = self.direction
                 file['image_info'].attrs['image_creator'] = str(image_creator)
+
+                if self.direction == 'orientation':
+                    file['image_info'].attrs['normal_vector'] = self.orientation.normal_vector
+                    file['image_info'].attrs['perp_vector1'] = self.orientation.perp_vector1
 
     def save_image(self, name, data):
         """

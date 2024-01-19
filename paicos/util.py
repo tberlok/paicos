@@ -12,7 +12,8 @@ from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
 from .cython.get_index_of_region import get_cube_plus_thin_layer
-from .cython.get_index_of_region import get_x_slice, get_y_slice, get_z_slice
+from .cython.get_index_of_region import get_rotated_cube
+from .cython.get_index_of_region import get_rotated_cube_plus_thin_layer
 from .cython.openmp_info import simple_reduction, get_openmp_settings
 
 # These will be set by the user using the add_user_unit function
@@ -177,12 +178,30 @@ def remove_astro_units(func):
     that do not support astro units or need to work with raw values.
     """
     @wraps(func)
-    def inner(*args, **kwargs):
+    def remove_astro_units_inner(*args, **kwargs):
+
+        unit_dict = {'length': []}
         # Create new args
         new_args = list(args)
         for ii, new_arg in enumerate(new_args):
             if hasattr(new_arg, 'unit'):
                 new_args[ii] = new_arg.value
+                if isinstance(new_arg, pu.PaicosQuantity):
+                    phys_type = new_arg.uq.to_physical.arepo.unit.physical_type
+                    unit = new_arg.uq.arepo.unit
+                else:
+                    phys_type = new_arg.unit.physical_type
+                    unit = new_arg.unit
+                if str(phys_type) == 'length':
+                    unit_dict['length'].append(unit)
+
+        for ii in range(len(unit_dict['length'])):
+            if unit_dict['length'][ii] != unit_dict['length'][0]:
+                err_msg = ("Paicos: Not all quantities with physical type "
+                           + "'length' have the same units. Stopping here "
+                           + "to prevent unit-related errors.")
+                print("Contents of unit_dict['length']", unit_dict['length'])
+                raise RuntimeError(err_msg)
 
         # Create new kwargs
         new_kwargs = kwargs  # dict(kwargs)
@@ -191,7 +210,7 @@ def remove_astro_units(func):
                 new_kwargs[key] = kwarg.value
 
         return func(*new_args, **new_kwargs)
-    return inner
+    return remove_astro_units_inner
 
 
 @remove_astro_units
@@ -200,6 +219,7 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
     Get a boolean array of positions, pos, which are inside the spherical
     shell with inner radius r_min and outer radius r_max, centered at center.
     """
+    assert center.shape[0] == 3
     x_c, y_c, z_c = center[0], center[1], center[2]
     index = get_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
                              settings.numthreads)
@@ -228,7 +248,7 @@ def get_index_of_cubic_region(pos, center, widths, box):
 def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, box):
     """
     Get a boolean array to the position array, pos, which are inside a cubic
-    region plus a think layer with a cell-dependent thickness
+    region plus a thin layer with a cell-dependent thickness
 
     pos (array): position array with dimensions = (n, 3)
     center (array with length 3): the center of the box (x, y, z)
@@ -244,35 +264,51 @@ def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, bo
 
 
 @remove_astro_units
-def get_index_of_slice_region(pos, center, widths, thickness, box):
+def get_index_of_rotated_cubic_region(pos, center, widths, box, orientation):
     """
-    Get a boolean array to the position array, pos, which are inside a thin
-    slice region with width thickness.
+    Get a boolean array to the position array, pos, which are inside a cubic
+    region
 
     pos (array): position array with dimensions = (n, 3)
     center (array with length 3): the center of the box (x, y, z)
-    widths (array with length 3): the widths of the box (one of which should
-                                  contain a zero, the selection will be
-                                  perpendicular to the corresponding direction)
+    widths (array with length 3): the widths of the box
     thickness: (array): array with same length as the position array
     box: the box size of the simulation (e.g. snap.box)
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
-    numthreads = settings.numthreads
+    unit_vectors = orientation.cartesian_unit_vectors
+    index = get_rotated_cube(pos, x_c, y_c, z_c, width_x, width_y,
+                             width_z, box,
+                             unit_vectors['x'],
+                             unit_vectors['y'],
+                             unit_vectors['z'],
+                             settings.numthreads)
+    return index
 
-    if widths[0] == 0.:
-        index = get_x_slice(pos, x_c, y_c, z_c, width_y, width_z, thickness,
-                            box, numthreads)
-    elif widths[1] == 0.:
-        index = get_y_slice(pos, x_c, y_c, z_c, width_x, width_z, thickness,
-                            box, numthreads)
-    elif widths[2] == 0.:
-        index = get_z_slice(pos, x_c, y_c, z_c, width_x, width_y, thickness,
-                            box, numthreads)
-    else:
-        raise RuntimeError('width={} should have length 3 and contain a zero!')
 
+@remove_astro_units
+def get_index_of_rotated_cubic_region_plus_thin_layer(pos, center, widths, thickness,
+                                                      box, orientation):
+    """
+    Get a boolean array to the position array, pos, which are inside a cubic
+    region plus a thin layer with a cell-dependent thickness
+
+    pos (array): position array with dimensions = (n, 3)
+    center (array with length 3): the center of the box (x, y, z)
+    widths (array with length 3): the widths of the box
+    thickness: (array): array with same length as the position array
+    box: the box size of the simulation (e.g. snap.box)
+    """
+    x_c, y_c, z_c = center[0], center[1], center[2]
+    width_x, width_y, width_z = widths
+    unit_vectors = orientation.cartesian_unit_vectors
+    index = get_rotated_cube_plus_thin_layer(pos, x_c, y_c, z_c, width_x, width_y,
+                                             width_z, thickness, box,
+                                             unit_vectors['x'],
+                                             unit_vectors['y'],
+                                             unit_vectors['z'],
+                                             settings.numthreads)
     return index
 
 

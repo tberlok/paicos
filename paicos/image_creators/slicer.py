@@ -7,6 +7,7 @@ from scipy.spatial import KDTree
 from .image_creator import ImageCreator
 from .. import util
 from .. import settings
+from ..orientation import Orientation
 
 
 class Slicer(ImageCreator):
@@ -59,8 +60,19 @@ class Slicer(ImageCreator):
         for ii, direc in enumerate(['x', 'y', 'z']):
             if self.direction == direc:
                 assert self.widths[ii] == 0.
+        if self.direction == 'orientation':
+            assert self.widths[2] == 0.
+
+        self._do_region_selection()
+
+    def _do_region_selection(self):
+
+        self.do_unit_consistency_check()
 
         parttype = self.parttype
+        snap = self.snap
+        center = self.center
+        widths = self.widths
 
         # Pre-select a narrow region around the region-of-interest
         avail_list = (list(snap.keys()) + snap._auto_list)
@@ -72,8 +84,20 @@ class Slicer(ImageCreator):
         else:
             raise RuntimeError(
                 'There is no smoothing length or volume for the thickness of the slice')
-        self.slice = util.get_index_of_slice_region(snap[f"{parttype}_Coordinates"],
-                                                    center, widths, thickness, snap.box)
+
+        if hasattr(thickness, 'unit'):
+            thickness = thickness.to(center.unit)
+
+        if self.direction != 'orientation':
+            get_index = util.get_index_of_cubic_region_plus_thin_layer
+            self.slice = get_index(snap[f"{parttype}_Coordinates"],
+                                   center, widths, thickness,
+                                   snap.box)
+        else:
+            get_index = util.get_index_of_rotated_cubic_region_plus_thin_layer
+            self.slice = get_index(snap[f"{parttype}_Coordinates"],
+                                   center, widths, thickness, snap.box,
+                                   self.orientation)
 
         self.index_in_slice_region = np.arange(snap[f"{parttype}_Coordinates"].shape[0]
                                                )[self.slice]
@@ -87,12 +111,19 @@ class Slicer(ImageCreator):
 
         center = self.center
         ones = np.ones(w.shape[0])
-        if direction == 'x':
+        if self.direction == 'x':
             image_points = np.vstack([ones * center[0], w, h]).T
-        elif direction == 'y':
-            image_points = np.vstack([w, ones * center[1], h]).T
-        elif direction == 'z':
+        elif self.direction == 'y':
+            image_points = np.vstack([h, ones * center[1], w]).T
+        elif self.direction == 'z':
             image_points = np.vstack([w, h, ones * center[2]]).T
+        elif self.direction == 'orientation':
+            orientation = self.orientation
+            image_points = np.vstack([w, h, ones * center[2]]).T - self.center
+            image_points = np.matmul(orientation.rotation_matrix, image_points.T).T \
+                + self.center
+        else:
+            raise RuntimeError(f"Problem with direction={self.direction} input")
 
         # Query the tree to obtain closest Voronoi cell indices
         d, i = tree.query(image_points, workers=settings.numthreads)
@@ -152,6 +183,10 @@ class Slicer(ImageCreator):
         An array of shape (npix, npix) representing the sliced gas variable
         """
 
+        # This calls _do_region_selection if resolution, Orientation,
+        # widths or center changed
+        self._check_if_properties_changed()
+
         if isinstance(variable, str):
             err_msg = 'slicer uses a different parttype'
             assert int(variable[0]) == self.parttype, err_msg
@@ -161,3 +196,19 @@ class Slicer(ImageCreator):
                 raise RuntimeError('Unexpected type for variable')
 
         return variable[self.index]
+
+    @property
+    def depth(self):
+        if self.direction == 'x':
+            return self.width_x
+
+        elif self.direction == 'y':
+            return self.width_y
+
+        elif self.direction == 'z' or self.direction == 'orientation':
+            return self.width_z
+
+    @depth.setter
+    def depth(self, value):
+        err_msg = "You can't change the depth of a slicer, as it is zero by definition"
+        raise RuntimeError(err_msg)

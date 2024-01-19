@@ -20,3 +20,12 @@ use_aliases = False
 
 # Strictly enforce units
 strict_units = True
+
+# Enable spherical coordinates
+spherical_coords = False
+
+# Enable cylindrical coordinates
+cyl_coords = False
+
+# Whether to give cuda import warnings
+give_cuda_import_warnings = True

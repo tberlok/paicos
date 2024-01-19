@@ -72,3 +72,87 @@ def get_magnitude_of_vector(real_t[:, :] Bvec):
     tmp = np.zeros(Np, dtype=np.float64)
     tmp[:] = B[:]
     return tmp
+
+def sum_1d_array_omp(real_t[:] arr, int num_threads):
+
+    """
+    Compute sum of an array along the first index.
+    Equivalent to np.sum(arr, axis=0)
+    """
+    cdef int ip
+    cdef int Np = arr.shape[0]
+    cdef real_t the_sum = 0.0
+
+    for ip in prange(Np, nogil=True, schedule='static', num_threads=num_threads):
+        the_sum += arr[ip]
+
+    return the_sum
+
+def sum_2d_array_omp(real_t[:, :] arr, int num_threads):
+
+    """
+    Compute sum of an array along the first index.
+    Equivalent to np.sum(arr, axis=0)
+    """
+    cdef int ip
+    cdef int Np = arr.shape[0]
+    cdef real_t jj_sum = 0.0
+
+    the_sum = np.zeros(arr.shape[1])
+    for jj in range(arr.shape[1]):
+        jj_sum = 0.0
+        for ip in prange(Np, nogil=True, schedule='static', num_threads=num_threads):
+            jj_sum += arr[ip, jj]
+
+        the_sum[jj] = jj_sum
+
+    return the_sum
+
+def sum_arr_times_vector_omp(real_t[:] arr, real_t[:, :] vector, int num_threads):
+
+    """
+    Compute the sum of an array times a vector.
+    e.g. sum_i M_i \vec{v}_i for calculating the center of mass.
+
+    Equivalent to np.sum(arr[:, None] * vector, axis=0)
+    """
+    cdef int ip
+    cdef int Np = arr.shape[0]
+    cdef real_t the_sum_x = 0.0
+    cdef real_t the_sum_y = 0.0
+    cdef real_t the_sum_z = 0.0
+
+    for ip in prange(Np, nogil=True, schedule='static', num_threads=num_threads):
+        the_sum_x += arr[ip] * vector[ip, 0]
+        the_sum_y += arr[ip] * vector[ip, 1]
+        the_sum_z += arr[ip] * vector[ip, 2]
+
+    return np.array([the_sum_x, the_sum_y, the_sum_z])
+
+def sum_arr_times_vector_cross_product(real_t[:] mass, real_t[:, :] coord, real_t[:, :] velocity,
+                                       real_t[:] center, int num_threads):
+
+    """
+    This code calculates sum_i (mass_i (coord_ij - center) x velocity_ij).
+
+    That is, it returns the total angular momentum vector.
+    """
+    cdef int ip
+    cdef int Np = mass.shape[0]
+    cdef real_t the_sum_x = 0.0
+    cdef real_t the_sum_y = 0.0
+    cdef real_t the_sum_z = 0.0
+    cdef real_t vx, vy, vz, rx, ry, rz
+
+    for ip in prange(Np, nogil=True, schedule='static', num_threads=num_threads):
+        vx = velocity[ip, 0]
+        vy = velocity[ip, 1]
+        vz = velocity[ip, 2]
+        rx = coord[ip, 0] - center[0]
+        ry = coord[ip, 1] - center[1]
+        rz = coord[ip, 2] - center[2]
+        the_sum_x += mass[ip] * (ry*vz - rz*vy)
+        the_sum_y += mass[ip] * (rz*vx - rx*vz)
+        the_sum_z += mass[ip] * (rx*vy - ry*vx)
+
+    return np.array([the_sum_x, the_sum_y, the_sum_z])

@@ -4,7 +4,8 @@ simulations performed with Arepo. Its main feature is that it includes
 handling of units, derived variables, loading of data upon request.
 
 The module includes a way of writing and reading data with units.
-The code is parallel with an OpenMP Cython implementation.
+The code is parallel with an OpenMP Cython implementation
+and a CUDA GPU implementation for visualization.
 """
 
 __version__ = "0.1.5"
@@ -45,6 +46,9 @@ from .histograms.histogram2D import Histogram2D
 
 # Derived variables
 from .derived_variables import derived_variables
+
+# Orientation class
+from .orientation import Orientation
 
 # Cython functions
 from . import cython
@@ -158,6 +162,13 @@ def give_openMP_warnings(option):
     settings.give_openMP_warnings = option
 
 
+def give_cuda_import_warnings(option):
+    """
+    Turns on/off cuda import warnings on startup
+    """
+    settings.give_cuda_import_warnings = option
+
+
 def set_aliases(aliases):
     """
     Assign a list of aliases for use as keys in snapshot objects.
@@ -189,6 +200,39 @@ def user_settings_exists():
 if user_settings_exists():
     # pylint: disable=E0401
     import user_settings
+
+
+# Import of GPU functionality only if
+# a simple test with cupy and numba works.
+try:
+    import cupy as cp
+    from numba import cuda
+
+    @cuda.jit
+    def my_kernel(io_array):
+        pos = cuda.grid(1)
+        if pos < io_array.size:
+            io_array[pos] *= 2
+
+    data = cp.ones(10**6)
+    threadsperblock = 256
+    blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
+    my_kernel[blockspergrid, threadsperblock](data)
+
+    del data
+
+    # Test above worked, do the imports
+    from .image_creators.gpu_sph_projector import GpuSphProjector
+    from .image_creators.gpu_ray_projector import GpuRayProjector
+except Exception as e:
+    if settings.give_cuda_import_warnings:
+        import warnings
+        print(e)
+        err_msg = ('\nPaicos: The simple cuda example using cupy and numba failed '
+                   'with the error above. Please check the official documentation for '
+                   'cupy and numba for installation procedure. Note that you need '
+                   ' a cuda-enabled GPU.\n')
+        warnings.warn(err_msg)
 
 # Do this at start up
 util.check_if_omp_has_issues()

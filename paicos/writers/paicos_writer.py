@@ -66,8 +66,23 @@ class PaicosWriter:
         if mode == 'w':
             util.copy_over_snapshot_information(self.org_filename,
                                                 self.tmp_filename, 'w')
+            self.write_info_about_org_file()
         else:
             self.perform_consistency_checks()
+
+    def write_info_about_org_file(self):
+        """
+        This function saves some attributes in org_info.
+        """
+        with h5py.File(self.tmp_filename, 'r+') as file:
+            file.create_group('org_info')
+            if hasattr(self.reader_object, 'snapnum'):
+                file['org_info'].attrs['snapnum'] = self.reader_object.snapnum
+            if hasattr(self.reader_object, 'basesubdir'):
+                file['org_info'].attrs['basesubdir'] = self.reader_object.basesubdir
+            file['org_info'].attrs['basedir'] = self.reader_object.basedir
+            file['org_info'].attrs['basename'] = self.reader_object.basename
+            file['org_info'].attrs['filename'] = self.reader_object.filename
 
     def write_data(self, name, data, data_attrs={}, group=None, group_attrs={}):
         """

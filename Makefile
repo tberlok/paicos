@@ -20,6 +20,7 @@ checks:
 	make cleanup
 	pytest tests/comoving
 	pytest tests/non-comoving
+	pytest tests/general
 
 linting:
 	flake8 ./
@@ -28,3 +29,9 @@ linting:
 make dev_checks:
 	make checks
 	make linting
+
+# Tests that can only run on some systems
+make gpu_checks:
+	python tests/cuda-gpu/test_gpu_binary_tree.py
+	python tests/cuda-gpu/test_gpu_ray_projector.py
+	python tests/cuda-gpu/test_gpu_sph_projector.py

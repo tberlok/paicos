@@ -631,6 +631,12 @@ class PaicosTimeSeries(PaicosQuantity):
             comoving_sim = value[0].comoving_sim
             unit = value[0].unit
             dtype = value[0].dtype
+
+            shapes = [value[i].value.shape for i in range(len(value))]
+            err_msg = f'Not all shapes of the list are identical!, {shapes},\n\n'
+            for shape in shapes:
+                assert shape == shapes[0], err_msg + f'{shape}'
+
             a = np.array([value[i]._a for i in range(len(value))])
             value = np.array([value[i].value for i in range(len(value))])
         elif isinstance(value, np.ndarray):
@@ -770,3 +776,17 @@ class PaicosTimeSeries(PaicosQuantity):
             if value.h != self.h:
                 info = f'\nObj1.h={self.h}.\n\nObj2.h={value.h}'
                 raise RuntimeError(err_msg + info)
+
+
+def paicos_quantity_list_to_array(list_to_convert):
+    """
+    Only works on 1D lists...
+    """
+    e0 = list_to_convert[0]
+    for e in list_to_convert:
+        assert e0.unit == e.unit
+        assert e0.comoving_sim == e.comoving_sim
+        assert e0._a == e._a
+        assert e0._h == e._h
+
+    return np.array([e.value for e in list_to_convert]) * e0.unit_quantity

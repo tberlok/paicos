@@ -260,6 +260,14 @@ def VelocityCurvature(snap, get_dependencies=False):
     return curva
 
 
+def Diameters(snap, get_dependencies=False):
+    """Returns the cell diameter"""
+    if get_dependencies:
+        return ['0_Volume']
+
+    return 2 * np.cbrt((snap['0_Volume']) / (4.0 * np.pi / 3.0))
+
+
 functions = {
     "0_GFM_MetallicityTimesMasses": GFM_MetallicityTimesMasses,
     "0_Volume": Volume,
@@ -278,5 +286,6 @@ functions = {
     "0_NumberDensity": NumberDensity,
     "0_MagneticCurvature": MagneticCurvature,
     "0_VelocityMagnitude": VelocityMagnitude,
-    "0_VelocityCurvature": VelocityCurvature
+    "0_VelocityCurvature": VelocityCurvature,
+    "0_Diameters": Diameters
 }
