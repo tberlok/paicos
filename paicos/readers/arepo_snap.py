@@ -12,6 +12,59 @@ from .. import settings
 from ..derived_variables import derived_variables
 
 
+class DerivedFunction:
+    """
+    This class allows us to get functions which is just a function of
+    a snap object while at the same time having access a parttype.
+
+    We use it for implementing functionality which is
+    almost the same for the different parttypes.
+    """
+
+    def __init__(self, parttype):
+        """
+        The parttype, e.g. 1 for DM particles
+        """
+        self.parttype = parttype
+
+    def get_masses_from_header(self, snap):
+        """
+        Get mass of particle type from the mass table
+        """
+        parttype = self.parttype
+        if parttype in snap.dic_selection_index:
+            npart = snap.dic_selection_index[parttype].shape[0]
+        else:
+            npart = snap.npart[parttype]
+        return np.ones(npart) * snap.masstable[parttype]
+
+    def get_centered_position(self, snap):
+        """
+        Get centered position, 
+        """
+        parttype = self.parttype
+
+        return snap[f'{parttype}_Coordinates'] - snap.center
+
+    def get_cyl_coords_radius(self, snap):
+        pass
+
+    def get_cyl_coords_z(self, snap):
+        pass
+
+    def get_cyl_coords_phi(self, snap):
+        pass
+
+    def get_spherical_coords_radius(self, snap):
+        pass
+
+    def get_spherical_coords_theta(self, snap):
+        pass
+
+    def get_spherical_coords_phi(self, snap):
+        pass
+
+
 class Snapshot(PaicosReader):
     """
     This is a Python class for reading Arepo snapshots, which are simulations
@@ -160,33 +213,11 @@ class Snapshot(PaicosReader):
 
         self._this_snap_funcs = {}
 
-        class Mass:
-            """
-            This class allows us to get a function which is just a function of
-            one parameter.
-            """
-            def __init__(self, parttype):
-                """
-                The parttype, e.g. 1 for DM particles
-                """
-                self.parttype = parttype
-
-            def get_masses_from_header(self, snap):
-                """
-                Get mass of particle type from the mass table
-                """
-                parttype = self.parttype
-                if parttype in snap.dic_selection_index:
-                    npart = snap.dic_selection_index[parttype].shape[0]
-                else:
-                    npart = snap.npart[parttype]
-                return np.ones(npart) * snap.masstable[parttype]
-
         # Add function to the ones available
         for parttype in range(self.nspecies):
             if self.masstable[parttype] != 0:
                 p_key = str(parttype) + '_Masses'
-                obj = Mass(parttype)
+                obj = DerivedFunction(parttype)
                 self._this_snap_funcs[p_key] = obj.get_masses_from_header
 
     def _find_available_for_loading(self):
@@ -841,6 +872,38 @@ class Snapshot(PaicosReader):
         writer.finalize()
 
         return writer
+
+    def _add_centered_positions_to_user_funcs(self):
+        """
+        """
+
+        # Add function to the ones available
+        for parttype in range(self.nspecies):
+            p_key = str(parttype) + '_CenteredCoordinates'
+            obj = DerivedFunction(parttype)
+            self._this_snap_funcs[p_key] = obj.get_centered_position
+
+    def set_center(self, center):
+        if hasattr(self, 'center'):
+            for parttype in range(self.nspecies):
+                self.remove_data(parttype, CenteredCoordinates)
+        else:
+            for parttype in range(self.nspecies):
+                self._auto_list.append(f'{parttype}_CenteredCoordinates')
+
+        if settings.use_units:
+            self.center = center.copy
+        else:
+            self.center = np.array(center)
+
+        self._add_centered_positions_to_user_funcs()
+
+    def set_orientation(self, orientation):
+        """
+        Input: either an orientation object or
+        the inputs required to construct such an object
+        """
+        pass
 
     def get_sum_of_array(self, variable):
         """
