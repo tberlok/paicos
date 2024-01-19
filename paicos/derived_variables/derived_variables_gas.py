@@ -191,8 +191,11 @@ def EnstrophyTimesMasses(snap, get_dependencies=False):
     return variable
 
 
-def MeanMolecularWeight(snap):
+def MeanMolecularWeight(snap, get_dependencies=False):
     """Returns the mean molecular weight, μ"""
+
+    if get_dependencies:
+        return ['0_Density']
 
     if '0_GFM_Metals' in snap.info(0, False):
         hydrogen_abundance = snap['0_GFM_Metals'][:, 0]
@@ -211,10 +214,13 @@ def MeanMolecularWeight(snap):
     return mean_molecular_weight
 
 
-def NumberDensity(snap):
+def NumberDensity(snap, get_dependencies=False):
     """
     The gas number density in cm⁻³.
     """
+    if get_dependencies:
+        return ['0_Density']
+
     from astropy import constants as c
     density = snap['0_Density'].cgs
     mean_molecular_weight = snap['0_MeanMolecularWeight']
