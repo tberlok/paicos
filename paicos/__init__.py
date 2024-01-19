@@ -162,11 +162,11 @@ def give_openMP_warnings(option):
     settings.give_openMP_warnings = option
 
 
-def give_cuda_import_warnings(option):
+def load_cuda_functionality_on_startup(option):
     """
-    Turns on/off cuda import warnings on startup
+    Turns on/off whether to import GPU/cuda on startup
     """
-    settings.give_cuda_import_warnings = option
+    settings.load_cuda_functionality_on_startup = option
 
 
 def set_aliases(aliases):
@@ -204,34 +204,34 @@ if user_settings_exists():
 
 # Import of GPU functionality only if
 # a simple test with cupy and numba works.
-try:
-    import cupy as cp
-    from numba import cuda
+if settings.load_cuda_functionality_on_startup:
+    try:
+        import cupy as cp
+        from numba import cuda
 
-    @cuda.jit
-    def my_kernel(io_array):
-        pos = cuda.grid(1)
-        if pos < io_array.size:
-            io_array[pos] *= 2
+        @cuda.jit
+        def my_kernel(io_array):
+            pos = cuda.grid(1)
+            if pos < io_array.size:
+                io_array[pos] *= 2
 
-    data = cp.ones(10**6)
-    threadsperblock = 256
-    blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
-    my_kernel[blockspergrid, threadsperblock](data)
+        data = cp.ones(10**6)
+        threadsperblock = 256
+        blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
+        my_kernel[blockspergrid, threadsperblock](data)
 
-    del data
+        del data
 
-    # Test above worked, do the imports
-    from .image_creators.gpu_sph_projector import GpuSphProjector
-    from .image_creators.gpu_ray_projector import GpuRayProjector
-except Exception as e:
-    if settings.give_cuda_import_warnings:
+        # Test above worked, do the imports
+        from .image_creators.gpu_sph_projector import GpuSphProjector
+        from .image_creators.gpu_ray_projector import GpuRayProjector
+    except Exception as e:
         import warnings
         print(e)
         err_msg = ('\nPaicos: The simple cuda example using cupy and numba failed '
                    'with the error above. Please check the official documentation for '
                    'cupy and numba for installation procedure. Note that you need '
-                   ' a cuda-enabled GPU.\n')
+                   'a GPU that supports CUDA.\n')
         warnings.warn(err_msg)
 
 # Do this at start up
