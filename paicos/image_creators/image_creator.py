@@ -3,6 +3,7 @@ This defines a base class for image creators (such as Projector and Slicer)
 """
 
 import numpy as np
+import warnings
 from .. import util
 from .. import settings
 from .. import units
@@ -66,10 +67,14 @@ class ImageCreator:
                 self.orientation = Orientation(normal_vector=[1, 0, 0],
                                                perp_vector1=[0, 1, 0])
             elif direction == 'y':
-                # Somewhat weird orientation of the standard y-image,
-                # TODO: change that before merge into master
-                self.orientation = Orientation(normal_vector=[0, -1, 0],
-                                               perp_vector1=[1, 0, 0])
+                warnings.warn("\n\nThe definition of a 'y'-image was changed "
+                              + "on 19/1/24 to be consistent with a right-handed "
+                              + "coordinate system. You can recover the old "
+                              + "behaviour by passing an orientation object:\n"
+                              + "Orientation(normal_vector=[0, -1, 0], perp_vector1=[1, 0, 0])\n"
+                              + "instead of a direction 'y' string.\n\n")
+                self.orientation = Orientation(normal_vector=[0, 1, 0],
+                                               perp_vector1=[0, 0, 1])
             elif direction == 'z':
                 self.orientation = Orientation(normal_vector=[0, 0, 1],
                                                perp_vector1=[1, 0, 0])
