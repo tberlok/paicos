@@ -178,12 +178,30 @@ def remove_astro_units(func):
     that do not support astro units or need to work with raw values.
     """
     @wraps(func)
-    def inner(*args, **kwargs):
+    def remove_astro_units_inner(*args, **kwargs):
+
+        unit_dict = {'length': []}
         # Create new args
         new_args = list(args)
         for ii, new_arg in enumerate(new_args):
             if hasattr(new_arg, 'unit'):
                 new_args[ii] = new_arg.value
+                if isinstance(new_arg, pu.PaicosQuantity):
+                    phys_type = new_arg.uq.to_physical.arepo.unit.physical_type
+                    unit = new_arg.uq.arepo.unit
+                else:
+                    phys_type = new_arg.unit.physical_type
+                    unit = new_arg.unit
+                if str(phys_type) == 'length':
+                    unit_dict['length'].append(unit)
+
+        for ii in range(len(unit_dict['length'])):
+            if unit_dict['length'][ii] != unit_dict['length'][0]:
+                err_msg = ("Paicos: Not all quantities with physical type "
+                           + "'length' have the same units. Stopping here "
+                           + "to prevent unit-related errors.")
+                print("Contents of unit_dict['length']", unit_dict['length'])
+                raise RuntimeError(err_msg)
 
         # Create new kwargs
         new_kwargs = kwargs  # dict(kwargs)
@@ -192,7 +210,7 @@ def remove_astro_units(func):
                 new_kwargs[key] = kwarg.value
 
         return func(*new_args, **new_kwargs)
-    return inner
+    return remove_astro_units_inner
 
 
 @remove_astro_units
