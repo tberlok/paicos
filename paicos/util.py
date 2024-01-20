@@ -191,8 +191,8 @@ def remove_astro_units(func):
             if hasattr(new_arg, 'unit'):
                 new_args[ii] = new_arg.value
                 if isinstance(new_arg, pu.PaicosQuantity):
-                    phys_type = new_arg.uq.to_physical.arepo.unit.physical_type
-                    unit = new_arg.uq.arepo.unit
+                    phys_type = new_arg.uq.to_physical.unit.physical_type
+                    unit = new_arg.uq.unit
                 else:
                     phys_type = new_arg.unit.physical_type
                     unit = new_arg.unit
