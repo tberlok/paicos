@@ -72,3 +72,40 @@ pip install paicos
 # Check if installation worked and that you can import Paicos 
 python -c "import paicos"
 ```
+
+## GPU/CUDA requirements
+
+The visualization routines that run on GPU require installing CuPy (a drop-in replacement
+for NumPy that runs on the GPU) and Numba CUDA (just-in-time compilation of kernel
+and device functions on the GPU). These packages only work on CUDA-enabled GPUs,
+which means that you need a recent Nvidia GPU.
+
+These packages (CuPy and Numba) are not automatically included in Paicos.
+Up-to-date instructions for installing them can be found at:
+
+- CuPy: https://docs.cupy.dev/en/stable/install.html
+
+- Numba: https://numba.readthedocs.io/en/stable/cuda/overview.html#supported-gpus
+
+At the time of writing, we have had success installing for CUDA version
+11.2 using
+
+```
+pip install numba
+pip install cupy-cuda112
+```
+and then setting the path to the CUDA installation in .bashrc as e.g.
+(substitute with the path to the CUDA installation on your system)
+```
+export CUDA_HOME=/software/astro/cuda/11.2 # numba
+export CUDA_PATH=/software/astro/cuda/11.2 # cupy
+```
+
+Finally, you need to add
+```
+# Whether to load GPU/cuda functionality on startup
+pa.load_cuda_functionality_on_startup(True)
+```
+to your `user_settings.py`.
+
+

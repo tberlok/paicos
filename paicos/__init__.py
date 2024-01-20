@@ -192,14 +192,14 @@ def user_settings_exists():
     """
     Checks if user settings exist in the root directory of Paicos.
     """
-    if os.path.exists(root_dir + 'user_settings.py'):
+    if os.path.exists(root_dir + 'paicos/paicos_user_settings.py'):
         return True
     return False
 
 
 if user_settings_exists():
     # pylint: disable=E0401
-    import user_settings
+    from . import paicos_user_settings
 
 
 # Import of GPU functionality only if
