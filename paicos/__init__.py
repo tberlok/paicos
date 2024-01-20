@@ -8,9 +8,9 @@ The code is parallel with an OpenMP Cython implementation
 and a CUDA GPU implementation for visualization.
 """
 
-__version__ = "0.1.6"
+__version__ = "0.1.7"
 __author__ = 'Thomas Berlok'
-__credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
+__credits__ = 'Niels Bohr Institute, University of Copenhagen'
 
 # Dependencies
 import os
