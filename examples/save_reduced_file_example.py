@@ -1,6 +1,6 @@
 import paicos as pa
 
-snap = pa.Snapshot(pa.root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 center = snap.Cat.Group['GroupPos'][0]
 
 widths = [2000, 2000, 2000]

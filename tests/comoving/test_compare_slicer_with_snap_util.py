@@ -9,7 +9,7 @@ def test_compare_slicer_with_snap_util(show=False):
     import gadget
     import numpy as np
 
-    g = gadget.gadget_readsnap(247, snappath=pa.root_dir + 'data',
+    g = gadget.gadget_readsnap(247, snappath=pa.data_dir,
                                snapbase='snap_')
 
     center = np.array([398968.4, 211682.6, 629969.9])
@@ -19,18 +19,18 @@ def test_compare_slicer_with_snap_util(show=False):
     sl = g.get_Aslice('rho', res=128, numthreads=1, center=center / g.hubbleparam,
                       box=box / g.hubbleparam)
 
-    np.savez(pa.root_dir + 'data/arepo-snap-util-slice.npz', sl['grid'].T)
+    np.savez(pa.data_dir + 'arepo-snap-util-slice.npz', sl['grid'].T)
     """
     import numpy as np
     import paicos as pa
-    snap = pa.Snapshot(pa.root_dir + 'data', 247, basename='reduced_snap')
+    snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap')
     center = [398968.4, 211682.6, 629969.9]
 
     widths = np.array([2000, 2000, 0.])
 
     slicer = pa.Slicer(snap, center, widths, 'z', npix=128)
 
-    dat = np.load(pa.root_dir + '/data/arepo-snap-util-slice.npz')
+    dat = np.load(pa.data_dir + 'arepo-snap-util-slice.npz')
     pai = slicer.slice_variable('0_Density').to_physical.value
     are = dat['arr_0']
 

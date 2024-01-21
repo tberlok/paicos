@@ -7,7 +7,7 @@ def test_gpu_ray_projector(show=False):
     pa.use_units(True)
 
     # Load snapshot
-    snap = pa.Snapshot(pa.root_dir + '/data', 247)
+    snap = pa.Snapshot(pa.data_dir, 247)
 
     center = snap.Cat.Group['GroupPos'][0]
     R200c = snap.Cat.Group['Group_R_Crit200'][0]

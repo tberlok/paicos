@@ -9,7 +9,7 @@ def test_compare_projector_with_snap_util(show=False):
     import gadget
     import numpy as np
 
-    g = gadget.gadget_readsnap(247, snappath=pa.root_dir + 'data',
+    g = gadget.gadget_readsnap(247, snappath=pa.data_dir,
                                snapbase='snap_')
 
     center = np.array([398968.4, 211682.6, 629969.9])
@@ -19,18 +19,18 @@ def test_compare_projector_with_snap_util(show=False):
     sl = g.get_Aslice('rho', res=128, numthreads=1, center=center / g.hubbleparam,
                   box=box / g.hubbleparam, proj=True)
 
-    np.savez(pa.root_dir + 'data/arepo-snap-util-slice-proj.npz', sl['grid'].T)
+    np.savez(pa.data_dir + 'arepo-snap-util-slice-proj.npz', sl['grid'].T)
     """
     import numpy as np
     import paicos as pa
-    snap = pa.Snapshot(pa.root_dir + 'data', 247, basename='reduced_snap')
+    snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap')
     center = [398968.4, 211682.6, 629969.9]
 
     widths = np.array([2000, 2000, 2000])
 
     projector = pa.TreeProjector(snap, center, widths, 'z', npix=128, npix_depth=128)
 
-    dat = np.load(pa.root_dir + '/data/arepo-snap-util-proj.npz')
+    dat = np.load(pa.data_dir + 'arepo-snap-util-proj.npz')
     pai = projector.project_variable('0_Density', additive=False).to_physical.value
 
     # Note division by 128 because the Paicos tree projector has different behavior

@@ -12,7 +12,7 @@ aliases = {'0_Temperatures': 'T',
 
 pa.set_aliases(aliases)
 
-p = pa.Snapshot(pa.root_dir + '/data', 247)
+p = pa.Snapshot(pa.data_dir, 247)
 p['rho']
 p['T']
 p['bfld']

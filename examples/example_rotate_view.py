@@ -9,7 +9,7 @@ from matplotlib.colors import LogNorm
 plt.rc('image', origin='lower', interpolation='None')
 plt.rc('text', usetex=True)
 
-snap = pa.Snapshot(pa.root_dir + 'data/snap_247.hdf5')
+snap = pa.Snapshot(pa.data_dir + 'snap_247.hdf5')
 center = snap.Cat.Group['GroupPos'][0]
 R200c = snap.Cat.Group['Group_R_Crit200'][0].value
 widths = [15000, 15000, 15000]

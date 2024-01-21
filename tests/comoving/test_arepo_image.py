@@ -4,7 +4,7 @@ def test_arepo_image(load_catalog=False):
     import numpy as np
     import h5py
 
-    snap = pa.Snapshot(pa.root_dir + '/data/', 247,
+    snap = pa.Snapshot(pa.data_dir, 247,
                        basename='reduced_snap', load_catalog=load_catalog)
 
     # A length-3 array giving the center of the image.
@@ -22,7 +22,7 @@ def test_arepo_image(load_catalog=False):
     # Create arepo image file.
     # The file will have 'tmp_' prepended to the filename until .finalize()
     # is called.
-    image_file = pa.ArepoImage(image_creator, pa.root_dir + 'test_data/',
+    image_file = pa.ArepoImage(image_creator, pa.data_dir + 'test_data/',
                                basename='test_arepo_image_format')
 
     # Save some images to the file (in a real example one would first import\\
@@ -36,7 +36,7 @@ def test_arepo_image(load_catalog=False):
 
     snap.load_data(0, 'Coordinates')
     # Now amend the file with another set of data
-    image_file = pa.ArepoImage(image_creator, pa.root_dir + 'test_data/',
+    image_file = pa.ArepoImage(image_creator, pa.data_dir + 'test_data/',
                                basename='test_arepo_image_format', mode='a')
     data = np.random.random((500, 500))
 

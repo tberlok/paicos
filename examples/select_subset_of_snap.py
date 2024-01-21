@@ -1,7 +1,7 @@
 import paicos as pa
 import numpy as np
 pa.use_units(True)
-snap = pa.Snapshot(pa.root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 
 snap['0_MagneticField']
 snap['1_Coordinates']

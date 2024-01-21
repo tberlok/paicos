@@ -12,7 +12,7 @@ clean:
 	rm -rf paicos.egg-info
 
 cleanup:
-	rm -rf test_data
+	rm -rf data/test_data
 	rm -f data/very_small_snap_247.hdf5
 	rm -f data/reduced_snap2_247.hdf5
 

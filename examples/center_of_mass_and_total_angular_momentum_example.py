@@ -1,12 +1,11 @@
 import paicos as pa
-from paicos import root_dir
 
 """
 Here we show how to efficiently calculate center-of-mass and
 total angular momentum using snapshot methods
 """
 
-snap = pa.Snapshot(root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 
 group_pos = snap.Cat.Group['GroupPos'][0]
 R200c = snap.Cat.Group['Group_R_Crit200'][0]

@@ -23,6 +23,9 @@ pa.give_openMP_warnings(False)
 # Whether to load GPU/cuda functionality on startup
 pa.load_cuda_functionality_on_startup(False)
 
+# Explicitly set data directory (only needed for pip installations)
+data_dir = '/Users/berlok/projects/paicos/data/'
+
 
 # Examples of adding user-defined functions
 def TemperaturesTimesMassesSquared(snap, get_dependencies=False):

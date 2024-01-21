@@ -22,6 +22,12 @@ import astropy
 # Settings and utility functions
 from . import util
 from . import settings
+
+
+# The place where __init__.py (this file) is located
+code_dir = os.path.dirname(os.path.abspath(__file__))
+
+# One folder up from __init__ (i.e. repo directory or installation directory)
 from .util import root_dir
 
 # HDF5 file readers
@@ -192,7 +198,7 @@ def user_settings_exists():
     """
     Checks if user settings exist in the root directory of Paicos.
     """
-    if os.path.exists(root_dir + 'paicos/paicos_user_settings.py'):
+    if os.path.exists(code_dir + '/paicos_user_settings.py'):
         return True
     return False
 
@@ -200,6 +206,16 @@ def user_settings_exists():
 if user_settings_exists():
     # pylint: disable=E0401
     from . import paicos_user_settings
+
+if os.path.exists(root_dir + 'data/'):
+    data_dir = root_dir + 'data/'
+else:
+    try:
+        from .paicos_user_settings import data_dir
+        if data_dir[-1] != '/':
+            data_dir += '/'
+    except:  # noqa: E722
+        data_dir = None
 
 
 # Import of GPU functionality only if

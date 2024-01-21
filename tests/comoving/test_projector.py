@@ -15,7 +15,7 @@ def test_projector(show=False):
 
         pa.use_units(use_units)
 
-        snap = pa.Snapshot(pa.root_dir + '/data/', 247, basename='reduced_snap',
+        snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                            load_catalog=False)
         center = [398968.4, 211682.6, 629969.9]
         widths = [2000, 2000, 2000]
@@ -26,7 +26,7 @@ def test_projector(show=False):
 
             basename = f'reduced_projection_{direction}'
             image_file = pa.ArepoImage(projector,
-                                       basedir=pa.root_dir + 'test_data/',
+                                       basedir=pa.data_dir + 'test_data/',
                                        basename=basename)
 
             Masses = projector.project_variable('0_Masses')

@@ -2,7 +2,7 @@
 def test_non_comoving(show=False):
     import paicos as pa
     import numpy as np
-    snap = pa.Snapshot(pa.root_dir + '/data/', 7,
+    snap = pa.Snapshot(pa.data_dir, 7,
                        basename='small_non_comoving')
 
     if pa.settings.use_units:

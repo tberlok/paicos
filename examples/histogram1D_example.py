@@ -9,7 +9,7 @@ plt.figure(1)
 plt.clf()
 fig, axes = plt.subplots(num=1, ncols=3, sharex=True)
 for ii in range(2):
-    snap = pa.Snapshot(pa.root_dir + "/data", 247)
+    snap = pa.Snapshot(pa.data_dir, 247)
     center = snap.Cat.Group["GroupPos"][0]
 
     r = np.sqrt(np.sum((snap["0_Coordinates"] - center[None, :]) ** 2.0,

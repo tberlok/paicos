@@ -5,7 +5,7 @@ def test_binary_tree():
     from scipy.spatial import KDTree
     pa.use_units(False)
     from paicos.trees.bvh_cpu import BinaryTree
-    snap = pa.Snapshot(pa.root_dir + '/data/', 247, basename='reduced_snap',
+    snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                        load_catalog=False)
     center = np.array([398968.4, 211682.6, 629969.9])
     widths = np.array([2000, 2000, 2000])
