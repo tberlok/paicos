@@ -30,15 +30,17 @@ in my `.bash_profile`.
 #### Compiling on MacOs
 
 You will need an openmp-enabled compiler. On MacOs, you can install gcc via homebrew.
-The `setup.py` in the Paicos directory currently has the following hardcoded
-compiler option. 
+You can then either modify `setup.py` with your
+compiler option, .e.g.,
 ```
 if sys.platform == 'darwin':
     os.environ['CC'] = 'gcc-13'
     os.environ['CXX'] = 'g++-13'
 ```
+or by running `CC=gcc-13 make` instead of simply `make`.
+
 If you have installed gcc via homebrew, then you can get your compiler version by running
-`brew info gcc` and update `setup.py` accordingly if that does not agree with what is hardcoded.
+`brew info gcc`, which you can use to modify the instructions above accordingly.
 
 
 #### Compiling Paicos inside a notebook
@@ -52,25 +54,34 @@ make clean
 make
 ```
 
-## Option 2: Installing the development version using pip 
+## Option 2: Installing directly via pip
+
+This is probably the simplest way of installing Paicos, i.e. you run
+```
+pip install paicos
+```
+in a terminal.
+
+Note however, that this installation does not include the tests, examples
+and example data.
+
+On MacOs you might have to do something like (see details above)
+```
+CC=gcc-13 pip install paicos
+```
+If the installation succeeded then you can proceed:
+```
+# Check if installation worked and that you can import Paicos 
+python -c "import paicos"
+```
+
+## Option 3: Installing the development version using pip 
 ```
 git clone git@github.com:tberlok/paicos.git
 cd paicos
 pip install -r requirements.txt 
 python3 -m pip install -e .
 make checks
-```
-
-## Option 3: Installing directly via pip
-
-This installation does not include the tests and examples and will probably mostly work on Linux machines
-```
-pip install paicos
-```
-
-```
-# Check if installation worked and that you can import Paicos 
-python -c "import paicos"
 ```
 
 ## GPU/CUDA requirements
