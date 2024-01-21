@@ -9,9 +9,12 @@ import os
 import numpy
 import glob
 
-if sys.platform == 'darwin':
-    os.environ['CC'] = 'gcc-13'
-    os.environ['CXX'] = 'g++-13'
+
+# On MacOs, you will need to explicitly set the compiler to one that features openmp.
+# Either by uncommenting below or by compiling with e.g. 'CC=gcc-14 make'
+# if sys.platform == 'darwin':
+#     os.environ['CC'] = 'gcc-13'
+#     os.environ['CXX'] = 'g++-13'
 
 Options.annotate = False
 compiler_directives = {"boundscheck": False, "cdivision": True,
