@@ -27,5 +27,5 @@ spherical_coords = False
 # Enable cylindrical coordinates
 cyl_coords = False
 
-# Whether to give cuda import warnings
-give_cuda_import_warnings = True
+# Whether to load GPU/cuda functionality on startup
+load_cuda_functionality_on_startup = True

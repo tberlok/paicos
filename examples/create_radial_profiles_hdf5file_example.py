@@ -4,10 +4,10 @@ import numpy as np
 pa.use_units(True)
 
 # Open an Arepo snapshot
-snap = pa.Snapshot(pa.root_dir + "/data", 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 
 # Create a Paicos writer object
-radfile = pa.PaicosWriter(snap, pa.root_dir + 'test_data', basename='radial')
+radfile = pa.PaicosWriter(snap, pa.data_dir + 'test_data', basename='radial')
 
 # The center of the most massive Friends-of-friends group in the simulation
 center = snap.Cat.Group["GroupPos"][0]
@@ -67,7 +67,7 @@ radfile.write_data('center', center)
 for parttype in range(1, snap.nspecies):
     pstr = f'{parttype}_'
     # Re-open the Arepo snapshot
-    snap = pa.Snapshot(pa.root_dir + "/data", 247)
+    snap = pa.Snapshot(pa.data_dir, 247)
 
     # Use OpenMP parallel Cython code to find this central sphere
     index = pa.util.get_index_of_radial_range(snap[pstr + 'Coordinates'],

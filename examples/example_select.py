@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import paicos as pa
 pa.use_units(True)
 
-snap = pa.Snapshot(pa.root_dir + '/data', 247, basename='snap',
+snap = pa.Snapshot(pa.data_dir, 247, basename='snap',
                    load_catalog=False)
 center = [398968.4, 211682.6, 629969.9] * snap.length
 

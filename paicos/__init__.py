@@ -8,9 +8,9 @@ The code is parallel with an OpenMP Cython implementation
 and a CUDA GPU implementation for visualization.
 """
 
-__version__ = "0.1.6"
+__version__ = "0.1.8"
 __author__ = 'Thomas Berlok'
-__credits__ = 'Leibniz-Institute for Astrophysics Potsdam (AIP)'
+__credits__ = 'Niels Bohr Institute, University of Copenhagen'
 
 # Dependencies
 import os
@@ -22,6 +22,8 @@ import astropy
 # Settings and utility functions
 from . import util
 from . import settings
+
+# One folder up from __init__ (i.e. repo directory or installation directory)
 from .util import root_dir
 
 # HDF5 file readers
@@ -54,6 +56,9 @@ from .orientation import Orientation
 from . import cython
 
 # pylint: disable=W0621
+
+# The place where __init__.py (this file) is located
+code_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def use_units(use_units):
@@ -162,11 +167,11 @@ def give_openMP_warnings(option):
     settings.give_openMP_warnings = option
 
 
-def give_cuda_import_warnings(option):
+def load_cuda_functionality_on_startup(option):
     """
-    Turns on/off cuda import warnings on startup
+    Turns on/off whether to import GPU/cuda on startup
     """
-    settings.give_cuda_import_warnings = option
+    settings.load_cuda_functionality_on_startup = option
 
 
 def set_aliases(aliases):
@@ -192,46 +197,56 @@ def user_settings_exists():
     """
     Checks if user settings exist in the root directory of Paicos.
     """
-    if os.path.exists(root_dir + 'user_settings.py'):
+    if os.path.exists(code_dir + '/paicos_user_settings.py'):
         return True
     return False
 
 
 if user_settings_exists():
     # pylint: disable=E0401
-    import user_settings
+    from . import paicos_user_settings
+
+if os.path.exists(root_dir + 'data/'):
+    data_dir = root_dir + 'data/'
+else:
+    try:
+        from .paicos_user_settings import data_dir
+        if data_dir[-1] != '/':
+            data_dir += '/'
+    except:  # noqa: E722
+        data_dir = None
 
 
 # Import of GPU functionality only if
 # a simple test with cupy and numba works.
-try:
-    import cupy as cp
-    from numba import cuda
+if settings.load_cuda_functionality_on_startup:
+    try:
+        import cupy as cp
+        from numba import cuda
 
-    @cuda.jit
-    def my_kernel(io_array):
-        pos = cuda.grid(1)
-        if pos < io_array.size:
-            io_array[pos] *= 2
+        @cuda.jit
+        def my_kernel(io_array):
+            pos = cuda.grid(1)
+            if pos < io_array.size:
+                io_array[pos] *= 2
 
-    data = cp.ones(10**6)
-    threadsperblock = 256
-    blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
-    my_kernel[blockspergrid, threadsperblock](data)
+        data = cp.ones(10**6)
+        threadsperblock = 256
+        blockspergrid = (data.size + (threadsperblock - 1)) // threadsperblock
+        my_kernel[blockspergrid, threadsperblock](data)
 
-    del data
+        del data
 
-    # Test above worked, do the imports
-    from .image_creators.gpu_sph_projector import GpuSphProjector
-    from .image_creators.gpu_ray_projector import GpuRayProjector
-except Exception as e:
-    if settings.give_cuda_import_warnings:
+        # Test above worked, do the imports
+        from .image_creators.gpu_sph_projector import GpuSphProjector
+        from .image_creators.gpu_ray_projector import GpuRayProjector
+    except Exception as e:
         import warnings
         print(e)
         err_msg = ('\nPaicos: The simple cuda example using cupy and numba failed '
                    'with the error above. Please check the official documentation for '
                    'cupy and numba for installation procedure. Note that you need '
-                   ' a cuda-enabled GPU.\n')
+                   'a GPU that supports CUDA.\n')
         warnings.warn(err_msg)
 
 # Do this at start up

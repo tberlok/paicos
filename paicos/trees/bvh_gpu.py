@@ -470,7 +470,7 @@ if __name__ == '__main__':
     from scipy.spatial import KDTree
     import numpy as np
     pa.use_units(False)
-    snap = pa.Snapshot(pa.root_dir + 'data/snap_247.hdf5')
+    snap = pa.Snapshot(pa.data_dir + 'snap_247.hdf5')
     center = snap.Cat.Group['GroupPos'][0]
     widths = np.array([15000, 15000, 15000])
 

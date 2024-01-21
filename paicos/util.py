@@ -86,6 +86,10 @@ def save_dataset(hdf5file, name, data=None, data_attrs={},
     Create dataset in *open* hdf5file ( hdf5file = h5py.File(filename, 'w') )
     If the data has units then they are saved as an attribute.
     """
+    assert isinstance(data_attrs, dict)
+    data_attrs = dict(data_attrs)
+    assert isinstance(group_attrs, dict)
+    group_attrs = dict(group_attrs)
 
     # Allow for storing data sets in groups or nested groups
     if group is None:
@@ -187,8 +191,8 @@ def remove_astro_units(func):
             if hasattr(new_arg, 'unit'):
                 new_args[ii] = new_arg.value
                 if isinstance(new_arg, pu.PaicosQuantity):
-                    phys_type = new_arg.uq.to_physical.arepo.unit.physical_type
-                    unit = new_arg.uq.arepo.unit
+                    phys_type = new_arg.uq.to_physical.unit.physical_type
+                    unit = new_arg.uq.unit
                 else:
                     phys_type = new_arg.unit.physical_type
                     unit = new_arg.unit

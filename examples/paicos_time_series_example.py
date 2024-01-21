@@ -2,7 +2,7 @@ import paicos as pa
 import numpy as np
 import matplotlib.pyplot as plt
 
-snap = pa.Snapshot(pa.root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 
 snap.load_data(0, 'Density')
 
@@ -16,7 +16,7 @@ Bc = B.to('uG').no_small_h
 Bc2 = B.no_small_h.to('uG')
 Bphys = B.to_physical.to('uG')
 
-f = pa.PaicosTimeSeriesWriter(snap, pa.root_dir + 'test_data',
+f = pa.PaicosTimeSeriesWriter(snap, pa.data_dir + 'test_data',
                               basename='time_series')
 
 # Write the time series to file
@@ -37,7 +37,7 @@ plt.legend(frameon=False)
 del B, Bc, Bphys
 # Read the data and make a new plot
 
-ser = pa.PaicosReader(pa.root_dir + "test_data", basename="time_series")
+ser = pa.PaicosReader(pa.data_dir + 'test_data', basename="time_series")
 
 plt.figure(2)
 plt.clf()

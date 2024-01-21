@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-from paicos import root_dir
 import paicos as pa
 import numpy as np
 
@@ -8,7 +7,7 @@ for use_units in [False, True]:
 
     pa.use_units(use_units)
 
-    snap = pa.Snapshot(root_dir + '/data', 247)
+    snap = pa.Snapshot(pa.data_dir, 247)
     center = snap.Cat.Group['GroupPos'][0]
     if pa.settings.use_units:
         R200c = snap.Cat.Group['Group_R_Crit200'][0].value
@@ -33,7 +32,7 @@ for use_units in [False, True]:
         treeprojector = pa.TreeProjector(snap, center, widths, direction,
                                          npix=512, parttype=1, verbose=True)
 
-        image_file = pa.ArepoImage(projector, basedir=root_dir + 'test_data/',
+        image_file = pa.ArepoImage(projector, basedir=pa.data_dir + 'test_data/',
                                    basename=f'projection_{direction}')
 
         Density = projector.project_variable('1_SubfindDMDensity')

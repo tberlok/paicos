@@ -9,9 +9,12 @@ import os
 import numpy
 import glob
 
-if sys.platform == 'darwin':
-    os.environ['CC'] = 'gcc-13'
-    os.environ['CXX'] = 'g++-13'
+
+# On MacOs, you will need to explicitly set the compiler to one that features openmp.
+# Either by uncommenting below or by compiling with e.g. 'CC=gcc-14 make'
+# if sys.platform == 'darwin':
+#     os.environ['CC'] = 'gcc-13'
+#     os.environ['CXX'] = 'g++-13'
 
 Options.annotate = False
 compiler_directives = {"boundscheck": False, "cdivision": True,
@@ -81,7 +84,7 @@ with open(cur + 'README.md') as f:
 
 setup(
     name='paicos',
-    version='0.1.6',
+    version='0.1.8',
     description=('An object-oriented Python package for analysis of '
                  + '(cosmological) simulations performed with Arepo.'),
     url='https://github.com/tberlok/paicos',

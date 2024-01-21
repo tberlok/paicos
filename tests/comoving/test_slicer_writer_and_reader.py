@@ -10,7 +10,7 @@ def test_slicer_writer_and_reader(show=False):
         import matplotlib.pyplot as plt
         from matplotlib.colors import LogNorm
 
-    snap = pa.Snapshot(pa.root_dir + '/data', 247,
+    snap = pa.Snapshot(pa.data_dir, 247,
                        basename='reduced_snap', load_catalog=False)
     center = [398968.4, 211682.6, 629969.9]
 
@@ -29,7 +29,7 @@ def test_slicer_writer_and_reader(show=False):
         widths = width_vec[ii]
         slicer = pa.Slicer(snap, center, widths, direction, npix=512)
 
-        image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + 'test_data/',
+        image_file = pa.ArepoImage(slicer, basedir=pa.data_dir + 'test_data/',
                                    basename=f'red_slice_{direction}')
 
         Density = slicer.slice_variable(snap['0_Density'])
@@ -41,7 +41,7 @@ def test_slicer_writer_and_reader(show=False):
         image_file.finalize()
 
         # Create a new image object in amend mode
-        image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + 'test_data/',
+        image_file = pa.ArepoImage(slicer, basedir=pa.data_dir + 'test_data/',
                                    basename=f'red_slice_{direction}',
                                    mode='a')
 
@@ -58,7 +58,7 @@ def test_slicer_writer_and_reader(show=False):
                                 extent=slicer.extent, norm=LogNorm())
 
     # Example of how to read the image files
-    im = pa.ImageReader(pa.root_dir + 'test_data', 247, 'red_slice_x')
+    im = pa.ImageReader(pa.data_dir + 'test_data', 247, 'red_slice_x')
 
     im['0_Volume']
 

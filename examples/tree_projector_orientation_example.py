@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-from paicos import root_dir
 import paicos as pa
 import numpy as np
 
 pa.use_units(True)
 
-snap = pa.Snapshot(root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 center = snap.Cat.Group['GroupPos'][0]
 R200c = snap.Cat.Group['Group_R_Crit200'][0].value
 

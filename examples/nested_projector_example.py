@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
 
-snap = pa.Snapshot(pa.root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 center = snap.Cat.Group['GroupPos'][0]
 
 if pa.settings.use_units:

@@ -2,7 +2,7 @@ import paicos as pa
 import numpy as np
 import matplotlib.pyplot as plt
 
-snap = pa.Snapshot(pa.root_dir + '/data/', 7,
+snap = pa.Snapshot(pa.data_dir, 7,
                    basename='small_non_comoving')
 
 widths = snap.box_size.copy

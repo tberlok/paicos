@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.abspath(os.path.join("..", "..")))
 project = 'Paicos'
 copyright = '2023, Thomas Berlok'
 author = 'Thomas Berlok'
-release = '0.1.6'
+release = '0.1.8'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

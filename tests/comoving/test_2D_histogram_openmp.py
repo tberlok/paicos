@@ -5,7 +5,7 @@ def test_2D_histogram_openmp(show=False):
     import paicos as pa
     pa.use_units(True)
 
-    snap = pa.Snapshot(pa.root_dir + '/data', 247, basename='reduced_snap',
+    snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                        load_catalog=False)
     center = [398968.4, 211682.6, 629969.9] * snap.length
 
@@ -27,12 +27,12 @@ def test_2D_histogram_openmp(show=False):
         r_rho.get_colorlabel(r'r', '\\rho', 'M')
 
         # Save the 2D histogram
-        r_rho.save(basedir=pa.root_dir + 'test_data',
+        r_rho.save(basedir=pa.data_dir + 'test_data',
                    basename=f'r_rho_hist_{numthreads}')
 
         del r_rho
 
-        r_rho_vec.append(pa.Histogram2DReader(pa.root_dir + 'test_data', 247,
+        r_rho_vec.append(pa.Histogram2DReader(pa.data_dir + 'test_data', 247,
                                               basename=f'r_rho_hist_{numthreads}'))
         if show:
             import matplotlib.pyplot as plt

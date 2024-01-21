@@ -7,7 +7,7 @@ def test_nested_particles(show=False):
     if show:
         import matplotlib.pyplot as plt
 
-    snap = pa.Snapshot(pa.root_dir + '/data', 247, basename='reduced_snap',
+    snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                        load_catalog=False)
 
     snap['0_Coordinates'] = snap['0_Coordinates'][:9]

@@ -1,5 +1,4 @@
 import paicos as pa
-from paicos import root_dir
 
 pa.use_units(True)
 pa.use_only_user_functions(False)
@@ -21,7 +20,7 @@ pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
 pa.add_user_function('0_CRM', CosmicRaysTimesMasses)
 
 
-snap = pa.Snapshot(root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 
 
 snap['0_TM2']

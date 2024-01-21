@@ -44,5 +44,12 @@ jobs:
         # twine upload --repository-url https://test.pypi.org/legacy/ dist/*manylinux*
 
         # Commands for uploading to pypi
-        #twine upload dist/*tar.gz
+        twine upload dist/*tar.gz
         twine upload dist/*manylinux*
+
+        # How to make a pip installation on my Mac:
+        # make clean
+        # python3 setup.py sdist bdist_wheel
+        # twine check dist/*
+        # twine upload dist/*
+

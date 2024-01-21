@@ -7,7 +7,7 @@ def test_gpu_binary_tree():
     from paicos.trees.bvh_gpu import GpuBinaryTree
     import numpy as np
     pa.use_units(False)
-    snap = pa.Snapshot(pa.root_dir + 'data/snap_247.hdf5')
+    snap = pa.Snapshot(pa.data_dir + 'snap_247.hdf5')
     center = snap.Cat.Group['GroupPos'][0]
     widths = np.array([15000, 15000, 15000])
 

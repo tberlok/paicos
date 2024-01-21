@@ -30,15 +30,17 @@ in my `.bash_profile`.
 #### Compiling on MacOs
 
 You will need an openmp-enabled compiler. On MacOs, you can install gcc via homebrew.
-The `setup.py` in the Paicos directory currently has the following hardcoded
-compiler option. 
+You can then either modify `setup.py` with your
+compiler option, .e.g.,
 ```
 if sys.platform == 'darwin':
     os.environ['CC'] = 'gcc-13'
     os.environ['CXX'] = 'g++-13'
 ```
+or by running `CC=gcc-13 make` instead of simply `make`.
+
 If you have installed gcc via homebrew, then you can get your compiler version by running
-`brew info gcc` and update `setup.py` accordingly if that does not agree with what is hardcoded.
+`brew info gcc`, which you can use to modify the instructions above accordingly.
 
 
 #### Compiling Paicos inside a notebook
@@ -52,7 +54,28 @@ make clean
 make
 ```
 
-## Option 2: Installing the development version using pip 
+## Option 2: Installing directly via pip
+
+This is probably the simplest way of installing Paicos, i.e. you run
+```
+pip install paicos
+```
+in a terminal.
+
+Note however, that this installation does not include the tests, examples
+and example data.
+
+On MacOs you might have to do something like (see details above)
+```
+CC=gcc-13 pip install paicos
+```
+If the installation succeeded then you can proceed:
+```
+# Check if installation worked and that you can import Paicos 
+python -c "import paicos"
+```
+
+## Option 3: Installing the development version using pip 
 ```
 git clone git@github.com:tberlok/paicos.git
 cd paicos
@@ -61,14 +84,39 @@ python3 -m pip install -e .
 make checks
 ```
 
-## Option 3: Installing directly via pip
+## GPU/CUDA requirements
 
-This installation does not include the tests and examples and will probably mostly work on Linux machines
-```
-pip install paicos
-```
+The visualization routines that run on GPU require installing CuPy (a drop-in replacement
+for NumPy that runs on the GPU) and Numba CUDA (just-in-time compilation of kernel
+and device functions on the GPU). These packages only work on CUDA-enabled GPUs,
+which means that you need a recent Nvidia GPU.
+
+These packages (CuPy and Numba) are not automatically included in Paicos.
+Up-to-date instructions for installing them can be found at:
+
+- CuPy: https://docs.cupy.dev/en/stable/install.html
+
+- Numba: https://numba.readthedocs.io/en/stable/cuda/overview.html#supported-gpus
+
+At the time of writing, we have had success installing for CUDA version
+11.2 using
 
 ```
-# Check if installation worked and that you can import Paicos 
-python -c "import paicos"
+pip install numba
+pip install cupy-cuda112
 ```
+and then setting the path to the CUDA installation in .bashrc as e.g.
+(substitute with the path to the CUDA installation on your system)
+```
+export CUDA_HOME=/software/astro/cuda/11.2 # numba
+export CUDA_PATH=/software/astro/cuda/11.2 # cupy
+```
+
+Finally, you need to add
+```
+# Whether to load GPU/cuda functionality on startup
+pa.load_cuda_functionality_on_startup(True)
+```
+to your `user_settings.py`.
+
+

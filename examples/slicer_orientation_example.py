@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
 
-snap = pa.Snapshot(pa.root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 center = snap.Cat.Group['GroupPos'][0]
 
 width_vec = (
@@ -27,7 +27,7 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     slicer = pa.Slicer(snap, center, widths, orientation, npix=512)
     slicer_dir = pa.Slicer(snap, center, width_vec[ii], direction, npix=512)
 
-    image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + 'test_data',
+    image_file = pa.ArepoImage(slicer, basedir=pa.data_dir + 'test_data',
                                basename=f'slice_{direction}')
 
     Density = slicer.slice_variable(snap['0_Density'])
@@ -39,7 +39,7 @@ for ii, direction in enumerate(['x', 'y', 'z']):
     image_file.finalize()
 
     # Create a new image object in amend mode
-    image_file = pa.ArepoImage(slicer, basedir=pa.root_dir + 'test_data',
+    image_file = pa.ArepoImage(slicer, basedir=pa.data_dir + 'test_data',
                                basename=f'slice_{direction}',
                                mode='a')
 
@@ -57,6 +57,6 @@ for ii, direction in enumerate(['x', 'y', 'z']):
                        origin='lower')  # , norm=LogNorm())
 
 # Example of how to read the image files
-im = pa.ImageReader(pa.root_dir + 'test_data', 247, 'slice_x')
+im = pa.ImageReader(pa.data_dir + 'test_data', 247, 'slice_x')
 
 plt.show()

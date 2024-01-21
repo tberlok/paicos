@@ -1,7 +1,6 @@
 import paicos as pa
-from paicos import root_dir
 pa.use_units(True)
-snap = pa.Snapshot(root_dir + '/data', 247)
+snap = pa.Snapshot(pa.data_dir, 247)
 
 snap['0_MagneticField']
 snap['0_Volume']
