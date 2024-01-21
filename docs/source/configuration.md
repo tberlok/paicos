@@ -7,7 +7,7 @@ can be seen on the sidebar on the left).
 
 ## Turn units/automatic derivations on/off
 
-Some users might not like the automatic handling of units
+You might not like the automatic handling of units
 and/or the automatic computations of derived quantities.
 These features are optional and can be turned off.
 
@@ -22,12 +22,12 @@ You can also turn off automatic derivations by running the following code.
 import paicos as pa
 pa.use_only_user_functions(True)
 ```
-This can be used to turn off the library of functions supplied by Paicos
-and replace them with your own functions instead (see the "Custom user functions"
+This can be used to turn off the library of functions supplied by Paicos.
+You can then replace them with your own functions instead (see the "Custom user functions"
 section below).
 
 It is worth noting that these options should be modified before loading any snapshots,
-i.e. at the top of your analysis scripts or in your `user_settings.py` file (see below).
+i.e. at the top of your analysis scripts or in your `paicos_user_settings.py` file (see below).
 
 ## Custom user units
 
@@ -39,7 +39,7 @@ option in Arepo or if your simulations include some non-standard physics options
 pa.add_user_unit('voronoi_cells', 'JetTracer', '')
 ```
 
-This let's Paicos know that your Arepo snapshots contain a block
+This lets Paicos know that your Arepo snapshots contain a block
 name JetTracer in the gas cells. You can get the full documentation
 by running
 ```
@@ -64,7 +64,7 @@ def TemperaturesTimesMassesSquared(snap, get_depencies=False):
 
 pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
 ```
-After setting this up, one would be able to run e.g.
+After setting this up, the user would be able to run e.g.
 
 ```
 snap = pa.Snapshot(root_dir + '/data', 247)
@@ -75,8 +75,8 @@ snap['0_TM2']
 
 ## Openmp parallel execution of code
 
-Paicos will check upon startup how many cores are available on your system,
-which might be limited to the number set in the environment variable OMP_NUM_THREADS.
+Paicos will upon startup check how many cores are available on your system.
+This might be limited to the number set in the environment variable OMP_NUM_THREADS.
 
 It is therefore sometimes useful to set the environment variable OMP_NUM_THREADS,
 which will then be the maximum number of threads that Paicos can use.
@@ -92,14 +92,25 @@ would use 24 cores in the parts of the code that are parallelized.
 
 ## Setting up user settings
 
-You can save a `user_settings.py` script at in Paicos base directory. We include an example
-named ``, which you use to get started. It looks like this
+You can save a `paicos_user_settings.py` script at the location of the Paicos code,
+which is imported when you do `import paicos`.
+The location of this directory depends on whether you have done a pip installation or not.
+You can find the correct location by doing this:
+
+```
+import paicos as pa
+print('Put your paicos_user_settings.py in this directory:', pa.code_dir)
+```
+
+We include an example named `paicos_user_settings_template.py`, which you can use to get started.
+It looks like this
 
 ```
 import paicos as pa
 
 """
-Set up your own default settings by renaming this file as user_settings.py.
+Set up your own default settings by renaming this file as paicos_user_settings.py
+and saving it at the directory found at: pa.code_dir
 
 Here we are overriding the defaults set in settings.py, so you only need
 to add things you want to change.
@@ -117,6 +128,12 @@ pa.numthreads(8)
 
 # Info about the openMP setup
 pa.give_openMP_warnings(False)
+
+# Whether to load GPU/cuda functionality on startup
+pa.load_cuda_functionality_on_startup(False)
+
+# Explicitly set data directory (only needed for pip installations)
+data_dir = '/Users/berlok/projects/paicos/data/'
 
 
 # Examples of adding user-defined functions

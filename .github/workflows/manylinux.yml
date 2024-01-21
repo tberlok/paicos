@@ -49,7 +49,8 @@ jobs:
 
         # How to make a pip installation on my Mac:
         # make clean
-        # python3 setup.py sdist bdist_wheel
+        # CC=gcc-13 python3 setup.py sdist bdist_wheel
         # twine check dist/*
-        # twine upload dist/*
+        ## twine upload dist/*
+        # twine upload dist/paicos*.tar.gz
 

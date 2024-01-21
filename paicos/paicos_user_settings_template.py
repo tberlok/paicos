@@ -1,7 +1,8 @@
 import paicos as pa
 
 """
-Set up your own default settings by renaming this file as user_settings.py.
+Set up your own default settings by renaming this file as paicos_user_settings.py
+and saving it at the directory found at: pa.code_dir
 
 Here we are overriding the defaults set in settings.py, so you only need
 to add things you want to change.
