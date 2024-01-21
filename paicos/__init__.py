@@ -58,7 +58,7 @@ from . import cython
 # pylint: disable=W0621
 
 # The place where __init__.py (this file) is located
-code_dir = os.path.dirname(os.path.abspath(__file__))
+code_dir = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 
 def use_units(use_units):

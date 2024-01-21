@@ -13,6 +13,14 @@ wget -O data/fof_subhalo_tab_247.hdf5 https://sid.erda.dk/share_redirect/BmILDaD
 wget -O data/snap_247.hdf5 https://sid.erda.dk/share_redirect/G4pUGFJUpq
 ```
 
+If you have done a pip-installation, then you will need to tell Paicos where the data is on your system.
+This is done by adding something like this
+```
+# Explicitly set data directory (only needed for pip installations)
+data_dir = '/Users/berlok/projects/paicos/data/'
+```
+to your `paicos_user_settings.py` (see the user configuration tab).
+
 ## Overview of the main Paicos classes
 The notebooks and python scripts illustrate typical use cases of the following Paicos classes:
 
@@ -33,3 +41,10 @@ The notebooks and python scripts illustrate typical use cases of the following P
 - PaicosWriter (paicos_writer.py)
 
 - PaicosReader (paicos_readers.py)
+
+## Main GPU classes
+
+The main GPU classes are
+
+- GpuSphProjector (gpu_sph_projector.py)
+- GpuRayProjector (gpu_ray_projector.py)

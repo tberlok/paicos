@@ -25,6 +25,8 @@ caption: Notebook examples
 /notebooks/histogram2d.ipynb
 /notebooks/histogram2d_plotting.ipynb
 
+/notebooks/gpu_ray_with_widget_and_logging_v2.ipynb
+
 ```
 
 ```{toctree}
