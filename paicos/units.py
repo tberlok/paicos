@@ -513,7 +513,7 @@ class PaicosQuantity(Quantity):
 
         return self._new_view(value * factor, new_unit)
 
-    def to_any(quantity, new_unit):
+    def to_any(self, new_unit):
         """
         Convert quantity to any (possible) unit.
 
@@ -523,7 +523,7 @@ class PaicosQuantity(Quantity):
         changing the units in one go.
         """
         u_unit, pu_unit = separate_units(new_unit)
-        new_quant = quantity.to(u_unit)
+        new_quant = self.to(u_unit)
         new_quant = new_quant.to_comoving(pu_unit)
         return new_quant
 
@@ -797,7 +797,7 @@ def paicos_quantity_list_to_array(list_to_convert):
     Only works on 1D lists...
     """
     e0 = list_to_convert[0]
-    if hasattr(e0 , 'unit'):
+    if hasattr(e0, 'unit'):
         for e in list_to_convert:
             assert e0.unit == e.unit
             assert e0.comoving_sim == e.comoving_sim

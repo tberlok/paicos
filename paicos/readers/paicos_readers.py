@@ -268,7 +268,7 @@ class PaicosReader(dict):
     @property
     def length(self):
         return self._length
-    
+
     @property
     def mass(self):
         return self._mass
@@ -503,8 +503,8 @@ class PaicosReader(dict):
         """
         unit = u.Unit(astropy_unit_str)
         return pu.PaicosQuantity(1.0, unit, a=self._Time, h=self.h,
-                                         comoving_sim=self.comoving_sim,
-                                         dtype=float)
+                                 comoving_sim=self.comoving_sim,
+                                 dtype=float)
 
     def uq(self, astropy_unit_str):
         """

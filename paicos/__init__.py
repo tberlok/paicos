@@ -23,10 +23,6 @@ import astropy
 from . import util
 from . import settings
 
-
-# The place where __init__.py (this file) is located
-code_dir = os.path.dirname(os.path.abspath(__file__))
-
 # One folder up from __init__ (i.e. repo directory or installation directory)
 from .util import root_dir
 
@@ -60,6 +56,9 @@ from .orientation import Orientation
 from . import cython
 
 # pylint: disable=W0621
+
+# The place where __init__.py (this file) is located
+code_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def use_units(use_units):
