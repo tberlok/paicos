@@ -26,12 +26,12 @@ linting:
 	flake8 ./
 	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=E0611,E0401,E1101,E1120,E1121 paicos
 
-make dev_checks:
+dev_checks:
 	make checks
 	make linting
 
 # Tests that can only run on some systems
-make gpu_checks:
+gpu_checks:
 	python tests/cuda-gpu/test_gpu_binary_tree.py
 	python tests/cuda-gpu/test_gpu_ray_projector.py
 	python tests/cuda-gpu/test_gpu_sph_projector.py
