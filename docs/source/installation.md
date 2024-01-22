@@ -117,6 +117,6 @@ Finally, you need to add
 # Whether to load GPU/cuda functionality on startup
 pa.load_cuda_functionality_on_startup(True)
 ```
-to your `user_settings.py`.
+to your `paicos_user_settings.py` (see details under 'User configuration').
 
 
