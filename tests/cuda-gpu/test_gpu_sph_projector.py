@@ -1,6 +1,6 @@
 def test_gpu_sph_projector(show=False):
     """
-    We compare the CPU and GPU implementations of ray-tracing.
+    We compare the CPU and GPU implementations of SPH-projection.
     """
     import paicos as pa
     import numpy as np
