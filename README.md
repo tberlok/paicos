@@ -8,9 +8,8 @@ https://github.com/tberlok/paicos/actions/workflows/flake8.yml)
 
 # Paicos
 
-A somewhat bare-bones Python package for making projections and slices of
-Arepo simulations. Please note that while Paicos has its visibility set to
-public, it is still in beta mode and under active development.
+An object-oriented Python package for analysis of (cosmological) simulations performed
+with Arepo.
 
 <img src="images/Z24_snap130_wide_projection_notnested.jpg" width="auto">
 
