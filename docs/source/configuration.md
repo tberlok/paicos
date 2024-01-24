@@ -31,7 +31,7 @@ i.e. at the top of your analysis scripts or in your `paicos_user_settings.py` fi
 
 ## Custom user units
 
-You can set your own units, which is useful if you have implemented a new output
+If you are using automatic handling of units, you need to set your own units if you use a new output
 option in Arepo or if your simulations include some non-standard physics options.
 
 ```
