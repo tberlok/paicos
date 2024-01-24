@@ -6,7 +6,7 @@ notebook 1a.
 
 ## Downloading sample data
 
-The examples require an Arepo snapshot. You can download one [here](https://www.dropbox.com/sh/xdmqpc72jprtfs7/AADTmM12Zqc4K5--R5OTb4oCa?dl=0) (1 GB Dropbox link). Alternatively, open a terminal at
+The examples require an Arepo snapshot. You can download one [here](https://sid.erda.dk/sharelink/DkVXfdoxIM). Alternatively, open a terminal at
 the root directory of the Paicos repo, then run
 ```
 wget -O data/fof_subhalo_tab_247.hdf5 https://sid.erda.dk/share_redirect/BmILDaDPPz
