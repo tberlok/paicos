@@ -89,7 +89,8 @@ make checks
 The visualization routines that run on GPU require installing CuPy (a drop-in replacement
 for NumPy that runs on the GPU) and Numba CUDA (just-in-time compilation of kernel
 and device functions on the GPU). These packages only work on CUDA-enabled GPUs,
-which means that you need a recent Nvidia GPU.
+which means that you need a recent Nvidia GPU. An Nvidia GPU with good FP64 performance
+is desirable.
 
 These packages (CuPy and Numba) are not automatically included in Paicos.
 Up-to-date instructions for installing them can be found at:
