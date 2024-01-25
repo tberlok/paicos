@@ -150,8 +150,10 @@ Arepo code available and to the main developers of arepo-snap-util
 (Federico Marinacci and Rüdiger Pakmor), a non-public code which we have used
 for comparison of projections and slices. TB gratefully acknowledges funding
 from the European Union’s Horizon Europe research and innovation programme
-under the Marie Skłodowska-Curie grant agreement No 101106080. LJ
-acknowledges support by the European Research Council under ERC-AdG grant
+under the Marie Skłodowska-Curie grant agreement No 101106080. LJ acknowledges
+support by the German Science Foundation (DFG) under grant "DFG Research Unit FOR
+5195 – Relativistic Jets in Active Galaxies".
+LJ and TB acknowledge support by the European Research Council under ERC-AdG grant
 PICOGAL-101019746. The authors gratefully acknowledge the Gauss Centre for
 Supercomputing e.V. (www.gauss-centre.eu) for funding this project by
 providing computing time on the GCS Supercomputer SuperMUC at Leibniz
