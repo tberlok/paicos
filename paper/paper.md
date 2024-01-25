@@ -5,7 +5,7 @@ tags:
   - astronomy
 authors:
   - name: Thomas Berlok
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0003-0466-603X
     corresponding: true
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
   - name: Léna Jlassi
