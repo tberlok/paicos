@@ -9,10 +9,13 @@ authors:
     corresponding: true
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
   - name: Léna Jlassi
+    orcid: 0009-0007-9039-294X
     affiliation: 2
   - name: Ewald Puchwein
+    orcid: 0000-0001-8778-7587
     affiliation: 2
   - name: Troels Haugbølle
+    orcid: 0000-0002-9422-8684
     affiliation: 1
 affiliations:
  - name: Niels Bohr Institute, University of Copenhagen, Denmark
