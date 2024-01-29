@@ -71,7 +71,7 @@ of Arepo simulations. Paicos provides an alternative, which is
 specifically tailored to Arepo simulations.
 It is in this regard
 similar to swiftsimio [@Borrow2020], which was developed specifically
-for SWIFT simulations [@Schaller2016].
+for SWIFT simulations [@Schaller2023].
 
 We have developed Paicos because we identified a need for an analysis code
 that simultaneously fulfills the following requirements: 1) is specifically
