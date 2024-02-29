@@ -1,3 +1,9 @@
+import pytest
+
+cupy = pytest.importorskip("cupy")
+numba = pytest.importorskip("numba")
+
+
 def test_gpu_sph_projector(show=False):
     """
     We compare the CPU and GPU implementations of SPH-projection.

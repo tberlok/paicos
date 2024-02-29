@@ -21,6 +21,7 @@ checks:
 	cd tests; pytest comoving
 	cd tests; pytest non-comoving
 	cd tests; pytest general
+	cd tests; pytest cuda-gpu
 
 linting:
 	flake8 ./
@@ -29,9 +30,3 @@ linting:
 dev_checks:
 	make checks
 	make linting
-
-# Tests that can only run on some systems
-gpu_checks:
-	cd tests; python cuda-gpu/test_gpu_binary_tree.py
-	cd tests; python cuda-gpu/test_gpu_ray_projector.py
-	cd tests; python cuda-gpu/test_gpu_sph_projector.py

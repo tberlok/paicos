@@ -1,3 +1,8 @@
+import pytest
+
+cupy = pytest.importorskip("cupy")
+numba = pytest.importorskip("numba")
+
 
 def test_gpu_binary_tree():
     import cupy as cp
