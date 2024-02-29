@@ -1,13 +1,18 @@
 import pytest
 
-cupy = pytest.importorskip("cupy")
-numba = pytest.importorskip("numba")
-
 
 def test_gpu_sph_projector(show=False):
     """
     We compare the CPU and GPU implementations of SPH-projection.
     """
+    try:
+        import cupy
+        import numba
+    except ImportError:
+        msg = ("Import of cupy and numba failed "
+               + " and GPU-tests can't run.")
+        pytest.xfail(msg)
+
     import paicos as pa
     import numpy as np
     pa.use_units(True)

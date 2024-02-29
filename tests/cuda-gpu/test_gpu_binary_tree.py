@@ -1,12 +1,16 @@
 import pytest
 
-cupy = pytest.importorskip("cupy")
-numba = pytest.importorskip("numba")
 
-
+@pytest.mark.xfail(raises=RuntimeError)
 def test_gpu_binary_tree():
-    import cupy as cp
-    from numba import cuda
+    try:
+        import cupy
+        import numba
+    except ImportError:
+        msg = ("Import of cupy and numba failed "
+               + " and GPU-tests can't run.")
+        pytest.xfail(msg)
+
     import paicos as pa
     from scipy.spatial import KDTree
     from paicos.trees.bvh_gpu import GpuBinaryTree
