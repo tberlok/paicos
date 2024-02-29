@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.xfail(raises=RuntimeError)
 def test_gpu_binary_tree():
     try:
-        import cupy
+        import cupy as cp
         import numba
     except ImportError:
         msg = ("Import of cupy and numba failed "
