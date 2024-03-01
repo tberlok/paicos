@@ -79,12 +79,16 @@ class Histogram2D:
 
             if logscale:
                 bins_x[0] = self.x[self.x > 0].min()
+        else:
+            assert bins_x[0] < bins_x[1], 'min and max values swapped!'
 
         if isinstance(bins_y, int):
             bins_y = [self.y.min(), self.y.max(), bins_y]
 
             if logscale:
                 bins_y[0] = self.y[self.y > 0].min()
+        else:
+            assert bins_y[0] < bins_y[1], 'min and max values swapped!'
 
         self.logscale = logscale
 
@@ -245,8 +249,8 @@ class Histogram2D:
         hist2d = hist2d.T
 
         if settings.use_units:
-            hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x.a,
-                                       h=self.x.h,
+            hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x._a,
+                                       h=self.x._h,
                                        comoving_sim=self.x.comoving_sim)
         if normalize:
             norm = np.sum(self.area_per_bin * hist2d)

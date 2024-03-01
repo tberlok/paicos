@@ -5,6 +5,7 @@ can be used to load derived variables.
 import os
 import h5py
 import numpy as np
+import traceback
 from astropy import units as u
 from astropy.cosmology import LambdaCDM
 from .. import util
@@ -179,62 +180,73 @@ class PaicosReader(dict):
             self._lookback_time = self.get_lookback_time(self.z)
 
         _ns = globals()
-        arepo_mass = u.def_unit(
-            ["arepo_mass"],
-            unit_mass,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo mass unit",
-            format={"latex": r"arepo\_mass"},
-        )
-        arepo_time = u.def_unit(
-            ["arepo_time"],
-            unit_time,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo time unit",
-            format={"latex": r"arepo\_time"},
-        )
-        arepo_length = u.def_unit(
-            ["arepo_length"],
-            unit_length,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo length unit",
-            format={"latex": r"arepo\_length"},
-        )
-        arepo_velocity = u.def_unit(
-            ["arepo_velocity"],
-            unit_velocity,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo velocity unit",
-            format={"latex": r"arepo\_velocity"},
-        )
-        arepo_pressure = u.def_unit(
-            ["arepo_pressure"],
-            unit_pressure,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo pressure unit",
-            format={"latex": r"arepo\_pressure"},
-        )
-        arepo_energy = u.def_unit(
-            ["arepo_energy"],
-            unit_energy,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo energy unit",
-            format={"latex": r"arepo\_energy"},
-        )
-        arepo_density = u.def_unit(
-            ["arepo_density"],
-            unit_density,
-            prefixes=False,
-            namespace=_ns,
-            doc="Arepo density unit",
-            format={"latex": r"arepo\_density"},
-        )
+
+        try:
+            arepo_mass = u.def_unit(
+                ["arepo_mass"],
+                unit_mass,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo mass unit",
+                format={"latex": r"arepo\_mass"},
+            )
+            arepo_time = u.def_unit(
+                ["arepo_time"],
+                unit_time,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo time unit",
+                format={"latex": r"arepo\_time"},
+            )
+            arepo_length = u.def_unit(
+                ["arepo_length"],
+                unit_length,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo length unit",
+                format={"latex": r"arepo\_length"},
+            )
+            arepo_velocity = u.def_unit(
+                ["arepo_velocity"],
+                unit_velocity,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo velocity unit",
+                format={"latex": r"arepo\_velocity"},
+            )
+            arepo_pressure = u.def_unit(
+                ["arepo_pressure"],
+                unit_pressure,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo pressure unit",
+                format={"latex": r"arepo\_pressure"},
+            )
+            arepo_energy = u.def_unit(
+                ["arepo_energy"],
+                unit_energy,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo energy unit",
+                format={"latex": r"arepo\_energy"},
+            )
+            arepo_density = u.def_unit(
+                ["arepo_density"],
+                unit_density,
+                prefixes=False,
+                namespace=_ns,
+                doc="Arepo density unit",
+                format={"latex": r"arepo\_density"},
+            )
+        except ValueError:
+            # print(e)
+            traceback.print_exc()
+            err_msg = ("Re-declaration of arepo code units attempted "
+                       + "within same Python session. "
+                       + "See https://github.com/tberlok/paicos/issues/59")
+            raise RuntimeError(err_msg)
+        # except Exception as e:
+        #     print(e)
 
         self.arepo_units_in_cgs = {'unit_length': unit_length,
                                    'unit_mass': unit_mass,

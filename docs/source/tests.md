@@ -10,6 +10,7 @@ into the `tests` directory and running
 pytest comoving
 pytest non-comoving
 pytest general
+pytest cuda-gpu
 ```
 but it is also possible to run each test from the command line,
 e.g.

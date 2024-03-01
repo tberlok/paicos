@@ -129,12 +129,14 @@ class Catalog(PaicosReader):
                         assert False
 
             # read group data
-            for ikey in file["Group"].keys():
-                self.Group[ikey][skip_gr:skip_gr + ng] = file["Group/" + ikey]
+            if ng > 0:
+                for ikey in file["Group"].keys():
+                    self.Group[ikey][skip_gr:skip_gr + ng] = file["Group/" + ikey]
 
             # read subhalo data
-            for ikey in file["Subhalo"].keys():
-                self.Sub[ikey][skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
+            if ns > 0:
+                for ikey in file["Subhalo"].keys():
+                    self.Sub[ikey][skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
 
             skip_gr += ng
             skip_sub += ns
