@@ -393,7 +393,7 @@ class Snapshot(PaicosReader):
         else:
             return load_keys
 
-    def load_data_experimental(self, parttype, blockname):
+    def _load_data_experimental(self, parttype, blockname):
         """
         Load data from hdf5 file(s). Example usage:
 
@@ -546,7 +546,7 @@ class Snapshot(PaicosReader):
 
             f = h5py.File(cur_filename, "r")
 
-            np_file = f["Header"].attrs["NumPart_ThisFile"][parttype]
+            np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])
 
             if ifile == 0:   # initialize array
                 shape = self._part_specs[parttype][blockname]['shape']
