@@ -69,12 +69,12 @@ class Orientation:
         Parameters:
 
             normal_vector: a vector which will be normal to the face of the image,
-            i.e. the depth direction. You can e.g. pass the angular momentum
-            vector of a galaxy for a face on projection.
+                           i.e. the depth direction. You can e.g. pass the angular momentum
+                           vector of a galaxy for a face on projection.
 
             perp_vector1: a vector which will be parallel to the image plane. This
-            will become the horizontal direction of your image. You can e.g. pass
-            the angular momentum vector here for an edge-on projection.
+                          will become the horizontal direction of your image. You can e.g. pass
+                          the angular momentum vector here for an edge-on projection.
 
         It's possible to supply both inputs, which then fully determines the
         orientation (the vertical direction of the image, perp_vector2, is

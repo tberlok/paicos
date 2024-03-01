@@ -16,7 +16,7 @@ def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
 
     """
     This is a cython implementation of a selection function,
-    which selects points inside a rectangular region ('cube' is a misnomer...)
+    which selects points inside a rectangular region ('cube' is a misnomer...).
 
     Users should not use this low-level function but instead use
     paicos.util.get_index_of_cubic_region

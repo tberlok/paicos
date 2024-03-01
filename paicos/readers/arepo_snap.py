@@ -28,29 +28,28 @@ class Snapshot(PaicosReader):
     factor, and other properties of the snapshot, as well as the subfind
     catalog if present.
 
-    Important methods and attributes.
+    Important methods and attributes:
+    ---------------------------------
 
     snap = Snapshot()
 
-    snap.Parameters (dict): Contains information from the parameter
-                            file used in the simulation (e.g. param.txt).
+    snap.Parameters (dict): Contains information from the parameter file used in the simulation (e.g. param.txt).
 
-    snap.Config (dict): Contains information from the Config
-                        file used in the simulation (e.g. Config.txt).
+    snap.Config (dict): Contains information from the Config file used in the simulation (e.g. Config.txt).
 
-    snap.Header (dict): Contains information about this particular snapshot
-                        such as its time (e.g scale factor).
+    snap.Header (dict): Contains information about this particular snapshot such as its time (e.g scale factor).
 
-    snap.z (float): redshift
+    snap.z (float): redshift.
 
     snap.h (float): reduced Hubble param (e.g. 0.67)
 
-    snap.age: the age of the Universe (only for cosmological runs)
-    snap.lookback_time: the age of the Universe (only for cosmological runs)
+    snap.age: the age of the Universe (only for cosmological runs).
 
-    snap.time: the time stamp of the snapshot (only for non-cosmological runs)
+    snap.lookback_time: the age of the Universe (only for cosmological runs).
 
-    snap.box_size: the dimensions of the simulation domain
+    snap.time: the time stamp of the snapshot (only for non-cosmological runs).
+
+    snap.box_size: the dimensions of the simulation domain.
 
     """
 
@@ -63,24 +62,24 @@ class Snapshot(PaicosReader):
 
         Parameters:
 
-        basedir (str): path of the directory containing the snapshot
-                       (e.g. the 'output' folder)
+            basedir (str): path of the directory containing the snapshot
+                           (e.g. the 'output' folder).
 
-        snapnum (int): snapshot number
+            snapnum (int): snapshot number.
 
-        basename (str): name of the snapshot file, default is "snap"
+            basename (str): name of the snapshot file, default is "snap".
 
-        verbose (bool): whether to print information about the snapshot,
-        default is False
+            verbose (bool): whether to print information about the snapshot,
+                            default is False.
 
-        no_snapdir (bool): whether there is no snap directory, i.e.,
-                           default is False
+            no_snapdir (bool): whether there is no snap directory, i.e.,
+                               default is False.
 
-        load_catalog (bool): whether to load the subfind catalog.
-                             The default None is internally changed to
-                             True for comoving simulations and to
-                             False for non-comoving simulations.
-    """
+            load_catalog (bool): whether to load the subfind catalog.
+                                 The default None is internally changed to
+                                 True for comoving simulations and to
+                                 False for non-comoving simulations.
+        """
 
         super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
                          load_all=load_all, to_physical=to_physical,

@@ -62,7 +62,7 @@ def get_curvature(real_t[:, :] Bvec, real_t[:, :] Bgradient):
 def get_magnitude_of_vector(real_t[:, :] Bvec):
 
     """
-    Computes the magnitude of a vector, e.g., magnetic field strength
+    Computes the magnitude of a vector, e.g., magnetic field strength.
     """
     cdef int ip, ii
     cdef int Np = Bvec.shape[0]

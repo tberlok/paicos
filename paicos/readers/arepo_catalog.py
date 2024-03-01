@@ -20,29 +20,52 @@ class Catalog(PaicosReader):
     The class also includes methods to extract the redshift, scale
     factor, and other properties of the catalog.
 
-    Important methods and attributes.
+    Important methods and attributes:
+    ---------------------------------
 
     cat = Catalog()
 
-    cat.Parameters (dict): Contains information from the parameter
-                            file used in the simulation (e.g. param.txt).
+    cat.Group (dict): Contains a dictionary of the FoF-catalog
 
-    cat.Config (dict): Contains information from the Config
-                        file used in the simulation (e.g. Config.txt).
+    cat.Sub (dict): Contains a dictionary of the Subfind-catalog
 
-    cat.Header (dict): Contains information about this particular catalog
-                        such as its time (e.g scale factor).
+    cat.Parameters (dict): Contains information from the parameter file used in the simulation (e.g. param.txt).
+
+    cat.Config (dict): Contains information from the Config file used in the simulation (e.g. Config.txt).
+
+    cat.Header (dict): Contains information about this particular catalog such as its time (e.g scale factor).
 
     cat.z (float): redshift
 
     cat.h (float): reduced Hubble param (e.g. 0.67)
 
     cat.age: the age of the Universe (only for cosmological runs)
+
     cat.lookback_time: the age of the Universe (only for cosmological runs)
 
     """
     def __init__(self, basedir='.', snapnum=None,
                  to_physical=False, subfind_catalog=True, verbose=False):
+        """
+        Initializes the Catalog class.
+
+        Parameters:
+
+            basedir (str): path of the directory containing the catalogs
+                           (e.g. the 'output' folder).
+
+            snapnum (int): snapshot number.
+
+            to_physical (bool): whether to convert to physical unit upon
+                                loading the data, default is False.
+
+            subfind_catalog (bool): whether the simulation has subfind catalogs,
+                                    when False the code will look for FoF-catalogs
+                                    only.
+
+            verbose (bool): whether to print information, default is False.
+
+        """
 
         if subfind_catalog:
             basename = 'fof_subhalo_tab'
@@ -67,13 +90,13 @@ class Catalog(PaicosReader):
 
     def load_data(self):
         """
-        Overwrite the base class method
+        Overwrite of the base class method.
         """
         pass
 
     def load_all_data(self):
         """
-        Calling method simply loads all the data in the catalog.
+        Calling this method simply loads all the data in the catalog.
 
         For large catalogs it might be useful to implement on-demand
         access in a similar way to what we have for snapshots.

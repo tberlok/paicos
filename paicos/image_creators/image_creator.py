@@ -140,7 +140,7 @@ class ImageCreator:
 
     def info(self):
         """
-        Prints some information about the image creator instance
+        Prints some information about the image creator instance.
         TODO: Add things like the number of cells/particles
         in the current instance.
         """
@@ -269,8 +269,8 @@ class ImageCreator:
         """
         The extent of the image in the horizontal-vertical plane.
         The idea with this property is that it corresponds to the
-        imshow keyword argument 'extent'. When using units, one
-        has to remember pass image_creator.extent.value rather
+        matplotlib imshow keyword argument 'extent'. When using units,
+        one has to remember pass image_creator.extent.value rather
         than image_creator.extent.
         """
         if self.direction == 'orientation':
@@ -451,7 +451,9 @@ class ImageCreator:
         """
         Moves the center of the image along its depth direction.
         Value can be positive or negative and must have same units
-        as the center (TODO: In principle we would just convert the distance).
+        as the center.
+
+        (TODO: In principle we could just convert the distance to same units).
         """
         self._move_center_along_unit_vector(shift, self.orientation.normal_vector)
 
@@ -459,7 +461,9 @@ class ImageCreator:
         """
         Moves the center of the image along its horizontal direction.
         Value can be positive or negative and must have same units
-        as the center (TODO: In principle we would just convert the distance).
+        as the center.
+
+        (TODO: In principle we could just convert the distance to same units).
         """
         self._move_center_along_unit_vector(shift, self.orientation.perp_vector1)
 
@@ -467,7 +471,9 @@ class ImageCreator:
         """
         Moves the center of the image along its vertical direction.
         Value can be positive or negative and must have same units
-        as the center (TODO: In principle we would just convert the distance).
+        as the center.
+
+        (TODO: In principle we could just convert the distance to same units).
         """
         self._move_center_along_unit_vector(shift, self.orientation.perp_vector2)
 

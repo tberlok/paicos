@@ -41,16 +41,18 @@ class ArepoImage(PaicosWriter):
         the file. Setting the mode to amend mode, 'a', allows to add new images
         to an already existing file.
 
-        Parameters: image_creator (object): A Paicos Projector or Slicer
-        object used to create the image.
+        Parameters:
 
-        basedir (file path): The folder where the image file should be saved.
+            image_creator (object): A Paicos Projector or Slicer
+            object used to create the image.
 
-        basename (string): The base name for the image file, which will be in
-        the format `basename_{:03d}`. (default: "projection")
+            basedir (file path): The folder where the image file should be saved.
 
-        mode (string): The mode to open the file in, either 'w' for write mode
-        or 'r' for read mode. (default: 'w')
+            basename (string): The base name for the image file, which will be in
+                               the format `basename_{:03d}`. (default: "projection")
+
+            mode (string): The mode to open the file in, either 'w' for write mode
+            or 'a' for append mode. (default: 'w')
         """
 
         self.center = image_creator.center
@@ -78,11 +80,11 @@ class ArepoImage(PaicosWriter):
 
     def save_image(self, name, data):
         """
-        This function saves a 2D image to the hdf5 file.
+        This method saves a 2D image to the hdf5 file.
         """
         self.write_data(name, data)
 
-    def perform_extra_consistency_checks(self):
+    def _perform_extra_consistency_checks(self):
         """
         Perform extra consistency checks on the HDF5 file to ensure the
         current values match the values stored in the HDF5 file that we intend

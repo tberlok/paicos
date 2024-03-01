@@ -269,6 +269,11 @@ class Histogram2D:
     def save(self, basedir, basename="2d_histogram"):
         """
         Saves the 2D histogram in the basedir directory.
+
+        Parameters:
+            basedir (path): The directory where the histogram should be saved.
+            basename (string): The basename for the filename, which will take
+                               the form: basename + f'_{snapnum:03d}.hdf5'
         """
 
         if basedir[-1] != '/':
