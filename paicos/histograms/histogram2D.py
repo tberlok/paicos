@@ -7,7 +7,7 @@ from astropy import units as u
 from .. import units as pu
 from .. import util
 from .. import settings
-from .histogram import make_bins
+from .histogram import _make_bins
 from ..cython.histogram import find_normalizing_norm_of_2d_hist
 
 
@@ -92,8 +92,8 @@ class Histogram2D:
             assert bins_x[0] > 0
             assert bins_y[0] > 0
 
-        self.edges_x, self.centers_x = make_bins(bins_x, self.logscale)
-        self.edges_y, self.centers_y = make_bins(bins_y, self.logscale)
+        self.edges_x, self.centers_x = _make_bins(bins_x, self.logscale)
+        self.edges_y, self.centers_y = _make_bins(bins_y, self.logscale)
         self.lower_x = self.edges_x[0]
         self.lower_y = self.edges_y[0]
         self.upper_x = self.edges_x[-1]
@@ -138,14 +138,15 @@ class Histogram2D:
     def get_colorlabel(self, x_symbol, y_symbol, weight_symbol=None):
         """
         Method to generate a color label for the histogram with units
+
         Parameters:
             x_symbol (string): Symbol for x axis
             y_symbol (string): Symbol for y axis
             weight_symbol (string): Symbol for weight of the histogram,
                                     default is None
+
         Returns:
-            colorlabel (string): The color label for the histogram with
-                                 units
+            string: The color label for the histogram with units
         """
 
         assert settings.use_units
@@ -296,4 +297,4 @@ class Histogram2D:
             for key, attr in attrs.items():
                 hdf5file[name].attrs[key] = attr
 
-        util.copy_over_snapshot_information(self.snap.filename, filename)
+        util._copy_over_snapshot_information(self.snap.filename, filename)

@@ -12,7 +12,30 @@ ctypedef fused real_t:
 
 def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
              real_t sidelength_x, real_t sidelength_y,
-             real_t thickness, real_t boxsize, int numthreads):
+             real_t sidelength_z, real_t boxsize, int numthreads):
+
+    """
+    This is a cython implementation of a selection function,
+    which selects points inside a rectangular region ('cube' is a misnomer...)
+
+    Users should not use this low-level function but instead use
+    paicos.util.get_index_of_cubic_region
+
+    Parameters:
+        pos (array, (N,3)): positions
+        xc (double): x-position of center
+        yc (double): y-position of center
+        zc (double): z-position of center
+        sidelength_x (double): length of cube along x
+        sidelength_y (double): length of cube along y
+        sidelength_z (double): length of cube along z
+        boxsize (double): size of simulation domain,
+                           which for now is assumed to be cubic!
+        numthreads (int): number of openmp threads to use
+
+    Returns:
+        boolean array (N): A boleean array with True for points inside the selected region
+    """
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -45,10 +68,10 @@ def get_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
 
         # Index calculation
         index[ip] = 0
-        if (x < sidelength_x/2.0) and (x > -sidelength_x/2):
-            if (y < sidelength_y/2.0) and (y > -sidelength_y/2):
-                if (z > -0.5*thickness):
-                    if (z < 0.5*thickness):
+        if (x < sidelength_x/2.0) and (x > -sidelength_x/2.0):
+            if (y < sidelength_y/2.0) and (y > -sidelength_y/2.0):
+                if (z > -sidelength_z/2.0):
+                    if (z < sidelength_z/2.0):
                         index[ip] = 1
 
     # Return a numpy boolean array
@@ -61,6 +84,30 @@ def get_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                              real_t sidelength_x, real_t sidelength_y,
                              real_t sidelength_z, real_t [:] thickness,
                              real_t boxsize, int numthreads):
+    """
+    This is a cython implementation of a selection function,
+    which selects points inside a rectangular region ('cube' is a misnomer...)
+    + a layer of variable thickness.
+
+    Users should not use this low-level function but instead use
+    paicos.util.get_index_of_cubic_region_plus_thin_layer
+
+    Parameters:
+        pos (array, (N,3)): positions
+        xc (double): x-position of center
+        yc (double): y-position of center
+        zc (double): z-position of center
+        sidelength_x (double): length of cube along x
+        sidelength_y (double): length of cube along y
+        sidelength_z (double): length of cube along z
+        thickness (array, (N)): variable thickness for each point
+        boxsize (double): size of simulation domain,
+                           which for now is assumed to be cubic!
+        numthreads (int): number of openmp threads to use
+
+    Returns:
+        boolean array (N): A boleean array with True for points inside the selected region
+    """
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -112,6 +159,10 @@ def get_rotated_cube(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
                              real_t[:] unit_vector_y,
                              real_t[:] unit_vector_z,
                              int numthreads):
+    """
+    Same as get_cube but for a rotated cube.
+    Please see paicos.util.get_index_of_rotated_cubic_region for details.
+    """
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -168,6 +219,10 @@ def get_rotated_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, re
                              real_t[:] unit_vector_y,
                              real_t[:] unit_vector_z,
                              int numthreads):
+    """
+    Same as get_cube_plus_thin_layer but for a rotated cube.
+    Please see paicos.util.get_index_of_rotated_cubic_region_plus_thin_layer for details.
+    """
 
     cdef int Np = pos.shape[0]
     cdef int ip
@@ -220,6 +275,25 @@ def get_rotated_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, re
 def get_radial_range(real_t [:, :] pos, real_t xc, real_t yc,
                     real_t zc, real_t r_min, real_t r_max,
                     int numthreads):
+    """
+    This is a cython implementation of a selection function,
+    which selects points inside a spherical shell.
+
+    Users should not use this low-level function but instead use
+    paicos.util.get_index_of_radial_range
+
+    Parameters:
+        pos (array, (N,3)): positions
+        xc (double): x-position of center
+        yc (double): y-position of center
+        zc (double): z-position of center
+        r_min (double): mininum radius
+        r_max (double): maxinum radius
+        numthreads (int): number of openmp threads to use
+
+    Returns:
+        boolean array (N): A boleean array with True for points inside the selected region
+    """
 
     cdef int Np = pos.shape[0]
     cdef int ip

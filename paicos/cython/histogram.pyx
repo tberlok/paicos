@@ -15,6 +15,9 @@ ctypedef fused real_t:
 
 def get_hist_from_weights_and_idigit(int num_bins, real_t[:] weights,
                                      long[:] i_digit):
+    """
+    This is a cython helper function for calculating 1D histograms.
+    """
 
     cdef int Np = weights.shape[0]
 
@@ -37,8 +40,11 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
                             real_t lower_y, real_t upper_y, int nbins_y,
                             bint logspace,
                             int numthreads=1):
+    """
+    This is a cython helper function for calculating 2D histograms.
+    """
 
-    assert numthreads == 1, 'use project_image_omp for more than one thread'
+    assert numthreads == 1, 'use get_hist2d_from_weights_omp for more than one thread'
 
     # Number of particles
     cdef int Np = xvec.shape[0]
@@ -87,6 +93,9 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
                                 real_t lower_y, real_t upper_y, int nbins_y,
                                 bint logspace,
                                 int numthreads=1):
+    """
+    This is a cython helper function for calculating 2D histograms using openmp.
+    """
 
     # Number of particles
     cdef int Np = xvec.shape[0]
@@ -147,6 +156,10 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
 
 def find_normalizing_norm_of_2d_hist(real_t [:, :] hist2d, real_t[:] edges_x,
                                      real_t[:] edges_y):
+    """
+    This is a cython helper function for calculating the normalization of
+    a 2D histogram.
+    """
 
     cdef int ix, iy
     cdef real_t dx, dy, cell_area

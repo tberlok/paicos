@@ -123,17 +123,15 @@ class PaicosQuantity(Quantity):
     h: the reduced Hubble parameter, e.g. h = 0.7
 
     unit: a string, e.g. 'g/cm^3 small_a^-3 small_h^2' or astropy Unit
-    The latter can be defined like this:
+          The latter can be defined like this:
 
-    from paicos import units as pu
-    from astropy import units as u
-    unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
+          from paicos import units as pu
+          from astropy import units as u
+          unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
 
-    The naming of small_a and small_h is to avoid conflict with the already
-    existing 'annum' (i.e. a year) and 'h' (hour) units.
+          The naming of small_a and small_h is to avoid conflict with the already
+          existing 'annum' (i.e. a year) and 'h' (hour) units.
 
-    Returns
-    ----------
 
     Methods/properties
     ----------

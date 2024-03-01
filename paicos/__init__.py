@@ -141,7 +141,7 @@ def numthreads(numthreads):
 
     numthreads (int): e.g. 16
     """
-    util.check_if_omp_has_issues(False)
+    util._check_if_omp_has_issues(False)
 
     if numthreads > settings.max_threads:
         print(f'Your machine only has {settings.max_threads} available threads')
@@ -250,4 +250,4 @@ if settings.load_cuda_functionality_on_startup:
         warnings.warn(err_msg)
 
 # Do this at start up
-util.check_if_omp_has_issues()
+util._check_if_omp_has_issues()

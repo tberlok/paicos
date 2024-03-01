@@ -8,7 +8,7 @@ from .. import settings
 from ..cython.histogram import get_hist_from_weights_and_idigit as func
 
 
-def make_bins(bins, logscale):
+def _make_bins(bins, logscale):
     """
     Private method to calculate the edges and centers of the bins
     given lower, upper and number of bins.
@@ -22,7 +22,7 @@ def make_bins(bins, logscale):
     """
 
     lower, upper, nbins = bins
-    edges, centers = make_bins_helper(lower, upper, nbins, logscale)
+    edges, centers = _make_bins_helper(lower, upper, nbins, logscale)
     if settings.use_units:
         assert lower.unit == upper.unit
         edges = np.array(edges) * lower.unit_quantity
@@ -31,7 +31,7 @@ def make_bins(bins, logscale):
 
 
 @util.remove_astro_units
-def make_bins_helper(lower, upper, nbins, logscale):
+def _make_bins_helper(lower, upper, nbins, logscale):
     """
     Private method to calculate the edges and centers of the bins
     in logscale or linear scale based on the class variable logscale
@@ -88,7 +88,7 @@ class Histogram:
         self.logscale = logscale
         self.verbose = verbose
 
-        self.edges, self.centers = make_bins(bins, self.logscale)
+        self.edges, self.centers = _make_bins(bins, self.logscale)
         self.bin_centers = self.centers
         self.bin_edges = self.edges
 

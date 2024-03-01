@@ -316,7 +316,7 @@ def get_index_of_rotated_cubic_region_plus_thin_layer(pos, center, widths, thick
     return index
 
 
-def check_if_omp_has_issues(verbose=True):
+def _check_if_omp_has_issues(verbose=True):
     """
     Check if the parallelization via OpenMP works.
 
@@ -359,7 +359,7 @@ def check_if_omp_has_issues(verbose=True):
             warnings.warn(msg)
 
 
-def copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
+def _copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
     """
     Copy over attributes from the original arepo snapshot.
     In this way we will have access to units used, redshift etc

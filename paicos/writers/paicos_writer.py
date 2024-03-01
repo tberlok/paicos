@@ -64,8 +64,8 @@ class PaicosWriter:
         self.tmp_filename = basedir + 'tmp_' + name
 
         if mode == 'w':
-            util.copy_over_snapshot_information(self.org_filename,
-                                                self.tmp_filename, 'w')
+            util._copy_over_snapshot_information(self.org_filename,
+                                                 self.tmp_filename, 'w')
             self.write_info_about_org_file()
         else:
             self.perform_consistency_checks()

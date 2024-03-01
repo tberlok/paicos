@@ -18,6 +18,8 @@ STUFF = "Hi"  # https://stackoverflow.com/questions/8024805/cython-compiled-c-ex
 
 def get_openmp_settings(mpirank, verbose=True):
     """
+    This helper function returns the maximum number of
+    openmp threads available on the system.
     """
 
     cdef int maxthreads = openmp.omp_get_max_threads()
@@ -28,9 +30,14 @@ def get_openmp_settings(mpirank, verbose=True):
 
 
 cpdef double simple_reduction(int n, int num_threads):
+    """
+    This program is a simple reduction using openmp parallel
+    code. The return value should simply be identical to the input, n.
+    Used to find a bug cython/openmp bug that at some point occured on MacOs.
+    """
     cdef int i
-    cdef int sum = 0
+    cdef int mysum = 0
 
     for i in prange(n, nogil=True, num_threads=num_threads, schedule='static'):
-        sum += 1
-    return sum
+        mysum += 1
+    return mysum

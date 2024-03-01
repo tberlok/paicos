@@ -176,11 +176,12 @@ class Slicer(ImageCreator):
 
         Parameters
         ----------
-        variable: a string or an array of shape (N, )
-                  representing the gas variable to slice
+        variable: a string or an array of shape (N, ) representing the gas variable to slice.
+                  For instance '0_Density' or snap['0_Density'].
 
-        Returns:
-        An array of shape (npix, npix) representing the sliced gas variable
+        Returns
+        -------
+            A 2D array the sliced variable.
         """
 
         # This calls _do_region_selection if resolution, Orientation,
@@ -199,6 +200,9 @@ class Slicer(ImageCreator):
 
     @property
     def depth(self):
+        """
+        Depth of the slice, which is zero by definition.
+        """
         if self.direction == 'x':
             return self.width_x
 

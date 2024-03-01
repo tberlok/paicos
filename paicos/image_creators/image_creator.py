@@ -152,10 +152,16 @@ class ImageCreator:
 
     @property
     def center(self):
+        """
+        Center of the image (3D coordinates)
+        """
         return self._center
 
     @property
     def widths(self):
+        """
+        Width of the image in each direction (3D coordinates).
+        """
         return self._widths
 
     @widths.setter
@@ -184,6 +190,10 @@ class ImageCreator:
 
     @property
     def npix(self):
+        """
+        The number of pixels along the horizontal
+        direction of the image.
+        """
         return self._npix
 
     @npix.setter
@@ -194,6 +204,10 @@ class ImageCreator:
 
     @property
     def npix_width(self):
+        """
+        The number of pixels along the horizontal
+        direction of the image.
+        """
         return self._npix
 
     @npix_width.setter
@@ -202,38 +216,63 @@ class ImageCreator:
 
     @property
     def parttype(self):
+        """
+        The parttype being imaged, e.g. parttype=0
+        are the Voronoi gas cells.
+        """
         return self._parttype
 
     @property
-    def foo(self):
-        return self._foo
-
-    @property
     def x_c(self):
+        """
+        The x-component of .center
+        """
         return self.center[0]
 
     @property
     def y_c(self):
+        """
+        The y-component of .center
+        """
         return self.center[1]
 
     @property
     def z_c(self):
+        """
+        The z-component of .center
+        """
         return self.center[2]
 
     @property
     def width_x(self):
+        """
+        The x-component of .widths
+        """
         return self.widths[0]
 
     @property
     def width_y(self):
+        """
+        The y-component of .widths
+        """
         return self.widths[1]
 
     @property
     def width_z(self):
+        """
+        The z-component of .widths
+        """
         return self.widths[2]
 
     @property
     def extent(self):
+        """
+        The extent of the image in the horizontal-vertical plane.
+        The idea with this property is that it corresponds to the
+        imshow keyword argument 'extent'. When using units, one
+        has to remember pass image_creator.extent.value rather
+        than image_creator.extent.
+        """
         if self.direction == 'orientation':
 
             # This is the extent of the image-plane pre-rotation
@@ -265,6 +304,9 @@ class ImageCreator:
 
     @property
     def centered_extent(self):
+        """
+        Same as 'extent' but centered on the center of the image.
+        """
         centered_extent = [- self.width / 2, self.width / 2,
                            - self.height / 2, self.height / 2]
 
@@ -276,6 +318,9 @@ class ImageCreator:
 
     @property
     def width(self):
+        """
+        The horizontal width of the image.
+        """
         if self.direction == 'x':
             return self.width_y
 
@@ -287,6 +332,9 @@ class ImageCreator:
 
     @property
     def height(self):
+        """
+        The vertical height of the image.
+        """
         if self.direction == 'x':
             return self.width_z
 
@@ -298,6 +346,9 @@ class ImageCreator:
 
     @property
     def depth(self):
+        """
+        The depth of the image.
+        """
         if self.direction == 'x':
             return self.width_x
 
@@ -350,12 +401,31 @@ class ImageCreator:
         self._properties_changed = True
 
     def double_resolution(self):
+        """
+        Calling this method doubles the pixel resolution of the image
+        creator.
+        """
         self.npix = self.npix * 2
 
     def half_resolution(self):
+        """
+        Calling this method halves the pixel resolution of the image
+        creator.
+        """
         self.npix = self.npix // 2
 
     def zoom(self, factor):
+        """
+        Calling this method zooms the view by the input factor,
+        that is, the horizontal width and vertical height of the
+        image creator is changed like this:
+
+        width = width / factor
+
+        height = height / factor
+
+        A factor less than one zooms out the view.
+        """
         self.width = self.width / factor
         self.height = self.height / factor
 
@@ -403,6 +473,9 @@ class ImageCreator:
 
     @property
     def npix_height(self):
+        """
+        The number of pixels of an image in the vertical direction.
+        """
         if settings.use_units:
             return int((self.height / self.width).value * self.npix_width)
         else:
@@ -410,16 +483,28 @@ class ImageCreator:
 
     @property
     def area(self):
+        """
+        The area of the image plane.
+        """
         return (self.extent[1] - self.extent[0]) * (self.extent[3] - self.extent[2])
 
     @property
     def area_per_pixel(self):
+        """
+        The area per pixel of the image plane.
+        """
         return self.area / (self.npix_width * self.npix_height)
 
     @property
     def volume(self):
+        """
+        The volume of the projection region (0 for slices).
+        """
         return self.width * self.height * self.depth
 
     @property
     def volume_per_pixel(self):
+        """
+        The volume per pixel in the image.
+        """
         return self.volume / (self.npix_width * self.npix_height)
