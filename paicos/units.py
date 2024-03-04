@@ -420,7 +420,7 @@ class PaicosQuantity(Quantity):
         """
         Return a Latex string for use in plots. The optional
         input variable could be the Latex symbol for the physical variable,
-        for instance \rho or \nabla\times\vec{v}.
+        for instance \\rho or \\nabla\\times\\vec{v}.
         """
 
         a_sc, a_sc_str = self.__scaling_and_scaling_str(small_a)
