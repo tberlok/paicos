@@ -53,7 +53,7 @@ Every research project has its own physical quantities of interest
 and people often like to implement this functionality themselves.
 
 Below is an example where the user would like to have Paicos
-be abble to automatically compute a derived quantity:
+be able to automatically compute a derived quantity:
 ```
 import paicos as pa
 def TemperaturesTimesMassesSquared(snap, get_dependencies=False):
