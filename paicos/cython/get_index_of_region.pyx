@@ -248,3 +248,56 @@ def get_radial_range(real_t [:, :] pos, real_t xc, real_t yc,
     tmp = np.zeros(Np, dtype=np.bool_)
     tmp[:] = index[:]
     return tmp
+
+
+def get_radial_range_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc,
+                                     real_t zc, real_t r_min, real_t r_max,
+                                     real_t [:] thickness, int numthreads):
+    """
+    This is a cython implementation of a selection function,
+    which selects points inside a spherical shell + a thin layer with
+    variable thickness.
+
+    Users should not use this low-level function but instead use
+    paicos.util.get_index_of_radial_range_plus_thin_layer
+
+    Parameters:
+        pos (array, (N,3)): positions
+        xc (double): x-position of center
+        yc (double): y-position of center
+        zc (double): z-position of center
+        r_min (double): mininum radius
+        r_max (double): maxinum radius
+        numthreads (int): number of openmp threads to use
+
+    Returns:
+        boolean array (N): A boleean array with True for points inside the selected region
+    """
+
+    cdef int Np = pos.shape[0]
+    cdef int ip
+    cdef real_t x, y, z, r2
+
+    cdef real_t r2_min = r_min*r_min
+    cdef real_t r2_max = r_max*r_max
+
+    cdef int[:] index = np.zeros(Np, dtype=np.intc)
+
+    openmp.omp_set_num_threads(numthreads)
+
+    for ip in prange(Np, nogil=True, schedule='static'):
+        x = pos[ip, 0] - xc
+        y = pos[ip, 1] - yc
+        z = pos[ip, 2] - zc
+
+        r2 = x*x + y*y + z*z
+
+        # Index calculation
+        index[ip] = 0
+        if (r2 < (r2_max + thickness[ip])) and (r2 > (r2_min - thickness[ip])):
+            index[ip] = 1
+
+    # Return a numpy boolean array
+    tmp = np.zeros(Np, dtype=np.bool_)
+    tmp[:] = index[:]
+    return tmp

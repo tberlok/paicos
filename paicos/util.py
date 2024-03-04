@@ -12,6 +12,7 @@ from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
 from .cython.get_index_of_region import get_cube_plus_thin_layer
+from .cython.get_index_of_region import get_radial_range_plus_thin_layer
 from .cython.get_index_of_region import get_rotated_cube
 from .cython.get_index_of_region import get_rotated_cube_plus_thin_layer
 from .cython.openmp_info import simple_reduction, get_openmp_settings
@@ -227,6 +228,21 @@ def get_index_of_radial_range(pos, center, r_min, r_max):
     x_c, y_c, z_c = center[0], center[1], center[2]
     index = get_radial_range(pos, x_c, y_c, z_c, r_min, r_max,
                              settings.numthreads)
+    return index
+
+
+@remove_astro_units
+def get_index_of_radial_range_plus_thin_layer(pos, center, r_min, r_max, thickness):
+    """
+    Get a boolean array for the positions, pos, which are inside the spherical
+    shell with inner radius r_min and outer radius r_max, centered at center.
+    The thickness array argument adds a variable thickness, e.g., the cell
+    diameters, so that point close to the selection are also included.
+    """
+    assert center.shape[0] == 3
+    x_c, y_c, z_c = center[0], center[1], center[2]
+    index = get_radial_range_plus_thin_layer(pos, x_c, y_c, z_c, r_min, r_max,
+                                             thickness, settings.numthreads)
     return index
 
 
