@@ -1,6 +1,6 @@
 # Running the examples and notebooks
 
-We provide a number of examples in the subdirectories `examples/` and `ipython-notebooks`.
+We provide a number of examples in the subdirectories `examples/` and `notebook-tutorials`.
 We recommend that you start by working your way through the notebooks, starting with
 notebook 1a.
 
