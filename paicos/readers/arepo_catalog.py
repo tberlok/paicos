@@ -42,7 +42,8 @@ class Catalog(PaicosReader):
 
     """
     def __init__(self, basedir='.', snapnum=None,
-                 to_physical=False, subfind_catalog=True, verbose=False):
+                 to_physical=False, subfind_catalog=True, load_all=True,
+                 verbose=False):
 
         if subfind_catalog:
             basename = 'fof_subhalo_tab'
@@ -67,11 +68,12 @@ class Catalog(PaicosReader):
         self.Sub = {}
 
         # Load all data
-        self.load_all_data()
+        if load_all:
+            self.load_all_data()
 
     def load_data(self):
         """
-        Overwrite the base class method
+        Overwrite the base class method.
         """
         pass
 
