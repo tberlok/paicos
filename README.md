@@ -14,7 +14,7 @@ with Arepo.
 <img src="images/Z24_snap130_wide_projection_notnested.jpg" width="auto">
 
 
-# Documentation
+# Documentation and asking for help
 
 Installation instructions and tips on how to get started can be found
 on [readthedocs](https://paicos.readthedocs.io/en/latest/?badge=latest).
