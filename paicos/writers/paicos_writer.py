@@ -18,22 +18,28 @@ class PaicosWriter:
         """
         The constructor for the `PaicosWriter` class.
 
-        Parameters:
+        Parameters
+        ----------
 
-            reader_object (obj): A PaicosReader object (or Snaphot or Catalog object).
+            reader_object :  obj
+                A PaicosReader object (or Snaphot or Catalog object).
 
-            basedir (file path): The folder where the HDF5 file will be saved.
+            basedir : file path
+                 The folder where the HDF5 file will be saved.
 
-            basename (str, optional): Base name of the HDF5 file. Defaults
-                                      to "paicos_file".
+            basename : str, optional
+                 Base name of the HDF5 file. Defaults to "paicos_file".
 
-            add_snapnum (bool): Whether to add the snapnum to the HDF5 filename.
-                                When True, the filename will be "basename_{:03d}.hdf5",
-                                when False it will simply be "basename.hdf5"
-                                Defaults to True.
+            add_snapnum :  bool
+                Whether to add the snapnum to the HDF5 filename.
 
-            mode (string): The mode to open the file in, either 'w' for write mode
-                           or 'a' for append mode. (default: 'w')
+                When True, the filename will be "basename_{:03d}.hdf5",
+                when False it will simply be "basename.hdf5"
+                Defaults to True.
+
+            mode :  string
+                The mode to open the file in, either 'w' for write mode
+                or 'a' for append mode. (default: 'w').
 
         """
 
@@ -94,10 +100,12 @@ class PaicosWriter:
             data (obj): The data to be written (e.g. PaicosQuantity, PaicosTimeSeries,
                         Astropy Quantity, numpy array).
 
-            data_attrs (dict): Dictionary of attributes for the data. E.g.
-                               {'info': 'Here I have written some extra information
-                                        about the data set'}. Defaults to an empty
-                                        dictionary.
+            data_attrs (dict):
+                Dictionary of attributes for the data. E.g.::
+
+                    {'info': 'Here I have written some extra information about the data set'}
+
+                Defaults to an empty dictionary.
 
             group (str, optional): Group in the HDF5 file where the data should
                                    be saved. Defaults to None in which case the
@@ -154,7 +162,7 @@ class PaicosWriter:
 
     def finalize(self):
         """
-        Move from a temporary to the final filename.
+        Move from a temporary filename to the final filename.
         """
         if self.mode == 'w':
             os.rename(self.tmp_filename, self.filename)

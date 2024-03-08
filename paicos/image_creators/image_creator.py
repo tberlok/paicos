@@ -270,7 +270,7 @@ class ImageCreator:
         The extent of the image in the horizontal-vertical plane.
         The idea with this property is that it corresponds to the
         matplotlib imshow keyword argument 'extent'. When using units,
-        one has to remember pass image_creator.extent.value rather
+        one has to remember to pass image_creator.extent.value rather
         than image_creator.extent.
         """
         if self.direction == 'orientation':

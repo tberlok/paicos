@@ -761,9 +761,10 @@ class Snapshot(PaicosReader):
         Create a new snapshot object which will only contain
         cells with a selection_index.
 
-        Example use:
-        index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
-        selected_snap = snap.select(index, parttype=0)
+        Example use::
+
+            index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
+            selected_snap = snap.select(index, parttype=0)
 
         """
         if parttype is None:
@@ -818,9 +819,11 @@ class Snapshot(PaicosReader):
 
     def radial_select(self, center, r_max, r_min=0.0, parttype=None):
         """
-        A convenient function for selecting in radius
+        A convenience function for selecting in radius.
 
-        Returns a new snapshot with the radial selection
+        Returns a new snapshot with the radial selection.
+
+        :meta private:
         """
         from .. import util
         if parttype is None:

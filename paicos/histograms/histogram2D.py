@@ -273,7 +273,9 @@ class Histogram2D:
         Parameters:
             basedir (path): The directory where the histogram should be saved.
             basename (string): The basename for the filename, which will take
-                               the form: basename + f'_{snapnum:03d}.hdf5'
+                               the form::
+
+                                   filename =  basename + f'_{snapnum:03d}.hdf5'
         """
 
         if basedir[-1] != '/':

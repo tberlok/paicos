@@ -41,18 +41,29 @@ class ArepoImage(PaicosWriter):
         the file. Setting the mode to amend mode, 'a', allows to add new images
         to an already existing file.
 
-        Parameters:
+        Parameters
+        ----------
 
-            image_creator (object): A Paicos Projector or Slicer
-            object used to create the image.
+            image_creator : object
+                A Paicos Projector or Slicer object used to create the image.
 
-            basedir (file path): The folder where the image file should be saved.
+            basedir (file: path
+                The folder where the image file should be saved.
 
-            basename (string): The base name for the image file, which will be in
-                               the format `basename_{:03d}`. (default: "projection")
+            basename : string
+                The base name for the image file, which will be in
+                the format ``basename_{:03d}``. (default: "projection").
 
-            mode (string): The mode to open the file in, either 'w' for write mode
-            or 'a' for append mode. (default: 'w')
+            mode : string
+                The mode to open the file in, either 'w' for write mode
+                or 'a' for append mode. (default: 'w').
+
+        Methods
+        -------
+
+            finalize :
+                Changes the filename from a temporary one to the final one,
+                e.g., from self.tmp_filename to self.filename.
         """
 
         self.center = image_creator.center
