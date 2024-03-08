@@ -53,6 +53,8 @@ def get_unit_dictionaries(unit):
     """
     Returns dictionaries with information about the units of the
     quantity.
+
+    :meta private:
     """
     codic = {}
     dic = {}
@@ -71,7 +73,9 @@ def get_unit_dictionaries(unit):
 def construct_unit_from_dic(dic):
     """
     Construct unit from a dictionary with the format returned
-    from __get_unit_dictionaries
+    from get_unit_dictionaries
+
+    :meta private:
     """
     return np.prod([unit**dic[unit] for unit in dic])
 
@@ -95,6 +99,8 @@ def separate_units(unit):
 def get_new_unit(unit, remove_list=[]):
     """
     Return new unit where base units in the remove list have been removed.
+
+    :meta private:
     """
     unit_list = []
     for base, power in zip(unit.bases, unit.powers):
@@ -122,42 +128,48 @@ class PaicosQuantity(Quantity):
 
     h: the reduced Hubble parameter, e.g. h = 0.7
 
-    unit: a string, e.g. 'g/cm^3 small_a^-3 small_h^2' or astropy Unit
-          The latter can be defined like this:
+    unit: a string, e.g. ``g/cm^3 small_a^-3 small_h^2`` or an astropy Unit
+          The latter can be defined like this::
 
-          from paicos import units as pu
-          from astropy import units as u
-          unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
+            from paicos import units as pu
+            from astropy import units as u
+            unit = u.g*u.cm**(-3)*small_a**(-3)*small_h**(2)
 
           The naming of small_a and small_h is to avoid conflict with the already
           existing 'annum' (i.e. a year) and 'h' (hour) units.
 
 
-    Methods/properties
-    ----------
+    Methods/key properties
+    ----------------------
 
-    no_small_h: returns a new comoving quantity where the h-factors have
-               been removed and the numeric value adjusted accordingly.
+        no_small_h
+                    Returns a new comoving quantity where the h-factors
+                    have been removed and the numeric value adjusted
+                    accordingly.
 
-    to_physical: returns a new  object where both a and h factors have been
-                 removed, i.e. we have switched from comoving values to
-                 the physical value.
+        to_physical
+                      Returns a new  object where both a and h factors have been
+                      removed, i.e. we have switched from comoving values to
+                      the physical value.
 
-    label: Return a Latex label for use in plots.
+        label
+                Returns a Latex label for use in plots.
 
     Examples
-    ----------
+    --------
 
-    units = 'g cm^-3 small_a^-3 small_h^2'
-    A = PaicosQuantity(2, units, h=0.7, a=1/128)
+    Here is an example::
 
-    # Create a new comoving quantity where the h-factors have been removed
-    B = A.no_small_h
+        units = 'g cm^-3 small_a^-3 small_h^2'
+        A = PaicosQuantity(2, units, h=0.7, a=1/128)
 
-    # Create a new quantity where both a and h factor have been removed,
-    # i.e. we have switched from a comoving quantity to the physical value
+        # Create a new comoving quantity where the h-factors have been removed
+        B = A.no_small_h
 
-    C = A.to_physical
+        # Create a new quantity where both a and h factor have been removed,
+        # i.e. we have switched from a comoving quantity to the physical value
+
+        C = A.to_physical
 
     """
 
@@ -172,6 +184,8 @@ class PaicosQuantity(Quantity):
         h
         a
         comoving_sim
+
+        :meta private:
         """
 
         assert h is not None, 'Paicos quantity is missing a value for h'
@@ -193,7 +207,9 @@ class PaicosQuantity(Quantity):
 
     def __array_finalize__(self, obj):
         """
-        Heavily inspired by the astropy Quantity version
+        Heavily inspired by the astropy Quantity version.
+
+        :meta private:
         """
         super_array_finalize = super().__array_finalize__
         if super_array_finalize is not None:
@@ -292,7 +308,7 @@ class PaicosQuantity(Quantity):
     @property
     def copy(self):
         """
-        Returns a copy of the PaicosQuantity
+        Returns a copy of the PaicosQuantity.
         """
         return PaicosQuantity(np.array(self.value), self.unit, a=self._a, h=self.h,
                               comoving_sim=self.comoving_sim, copy=True)
@@ -308,6 +324,8 @@ class PaicosQuantity(Quantity):
     def hdf5_attrs(self):
         """
         Give the units as a dictionary for hdf5 data set attributes
+
+        :meta private:
         """
         return {'unit': self.unit.to_string()}
 
@@ -404,6 +422,8 @@ class PaicosQuantity(Quantity):
         A = B.decompose(bases=[u.kpc, u.Msun, u.s, u.uG, u.keV])
 
         small_a and small_h are automatically included in the bases.
+
+        :meta private:
         """
         _, pu_unit = separate_units(self.unit)
         if len(bases) == 0 or pu_unit == u.Unit(''):
@@ -528,6 +548,8 @@ class PaicosQuantity(Quantity):
     def __scaling_and_scaling_str(self, unit):
         """
         Helper function to create labels
+
+        :meta private:
         """
         codic, dic = get_unit_dictionaries(self.unit)
         # print(unit, dic, codic)
@@ -596,31 +618,59 @@ class PaicosQuantity(Quantity):
         return super().__truediv__(value)
 
     def dump(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
     def dumps(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
     def tobytes(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
     def tofile(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
     def tolist(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
     def tostring(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
     def choose(self):
-        """This astropy Quantity method has not been implemented the Paicos subclasses."""
+        """
+        This astropy Quantity method has not been implemented in the Paicos subclass.
+
+        :meta private:
+        """
         raise RuntimeError("not implemented")
 
 
@@ -750,6 +800,8 @@ class PaicosTimeSeries(PaicosQuantity):
     def hdf5_attrs(self):
         """
         Give the units as a dictionary for hdf5 data set attributes
+
+        :meta private:
         """
         return {'unit': self.unit.to_string(), 'Paicos': 'PaicosTimeSeries'}
 
@@ -763,6 +815,7 @@ class PaicosTimeSeries(PaicosQuantity):
 
     def make_matrix(self, vec):
         """
+        :meta private:
         """
         assert vec.shape[0] == self.shape[0]
         return np.vstack([vec for _ in range(self.shape[1])]).T
@@ -793,6 +846,8 @@ class PaicosTimeSeries(PaicosQuantity):
 def paicos_quantity_list_to_array(list_to_convert):
     """
     Only works on 1D lists...
+
+    :meta private:
     """
     e0 = list_to_convert[0]
     if hasattr(e0, 'unit'):

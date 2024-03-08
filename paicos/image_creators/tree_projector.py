@@ -247,28 +247,31 @@ class TreeProjector(ImageCreator):
                     named 'extrinsic'.
 
         Returns:
-            An array of shape (npix, npix) representing the projected gas variable
+                A 2D array representing the projected gas variable.
 
-            For non-additive (intrinsic) variables, the unit of the projection is
-            identical to the unit of the input variable. For additive (extrinsic)
-            variables, the projection unit is the input variable unit divided by area.
+                For non-additive (intrinsic) variables, the unit of the projection is
+                identical to the unit of the input variable. For additive (extrinsic)
+                variables, the projection unit is the input variable unit divided by area.
 
         Examples
         ----------
 
-        We can compute the projected density in two ways.
+        We can compute the projected density in two ways, using either
+        additive or non-additive projetions. In both case,
+        we first need to create a TreeProjector object::
 
-        tree_projector = pa.TreeProjector(snap, center, widths, 'z')
+            tree_projector = pa.TreeProjector(snap, center, widths, 'z')
 
-        Method I (divide projected mass by projected volume):
-            tree_M = tree_projector.project_variable('0_Masses')
-            tree_V = tree_projector.project_variable('0_Volume')
+        Method I (divide projected mass by projected volume)::
+
+            tree_M = tree_projector.project_variable('0_Masses', additive=True)
+            tree_V = tree_projector.project_variable('0_Volume', additive=True)
 
             tree_rho = tree_M / tree_V
 
-        Method II (directly project the density):
+        Method II (directly project the density)::
 
-            rho = tree_projector.project_variable('0_Density', extrinsic=False)
+            rho = tree_projector.project_variable('0_Density', additive=False)
 
         """
         # This calls _do_region_selection if resolution, Orientation,

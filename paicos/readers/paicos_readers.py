@@ -135,7 +135,9 @@ class PaicosReader(dict):
 
     def load_org_info(self):
         """
-        Load some extra info about original data
+        Load some extra info about original data.
+
+        :meta private:
         """
         with h5py.File(self.filename, 'r') as f:
             if 'org_info' in f:
@@ -149,6 +151,8 @@ class PaicosReader(dict):
 
         The input required is a hdf5 file with the Parameters and Header
         groups found in arepo snapshots.
+
+        :meta private:
         """
 
         self._Time = self.Header['Time']
@@ -266,7 +270,9 @@ class PaicosReader(dict):
 
     def enable_units(self):
         """
-        Enables arepo units globally
+        Enables arepo units globally.
+
+        :meta private:
         """
         for unit_name, unit in self.arepo_units.items():
             u.add_enabled_units(unit)
@@ -279,19 +285,29 @@ class PaicosReader(dict):
 
     @property
     def length(self):
+        """The unit of length used in the simulation."""
         return self._length
 
     @property
     def mass(self):
+        """The unit of mass used in the simulation."""
         return self._mass
 
     @property
     def velocity(self):
+        """
+        One of the units used for velocities in the simulation.
+
+        Note: The a and h-scalings are not the same for velocities
+        in the halo catalogs and in the snapshots.
+        """
         return self._velocity
 
     def add_user_units(self):
         """
         Add all user supplied units
+
+        :meta private:
         """
         # pylint: disable=import-outside-toplevel, consider-using-dict-items
         from .. import unit_specifications
@@ -510,7 +526,7 @@ class PaicosReader(dict):
 
     def unit_quantity(self, astropy_unit_str):
         """
-        Return a Paicos quantity with value 1 and any
+        Returns a Paicos quantity with value 1 and any
         astropy unit.
         """
         unit = u.Unit(astropy_unit_str)
@@ -545,8 +561,8 @@ class PaicosReader(dict):
         instance).
 
         The method requires that the data sets have a 'unit' attribute
-        and hence does work for Arepo hdf5 files.
-        For this reason, the method is overloaded in the Snapshot and Catalog
+        and hence does not work for Arepo hdf5 files.
+        For this reason, this method is overloaded in the Snapshot and Catalog
         classes.
         """
 

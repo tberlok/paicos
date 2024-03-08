@@ -317,6 +317,8 @@ class Snapshot(PaicosReader):
         This is a helper function for 'get_derived_data'. It returns a
         function if info is False, and a list of all available
         functions for parttype = p_key[0] if info is True.
+
+        :meta private:
         """
 
         assert isinstance(p_key, str)
@@ -351,12 +353,24 @@ class Snapshot(PaicosReader):
         This function provides information about the keys of a certain
         particle type in a snapshot.
 
-        Args: PartType (int): An integer representing the particle type of
-        interest. verbose (bool, optional): A flag indicating whether or not
-        to print the keys to the console. Defaults to True.
+        Parameters
+        -----------
 
-        Returns: list or None : If the PartType exists in the file, a list of
-        keys for that PartType is returned, otherwise None.
+            partType (int):
+                           An integer representing the particle type of
+                           interest, e.g. 0 for gas, 1 for DM etc.
+
+            verbose (bool):
+                           A flag indicating whether or not
+                           to print the keys to the console.
+                           Defaults to True.
+
+        Returns
+        -------
+
+            list or None :
+                          If the requested PartType exists in the file, a list of
+                          keys for that PartType is returned, otherwise None.
         """
         parttype_str = f'PartType{parttype}'
         if parttype >= self.nspecies:
@@ -394,17 +408,16 @@ class Snapshot(PaicosReader):
 
     def _load_data_experimental(self, parttype, blockname):
         """
-        Load data from hdf5 file(s). Example usage:
+        Load data from hdf5 file(s). Example usage::
 
-        snap = Snapshot(...)
-
-        snap.load_data(0, 'Density')
+            snap = Snapshot(...)
+            snap.load_data(0, 'Density')
 
         Note that subsequent calls does not reload the data. Reloading
-        the data can be done explicitly:
+        the data can be done explicitly::
 
-        snap.remove_data(0, 'Density')
-        snap.load_data(0, 'Density')
+            snap.remove_data(0, 'Density')
+            snap.load_data(0, 'Density')
 
         """
 
@@ -435,7 +448,9 @@ class Snapshot(PaicosReader):
 
         def read_hdf5_file(filename, parttype, blockname):
             """
-            This helper function does the actual data loading
+            This helper function does the actual data loading.
+
+            :meta private:
             """
             parttype_str = f'PartType{parttype}'
             with h5py.File(filename, 'r') as f:
@@ -492,18 +507,16 @@ class Snapshot(PaicosReader):
 
     def load_data(self, parttype, blockname):
         """
-        Load data from hdf5 file(s). Example usage:
+        Load data from hdf5 file(s). Example usage::
 
-        snap = Snapshot(...)
-
-        snap.load_data(0, 'Density')
+            snap = Snapshot(...)
+            snap.load_data(0, 'Density')
 
         Note that subsequent calls does not reload the data. Reloading
-        the data can be done explicitly:
+        the data can be done explicitly::
 
-        snap.remove_data(0, 'Density')
-        snap.load_data(0, 'Density')
-
+            snap.remove_data(0, 'Density')
+            snap.load_data(0, 'Density')
         """
 
         assert parttype < self.nspecies
@@ -605,6 +618,7 @@ class Snapshot(PaicosReader):
 
         snap.get_derived_data(0, 'Temperatures')
 
+        :meta private:
         """
         # from .derived_variables import get_variable_function
 
@@ -846,6 +860,8 @@ class Snapshot(PaicosReader):
         Find the sum of a 1D array.
 
         Equivalent to np.sum(arr, axis=0) but with open_mp
+
+        :meta private:
         """
         from .. import util
 
@@ -874,6 +890,8 @@ class Snapshot(PaicosReader):
         Find the sum of a 1D array times a 2D array
 
         Equivalent to np.sum(arr[:, None] * vector, axis=0) but with open_mp
+
+        :meta private:
         """
         from .. import util
         from ..cython.get_derived_variables import sum_arr_times_vector_omp
@@ -905,6 +923,8 @@ class Snapshot(PaicosReader):
         This code calculates sum_i (mass_i (coord_ij - center) x velocity_ij).
 
         That is, it returns the total angular momentum vector.
+
+        :meta private:
         """
         from .. import util
         from ..cython.get_derived_variables import sum_arr_times_vector_cross_product
@@ -939,13 +959,14 @@ class Snapshot(PaicosReader):
         """
         Finds the center of mass for the entire snapshot.
 
-        parttype (default None): if None, then all parttypes are included in the
+        parttype (default None):
+                                 If None, then all parttypes are included in the
                                  center-of-mass calculation. If e.g. parttype=0,
                                  then the center of mass of the gas is returned.
                                  if parttype=None, then the total center and
                                  a list of of the parttype centers are returned
 
-        Can be used in combination with self.select to find the
+        This method can be used in combination with the select method to find the
         center of mass of a selection.
         """
         if parttype is None:
@@ -969,11 +990,12 @@ class Snapshot(PaicosReader):
 
         center: the center around which to calculate the angular momentum
 
-        parttype (default None): if None, then all parttypes are included in the
+        parttype (default None):
+                                 If None, then all parttypes are included in the
                                  calculation. If e.g. parttype=0,
                                  then total angular momentum of the gas is returned.
 
-        Can be used in combination with self.select to find the
+        This method can be used in combination with the select method to find the
         total angular momentum of a selection.
         """
         func = self.get_sum_of_arr_times_vector_cross_product
