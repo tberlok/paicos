@@ -10,6 +10,8 @@ The orientation clas and its helper functions.
 def normalize_vector(vector):
     """
     Normalize a vector and return it as a numpy array
+
+    :meta private:
     """
     return vector / np.linalg.norm(vector)
 
@@ -19,6 +21,8 @@ def find_a_perpendicular_vector(vector):
     """
     Given an input vector, find a vector which is perpendicular.
     Assumes 3D vectors.
+
+    :meta private:
     """
     assert np.linalg.norm(vector) > 0.
     if vector[1] == 0 and vector[2] == 0:
@@ -36,6 +40,8 @@ def get_basis_from_2vecs(vector1, vector2):
     Returns a right-hand orthogonal basis, e1, e2, e3,
     where e1 is in the direction of vector1.
     Adapted from code by Ewald Puchwein.
+
+    :meta private:
     """
 
     # unit vector in vector1 direction
@@ -247,25 +253,25 @@ class Orientation:
     @property
     def rotation_matrix(self):
         """
-        This rotation matrix rotates the standard cartesian unit vectors
+        This rotation matrix rotates the standard cartesian unit vectors::
 
-        ex = [1, 0, 0]
-        ey = [0, 1, 0]
-        ez = [0, 0, 1]
+            ex = [1, 0, 0]
+            ey = [0, 1, 0]
+            ez = [0, 0, 1]
 
-        into the cartesian coordinate system defined by the three unit vectors
+        into the cartesian coordinate system defined by the three unit vectors::
 
-        perp_vector1
-        perp_vector2
-        normal_vector
+            perp_vector1
+            perp_vector2
+            normal_vector
 
         which can also be accessed through the cartesian_unit_vectors method.
 
-        That is, the following equality holds:
+        That is, the following equality holds::
 
-        perp_vector1 = np.matmul(rotation_matrix, [1, 0, 0])
-        perp_vector2 = np.matmul(rotation_matrix, [0, 1, 0])
-        normal_vector = np.matmul(rotation_matrix, [0, 0, 1])
+            perp_vector1 = np.matmul(rotation_matrix, [1, 0, 0])
+            perp_vector2 = np.matmul(rotation_matrix, [0, 1, 0])
+            normal_vector = np.matmul(rotation_matrix, [0, 0, 1])
         """
         return self.inverse_rotation_matrix.T
 
@@ -286,6 +292,8 @@ class Orientation:
     def spherical_unit_vectors(self):
         """
         To be implemented.
+
+        :meta private:
         """
         raise RuntimeError('not implemented')
 
@@ -293,6 +301,8 @@ class Orientation:
     def cylindrical_unit_vectors(self):
         """
         To be implemented.
+
+        :meta private:
         """
         raise RuntimeError('not implemented')
 
@@ -300,6 +310,8 @@ class Orientation:
     def euler_angles(self):
         """
         To be implemented.
+
+        :meta private:
         """
         raise RuntimeError('not implemented')
 
@@ -327,6 +339,8 @@ class Orientation:
     def __print__(self):
         """
         Useful for displaying an Orientation instance.
+
+        :meta private:
         """
         print('normal_vector:', self.normal_vector)
         print('perp_vector1: ', self.perp_vector1)
@@ -335,6 +349,8 @@ class Orientation:
     def __repr__(self):
         """
         Useful for displaying an Orientation instance.
+
+        :meta private:
         """
         s = 'Paicos Orientation instance\n'
         s += f'normal_vector: {self.normal_vector}\n'

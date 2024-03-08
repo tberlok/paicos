@@ -31,25 +31,40 @@ class Snapshot(PaicosReader):
     Important methods and attributes:
     ---------------------------------
 
-    snap = Snapshot()
+        snap = Snapshot()
 
-    snap.Parameters (dict): Contains information from the parameter file used in the simulation (e.g. param.txt).
+        snap.Group : dict
+            Contains a dictionary of the FoF-catalog.
 
-    snap.Config (dict): Contains information from the Config file used in the simulation (e.g. Config.txt).
+        snap.Sub : dict
+            Contains a dictionary of the Subfind-catalog.
 
-    snap.Header (dict): Contains information about this particular snapshot such as its time (e.g scale factor).
+        snap.Parameters : dict
+            Contains information from the parameter file used in the simulation (e.g. param.txt).
 
-    snap.z (float): redshift.
+        snap.Config : dict
+            Contains information from the Config file used in the simulation (e.g. Config.txt).
 
-    snap.h (float): reduced Hubble param (e.g. 0.67)
+        snap.Header : dict
+            Contains information about this particular catalog such as its time (e.g scale factor).
 
-    snap.age: the age of the Universe (only for cosmological runs).
+        snap.z : float
+            The redshift.
 
-    snap.lookback_time: the age of the Universe (only for cosmological runs).
+        snap.h : float
+            Reduced Hubble param (e.g. 0.67).
 
-    snap.time: the time stamp of the snapshot (only for non-cosmological runs).
+        snap.age : float
+            The age of the Universe (only for cosmological runs).
 
-    snap.box_size: the dimensions of the simulation domain.
+        snap.lookback_time : float
+            The age of the Universe (only for cosmological runs).
+
+        snap.time : float
+            The time stamp of the snapshot (only for non-cosmological runs).
+
+        snap.box_size : array with length 3
+            The dimensions of the simulation domain.
 
     """
 

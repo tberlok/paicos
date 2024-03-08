@@ -82,13 +82,15 @@ def construct_unit_from_dic(dic):
 
 def separate_units(unit):
     """
-    Separate the standard physical units (u_unit) from the units involving
-    a and h (pu_unit). That is,
+    Separates the standard physical units (u_unit) from the units involving
+    a and h (pu_unit). That is::
 
-    u_unit, pu_unit = separate_units(unit)
+        u_unit, pu_unit = separate_units(unit)
 
     where pu_unit contains small_a and small_h and u_unit contains
-    everything else such that unit = u_unit * pu_unit
+    everything else such that::
+
+        unit = u_unit * pu_unit
     """
     codic, dic = get_unit_dictionaries(unit)
     u_unit = construct_unit_from_dic(dic)
@@ -808,7 +810,7 @@ class PaicosTimeSeries(PaicosQuantity):
     @property
     def copy(self):
         """
-        Returns a copy of the PaicosQuantity
+        Returns a copy of the PaicosTimeSeries.
         """
         return PaicosTimeSeries(self.value, self.unit, a=self._a, h=self.h,
                                 copy=True, comoving_sim=self.comoving_sim)

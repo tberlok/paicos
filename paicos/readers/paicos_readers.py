@@ -33,24 +33,32 @@ class PaicosReader(dict):
         """
         Initialize the PaicosReader class.
 
-        Parameters:
+        Parameters
+        ----------
 
-        basedir (str): path of the directory containing the hdf5 files
-                       (e.g. the 'output' folder)
+            basedir : str
+                The path of the directory containing the hdf5 files
+                (e.g. the 'output' folder).
 
-        snapnum (int): e.g. snapshot number
+            snapnum : int
+                e.g. the snapshot number
 
-        basename (str): name of the file takes the form 'basename_{:03d}.hdf5'
-                        or 'basename_{:03d}.{}.hdf5'. Default is 'snap'.
+            basename : str
+                name of the file takes the form ``basename_{:03d}.hdf5``
+                or ``basename_{:03d}.{}.hdf5``. Default is ``snap``.
 
-        basesubdir (str): name of the subfolder. Default is "snapdir".
+            basesubdir : str
+                The name of the subfolder. Default is ``snapdir``.
 
-        load_all (bool): whether to simply load all data, default is True
+            load_all : bool
+                Whether to simply load all data, default is True.
 
-        to_physical (bool): whether to convert from comoving to physical
-                            variables upon load, not yet implemented!
+            to_physical : bool
+                Whether to convert from comoving to physical
+                variables upon load.
 
-        verbose (bool): whether to print information, default is False
+            verbose : bool
+                Whether to print information, default is False.
         """
 
         self.to_physical = to_physical

@@ -63,10 +63,31 @@ code_dir = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 def use_units(use_units):
     """
-    pa.use_units(True) turns on paicos quantities globally
-    pa.use_units(False) loads in data without applying units.
+    Parameters
+    ----------
 
-    The status can be seen in pa.settings.use_units
+    use_units : bool
+        True for enabling units globally and False for disabling
+        them globally.
+        Note that this will not modify snapshots that have
+        already been loaded.
+
+    Examples
+    --------
+
+    An example::
+
+        import paicos as pa
+        print('Using units:', pa.settings.use_units)
+
+        # Turn on paicos quantities globally
+        pa.use_units(True)
+        print('Using units:', pa.settings.use_units)
+
+        # Loads in data without applying units.
+        pa.use_units(False)
+        print('Using units:', pa.settings.use_units)
+
     """
     settings.use_units = use_units
 
@@ -74,15 +95,15 @@ def use_units(use_units):
 def add_user_function(variable_string, function):
     """
     This functions allows to enable user functions for obtaining
-    deriving variables. An example could be the following:
+    deriving variables. An example could be the following::
 
-    def TemperaturesTimesMassesSquared(snap, get_depencies=False):
-        if get_depencies:
-            return ['0_Temperatures', '0_Masses']
-        return snap['0_Temperatures'] * snap['0_Masses']**2
+        def TemperaturesTimesMassesSquared(snap, get_depencies=False):
+            if get_depencies:
+                return ['0_Temperatures', '0_Masses']
+            return snap['0_Temperatures'] * snap['0_Masses']**2
 
 
-    pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
+        pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
 
     """
     derived_variables.user_functions.update({variable_string: function})
@@ -100,34 +121,42 @@ def add_user_unit(field, blockname, unit):
     """
     This function adds user units.
 
-    Parameters:
+    Parameters
+    ----------
 
-    field (string): possible values are specified in
-                    unit_specifications.pos_fields, currently
+    field : string
+        possible values are specified in
+        unit_specifications.pos_fields, currently
 
-                    pos_fields = ['default', 'voronoi_cells', 'dark_matter',
-                    'stars', 'black_holes', 'groups', 'subhalos']
+        pos_fields = ['default', 'voronoi_cells', 'dark_matter',
+        'stars', 'black_holes', 'groups', 'subhalos']
 
-    blockname (string): The blockname that you would like to enable units for.
+    blockname : string
+        The blockname that you would like to enable units for.
 
-    unit (string): The unit that the blockname should have.
-                                   String inputs are preferred, e.g.,
+    unit : string
+        The unit that the blockname should have.
+        String inputs are preferred, e.g., ``arepo_mass arepo_length small_a^2 small_h^(-3/2)``.
 
-                         'arepo_mass arepo_length small_a^2 small_h^(-3/2)'
+        The available arepo units are:
 
-                   The available arepo units are
+        ``arepo_length`` (often 1 kpc)
 
-                   arepo_length (often 1 kpc)
-                   arepo_mass (often 10^10 Msun)
-                   arepo_velocity (often 1 km/s)
-                   arepo_time
-                   arepo_energy
-                   arepo_pressure
-                   arepo_density
+        ``arepo_mass`` (often 10^10 Msun)
 
-                   Please note that these only become available once you
-                   actually load a hdf5 file. This is the reason that you can
-                   pass the string only.
+        ``arepo_velocity`` (often 1 km/s)
+
+        ``arepo_time``
+
+        ``arepo_energy``
+
+        ``arepo_pressure``
+
+        ``arepo_density``
+
+        Please note that these only become available once you
+        actually load a hdf5 file. This is the reason that you can
+        pass the string only.
     """
     if field not in util.user_unit_dict:
         raise RuntimeError(f'unknown field: {field}')
@@ -162,14 +191,14 @@ def print_info_when_deriving_variables(option):
 
 def give_openMP_warnings(option):
     """
-    Turns of warnings that will otherwise appear on a mac computer.
+    Turns of warnings that might otherwise appear on a mac computer.
     """
     settings.give_openMP_warnings = option
 
 
 def load_cuda_functionality_on_startup(option):
     """
-    Turns on/off whether to import GPU/cuda on startup
+    Turns on/off whether to import GPU/cuda on startup.
     """
     settings.load_cuda_functionality_on_startup = option
 
@@ -178,11 +207,15 @@ def set_aliases(aliases):
     """
     Assign a list of aliases for use as keys in snapshot objects.
 
-    input (dictionary): e.g.
+    Parameters
+    ----------
+        aliases : dict
+            A dictionary containing the mapping of variable names
+            that you would like to have enabled, e.g.::
 
-    aliases = {'0_Density': 'dens',
-           '0_Temperatures': 'T',
-           '0_MeanMolecularWeight': 'mu'}
+                aliases = {'0_Density': 'dens',
+                       '0_Temperatures': 'T',
+                       '0_MeanMolecularWeight': 'mu'}
     """
     msg = 'Your user-set aliases seem to not be unique'
     assert len(set(aliases.values())) == len(aliases.values()), msg
@@ -196,6 +229,8 @@ def set_aliases(aliases):
 def user_settings_exists():
     """
     Checks if user settings exist in the root directory of Paicos.
+
+    :meta private:
     """
     if os.path.exists(code_dir + '/paicos_user_settings.py'):
         return True

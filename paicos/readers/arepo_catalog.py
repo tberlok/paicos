@@ -23,25 +23,34 @@ class Catalog(PaicosReader):
     Important methods and attributes:
     ---------------------------------
 
-    cat = Catalog()
+        cat = Catalog()
 
-    cat.Group (dict): Contains a dictionary of the FoF-catalog
+        cat.Group : dict
+            Contains a dictionary of the FoF-catalog.
 
-    cat.Sub (dict): Contains a dictionary of the Subfind-catalog
+        cat.Sub : dict
+            Contains a dictionary of the Subfind-catalog.
 
-    cat.Parameters (dict): Contains information from the parameter file used in the simulation (e.g. param.txt).
+        cat.Parameters : dict
+            Contains information from the parameter file used in the simulation (e.g. param.txt).
 
-    cat.Config (dict): Contains information from the Config file used in the simulation (e.g. Config.txt).
+        cat.Config : dict
+            Contains information from the Config file used in the simulation (e.g. Config.txt).
 
-    cat.Header (dict): Contains information about this particular catalog such as its time (e.g scale factor).
+        cat.Header : dict
+            Contains information about this particular catalog such as its time (e.g scale factor).
 
-    cat.z (float): redshift
+        cat.z : float
+            The redshift.
 
-    cat.h (float): reduced Hubble param (e.g. 0.67)
+        cat.h : float
+            Reduced Hubble param (e.g. 0.67).
 
-    cat.age: the age of the Universe (only for cosmological runs)
+        cat.age : float
+            The age of the Universe (only for cosmological runs).
 
-    cat.lookback_time: the age of the Universe (only for cosmological runs)
+        cat.lookback_time : float
+            The age of the Universe (only for cosmological runs).
 
     """
     def __init__(self, basedir='.', snapnum=None,
@@ -91,6 +100,8 @@ class Catalog(PaicosReader):
     def load_data(self):
         """
         Overwrite of the base class method.
+
+        :meta private:
         """
         pass
 
@@ -98,7 +109,7 @@ class Catalog(PaicosReader):
         """
         Calling this method simply loads all the data in the catalog.
 
-        For large catalogs it might be useful to implement on-demand
+        TODO: For large catalogs it might be useful to implement on-demand
         access in a similar way to what we have for snapshots.
         """
 
