@@ -16,7 +16,7 @@ Below we provide three differens ways of getting Paicos up and running,
 ```
 git clone git@github.com:tberlok/paicos.git
 cd paicos
-pip install -r requirements.txt 
+pip install -r requirements.txt
 make
 make checks
 ```
