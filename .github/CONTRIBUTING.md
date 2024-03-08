@@ -32,6 +32,7 @@ Description of current tests can be found [here.](https://paicos.readthedocs.io/
 - New functionality is expected to include a Python script or notebook example illustrating the functionality that has been developed and
 we also encourage you to add new tests!
 
+
 - Functions and classes should have documentation strings, in the style of numpy or Google, so that the automated documentation on [readthedocs](https://paicos.readthedocs.io/en/latest/?badge=latest) works and is kept up to date. You can build the documentation locally as follows from the root directory:
 ```
 pip install -r docs/requirements.txt

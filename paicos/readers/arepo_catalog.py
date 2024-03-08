@@ -53,26 +53,34 @@ class Catalog(PaicosReader):
             The age of the Universe (only for cosmological runs).
 
     """
-    def __init__(self, basedir='.', snapnum=None,
+    def __init__(self, basedir='.', snapnum=None, load_all=True,
                  to_physical=False, subfind_catalog=True, verbose=False):
         """
         Initializes the Catalog class.
 
-        Parameters:
+        Parameters
+        ----------
 
-            basedir (str): path of the directory containing the catalogs
-                           (e.g. the 'output' folder).
+            basedir : str
+                The path of the directory containing the catalogs
+                (e.g. the 'output' folder).
 
-            snapnum (int): snapshot number.
+            snapnum : int
+                The snapshot number.
 
-            to_physical (bool): whether to convert to physical unit upon
-                                loading the data, default is False.
+            load_all : bool
+                Whether to immediately load all fields or not.
 
-            subfind_catalog (bool): whether the simulation has subfind catalogs,
-                                    when False the code will look for FoF-catalogs
-                                    only.
+            to_physical : bool
+                whether to convert to physical unit upon loading the data.
+                Default is False.
 
-            verbose (bool): whether to print information, default is False.
+            subfind_catalog : bool
+                whether the simulation has subfind catalogs,
+                when False the code will look for FoF-catalogs only.
+
+            verbose : bool
+                whether to print information, default is False.
 
         """
 
@@ -94,8 +102,13 @@ class Catalog(PaicosReader):
         else:
             self.nsubs = self.Header["Nsubhalos_Total"]
 
+        # Initialize dictionaries
+        self.Group = {}
+        self.Sub = {}
+
         # Load all data
-        self.load_all_data()
+        if load_all:
+            self.load_all_data()
 
     def load_data(self):
         """
@@ -136,31 +149,30 @@ class Catalog(PaicosReader):
             else:
                 ns = int(file["Header"].attrs["Nsubhalos_ThisFile"])
 
-            # initialze arrays
+            # initialize arrays
             if ifile == 0:
-                self.Group = {}
-                self.Sub = {}
-                for ikey in file["Group"].keys():
-                    if len(file["Group/" + ikey].shape) == 1:
-                        self.Group[ikey] = np.empty(
-                            self.ngroups, dtype=file["Group/" + ikey].dtype)
-                    elif len(file["Group/" + ikey].shape) == 2:
-                        self.Group[ikey] = np.empty(
-                            (self.ngroups, file["Group/" + ikey].shape[1]),
-                            dtype=file["Group/" + ikey].dtype)
-                    else:
-                        assert False
-
-                for ikey in file["Subhalo"].keys():
-                    if len(file["Subhalo/" + ikey].shape) == 1:
-                        self.Sub[ikey] = np.empty(
-                            self.nsubs, dtype=file["Subhalo/" + ikey].dtype)
-                    elif len(file["Subhalo/" + ikey].shape) == 2:
-                        self.Sub[ikey] = np.empty(
-                            (self.nsubs, file["Subhalo/" + ikey].shape[1]),
-                            dtype=file["Subhalo/" + ikey].dtype)
-                    else:
-                        assert False
+                if "Group" in file:
+                    for ikey in file["Group"].keys():
+                        if len(file["Group/" + ikey].shape) == 1:
+                            self.Group[ikey] = np.empty(
+                                self.ngroups, dtype=file["Group/" + ikey].dtype)
+                        elif len(file["Group/" + ikey].shape) == 2:
+                            self.Group[ikey] = np.empty(
+                                (self.ngroups, file["Group/" + ikey].shape[1]),
+                                dtype=file["Group/" + ikey].dtype)
+                        else:
+                            assert False
+                if "Subhalo" in file:
+                    for ikey in file["Subhalo"].keys():
+                        if len(file["Subhalo/" + ikey].shape) == 1:
+                            self.Sub[ikey] = np.empty(
+                                self.nsubs, dtype=file["Subhalo/" + ikey].dtype)
+                        elif len(file["Subhalo/" + ikey].shape) == 2:
+                            self.Sub[ikey] = np.empty(
+                                (self.nsubs, file["Subhalo/" + ikey].shape[1]),
+                                dtype=file["Subhalo/" + ikey].dtype)
+                        else:
+                            assert False
 
             # read group data
             if ng > 0:
