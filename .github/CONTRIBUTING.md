@@ -21,3 +21,5 @@ See also [here.](https://paicos.readthedocs.io/en/latest/tests.html)
 
 - New functionality is expected to include a Python script or notebook example illustrating the functionality that has been developed and
 we also encourage you to add new tests!
+
+- Functions and classes should have documentation strings, in the style of numpy or Google, so that the automated documentation on [readthedocs](https://paicos.readthedocs.io/en/latest/?badge=latest) works and is kept up to date.
