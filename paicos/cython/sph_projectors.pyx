@@ -19,8 +19,8 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
 
     """
 
-    xc, yc are the coordinates at the center of a square image
-    with sidelength=sidelength.
+    Projects particles using an SPH-like kernel.
+
     This function assumes that only particles with coordinates
 
     x0 < x < x0 + sidelength_x
@@ -29,6 +29,20 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     are passed to it. For speed, this is not checked!
 
     Here x0, y0 are the coordinates at the lower, left corner.
+
+    Parameters:
+        xvec (array, N): positions along x (horizontal)
+        yvec (array, N): positions along y (vertical)
+        variable (array, N): variable to be projected (e.g. mass)
+        hsml (array, N): size of particles
+        sidelength_x (double): size of image along x
+        sidelength_y (double): size of image along y
+        boxsize (double): size of simulation domain,
+                           which for now is assumed to be cubic!
+
+    Returns:
+        2d array: A 2D array with the projected variable.
+
     """
 
     assert numthreads == 1, 'use project_image_omp for more than one thread'
@@ -56,8 +70,8 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     assert sidelength_x/nx == sidelength_y/ny
 
     # Lower left corner of image in Arepo coordinates
-    x0 = xc - sidelength_x/2.0
-    y0 = yc - sidelength_y/2.0
+    x0 = xc - sidelength_x / 2.0
+    y0 = yc - sidelength_y / 2.0
 
     for ip in range(Np):
         # Center coordinate system at x0, y0
@@ -136,6 +150,10 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
                       real_t[:] hvec, int nx, real_t xc, real_t yc,
                       real_t sidelength_x, real_t sidelength_y,
                       real_t boxsize, int numthreads):
+
+    """
+    Same as project_image but here with an openmp parallel implementation.
+    """
 
     # Number of particles
     cdef int Np = xvec.shape[0]
@@ -255,6 +273,7 @@ def project_oriented_image(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, real_
                            int numthreads=1):
 
     """
+    Same as project_image but here for an arbitrarily oriented image.
     """
 
     assert numthreads == 1, 'use project_image_omp for more than one thread'
@@ -370,7 +389,7 @@ def project_oriented_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, r
                                int numthreads=1):
 
     """
-
+    Same as project_oriented_image but here with an openmp implementation.
     """
 
     # Number of particles

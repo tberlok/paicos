@@ -2,15 +2,7 @@ import numpy as np
 from . import util
 
 """
-Files to modify to implement these changes:
-arepo_image
-image_creators
-all projectors
-the slicer
-arepo snapshot
-
-TODO: Make it possible to pass angles, so that one may easily
-change the viewing inclination in small steps in angle.
+The orientation clas and its helper functions.
 """
 
 
@@ -18,6 +10,8 @@ change the viewing inclination in small steps in angle.
 def normalize_vector(vector):
     """
     Normalize a vector and return it as a numpy array
+
+    :meta private:
     """
     return vector / np.linalg.norm(vector)
 
@@ -27,6 +21,8 @@ def find_a_perpendicular_vector(vector):
     """
     Given an input vector, find a vector which is perpendicular.
     Assumes 3D vectors.
+
+    :meta private:
     """
     assert np.linalg.norm(vector) > 0.
     if vector[1] == 0 and vector[2] == 0:
@@ -44,6 +40,8 @@ def get_basis_from_2vecs(vector1, vector2):
     Returns a right-hand orthogonal basis, e1, e2, e3,
     where e1 is in the direction of vector1.
     Adapted from code by Ewald Puchwein.
+
+    :meta private:
     """
 
     # unit vector in vector1 direction
@@ -67,19 +65,26 @@ def get_basis_from_2vecs(vector1, vector2):
 
 
 class Orientation:
+    """
+    The Orientation class is used to define an orientation of e.g.
+    an image. An instance of this class can be passed to an ImageCreator.
+    """
     def __init__(self, normal_vector=None, perp_vector1=None):
         """
-        Inputs:
 
-        normal_vector: a vector which will be normal to the face
-                       of the image, e.g. pass the angular momentum vector
-                       of a galaxy here for a face on projection.
+        Parameters:
 
-        perp_vector1: Perpendicular vector to the image plane, e.g.,
-                         pass the angular momentum vector here for an edge-on
-                         projection.
+            normal_vector: a vector which will be normal to the face of the image,
+                           i.e. the depth direction. You can e.g. pass the angular momentum
+                           vector of a galaxy for a face on projection.
 
-        It's possible to supply both inputs.
+            perp_vector1: a vector which will be parallel to the image plane. This
+                          will become the horizontal direction of your image. You can e.g. pass
+                          the angular momentum vector here for an edge-on projection.
+
+        It's possible to supply both inputs, which then fully determines the
+        orientation (the vertical direction of the image, perp_vector2, is
+        automatically calculated).
         """
 
         # Construct unit vectors for the chosen coordinate system
@@ -113,6 +118,9 @@ class Orientation:
         self.perp_vector2 = e3
 
     def _get_radians(self, degrees=None, radians=None):
+        """
+        Converts from degrees to radians.
+        """
         if radians is not None:
             return radians
         return 2.0 * np.pi * degrees / 360.
@@ -128,8 +136,9 @@ class Orientation:
         respectively, applying the either Rx, Ry or Rz and
         then transforming back.
         """
-
-        radians = self._get_radians(degrees)
+        if radians is None:
+            assert degrees is not None
+            radians = self._get_radians(degrees)
 
         if axis == 'x':
             R = np.array([[1, 0, 0],
@@ -152,19 +161,6 @@ class Orientation:
             u = self.perp_vector2
         elif axis == 'normal_vector':
             u = self.normal_vector
-        #     Rx = self._get_rotation_matrix('x', degrees, radians)
-        #     Rtmp = np.matmul(Rx, self.inverse_rotation_matrix)
-        #     R = np.matmul(self.rotation_matrix, Rtmp)
-
-        # elif axis == 'perp_vector2':
-        #     Ry = self._get_rotation_matrix('y', degrees, radians)
-        #     Rtmp = np.matmul(Ry, self.inverse_rotation_matrix)
-        #     R = np.matmul(self.rotation_matrix, Rtmp)
-
-        # elif axis == 'normal_vector':
-        #     Rz = self._get_rotation_matrix('z', degrees, radians)
-        #     Rtmp = np.matmul(Rz, self.inverse_rotation_matrix)
-        #     R = np.matmul(self.rotation_matrix, Rtmp)
 
         else:
             raise RuntimeError("invalid input")
@@ -187,36 +183,48 @@ class Orientation:
 
     def rotate_around_x(self, degrees=None, radians=None):
         """
+        Rotates the orientation instance around the 'x'-coordinate axis
         """
         R = self._get_rotation_matrix('x', degrees, radians)
         self._apply_rotation_matrix(R)
 
     def rotate_around_y(self, degrees=None, radians=None):
         """
+        Rotates the orientation instance around the 'y'-coordinate axis
         """
         R = self._get_rotation_matrix('y', degrees, radians)
         self._apply_rotation_matrix(R)
 
     def rotate_around_z(self, degrees=None, radians=None):
         """
+        Rotates the orientation instance around the 'z'-coordinate axis
         """
         R = self._get_rotation_matrix('z', degrees, radians)
         self._apply_rotation_matrix(R)
 
     def rotate_around_normal_vector(self, degrees=None, radians=None):
         """
+        Rotates the orientation instance around its normal_vector.
+
+        For a projection image, this is the depth direction.
         """
         R = self._get_rotation_matrix('normal_vector', degrees, radians)
         self._apply_rotation_matrix(R)
 
     def rotate_around_perp_vector1(self, degrees=None, radians=None):
         """
+        Rotates the orientation instance around its perp_vector1.
+
+        For an image, this is the horizontal axis.
         """
         R = self._get_rotation_matrix('perp_vector1', degrees, radians)
         self._apply_rotation_matrix(R)
 
     def rotate_around_perp_vector2(self, degrees=None, radians=None):
         """
+        Rotates the orientation instance around its perp_vector2.
+
+        For an image, this is the vertical axis.
         """
         R = self._get_rotation_matrix('perp_vector2', degrees, radians)
         self._apply_rotation_matrix(R)
@@ -245,25 +253,25 @@ class Orientation:
     @property
     def rotation_matrix(self):
         """
-        This rotation matrix rotates the standard cartesian unit vectors
+        This rotation matrix rotates the standard cartesian unit vectors::
 
-        ex = [1, 0, 0]
-        ey = [0, 1, 0]
-        ez = [0, 0, 1]
+            ex = [1, 0, 0]
+            ey = [0, 1, 0]
+            ez = [0, 0, 1]
 
-        into the cartesian coordinate system defined by the three unit vectors
+        into the cartesian coordinate system defined by the three unit vectors::
 
-        perp_vector1
-        perp_vector2
-        normal_vector
+            perp_vector1
+            perp_vector2
+            normal_vector
 
         which can also be accessed through the cartesian_unit_vectors method.
 
-        That is, the following equality holds:
+        That is, the following equality holds::
 
-        perp_vector1 = np.matmul(rotation_matrix, [1, 0, 0])
-        perp_vector2 = np.matmul(rotation_matrix, [0, 1, 0])
-        normal_vector = np.matmul(rotation_matrix, [0, 0, 1])
+            perp_vector1 = np.matmul(rotation_matrix, [1, 0, 0])
+            perp_vector2 = np.matmul(rotation_matrix, [0, 1, 0])
+            normal_vector = np.matmul(rotation_matrix, [0, 0, 1])
         """
         return self.inverse_rotation_matrix.T
 
@@ -282,21 +290,35 @@ class Orientation:
 
     @property
     def spherical_unit_vectors(self):
+        """
+        To be implemented.
+
+        :meta private:
+        """
         raise RuntimeError('not implemented')
 
     @property
     def cylindrical_unit_vectors(self):
+        """
+        To be implemented.
+
+        :meta private:
+        """
         raise RuntimeError('not implemented')
 
     @property
     def euler_angles(self):
-        # TODO: intrinsic and extrinsic version?
+        """
+        To be implemented.
+
+        :meta private:
+        """
         raise RuntimeError('not implemented')
 
     @property
     def copy(self):
         """
-        Return a copy of the current Orientation instance.
+        Returns a copy of the current Orientation instance.
         """
         return Orientation(normal_vector=self.normal_vector,
                            perp_vector1=self.perp_vector1)
@@ -315,11 +337,21 @@ class Orientation:
         return identical
 
     def __print__(self):
+        """
+        Useful for displaying an Orientation instance.
+
+        :meta private:
+        """
         print('normal_vector:', self.normal_vector)
         print('perp_vector1: ', self.perp_vector1)
         print('perp_vector2: ', self.perp_vector2)
 
     def __repr__(self):
+        """
+        Useful for displaying an Orientation instance.
+
+        :meta private:
+        """
         s = 'Paicos Orientation instance\n'
         s += f'normal_vector: {self.normal_vector}\n'
         s += f'perp_vector1:  {self.perp_vector1}\n'

@@ -16,18 +16,18 @@ maxdepth: 2
 caption: Notebook examples
 ---
 
-/notebooks/paicos_basics.ipynb
+/notebooks/notebook1_paicos_basics.ipynb
 
-/notebooks/creating_slices_projections.ipynb
+/notebooks/notebook2_slices_and_projections.ipynb
 
-/notebooks/creating_radial_profiles.ipynb
+/notebooks/notebook3_radial_profiles.ipynb
 
-/notebooks/creating_histograms_2d.ipynb
+/notebooks/notebook4_making_2d_histograms.ipynb
 
-/notebooks/example_gpu_sph_projector.ipynb
-/notebooks/example_gpu_ray_projector.ipynb
+/notebooks/notebook5a_sph_projection_on_the_gpu.ipynb
+/notebooks/notebook5b_ray_tracing_on_the_gpu.ipynb
 
-/notebooks/gpu_ray_with_widget_and_logging_v2.ipynb
+/notebooks/notebook6_interactive_visualization_on_the_gpu.ipynb
 
 ```
 

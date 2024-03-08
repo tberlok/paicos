@@ -8,7 +8,7 @@ from .. import util
 
 class PaicosWriter:
     """
-    This class writes data to self-documenting hdf5 files.
+    This class can be used for writing data to self-documenting hdf5 files.
 
     It is the base class for the ArepoImage writer.
     """
@@ -21,20 +21,25 @@ class PaicosWriter:
         Parameters
         ----------
 
-        reader_object (obj): A PaicosReader object (or Snaphot or Catalog object).
+            reader_object :  obj
+                A PaicosReader object (or Snaphot or Catalog object).
 
-        basedir (file path): The folder where the HDF5 file will be saved.
+            basedir : file path
+                 The folder where the HDF5 file will be saved.
 
-        basename (str, optional): Base name of the HDF5 file. Defaults
-                                  to "paicos_file".
+            basename : str, optional
+                 Base name of the HDF5 file. Defaults to "paicos_file".
 
-        add_snapnum (bool): Whether to add the snapnum to the HDF5 filename.
-                            When True, the filename will be "basename_{:03d}.hdf5",
-                            when False it will simply be "basename.hdf5"
-                            Defaults to True.
+            add_snapnum :  bool
+                Whether to add the snapnum to the HDF5 filename.
 
-        mode (string): The mode to open the file in, either 'w' for write mode
-        or 'r' for read mode. (default: 'w')
+                When True, the filename will be "basename_{:03d}.hdf5",
+                when False it will simply be "basename.hdf5"
+                Defaults to True.
+
+            mode :  string
+                The mode to open the file in, either 'w' for write mode
+                or 'a' for append mode. (default: 'w').
 
         """
 
@@ -64,13 +69,13 @@ class PaicosWriter:
         self.tmp_filename = basedir + 'tmp_' + name
 
         if mode == 'w':
-            util.copy_over_snapshot_information(self.org_filename,
-                                                self.tmp_filename, 'w')
-            self.write_info_about_org_file()
+            util._copy_over_snapshot_information(self.org_filename,
+                                                 self.tmp_filename, 'w')
+            self._write_info_about_org_file()
         else:
-            self.perform_consistency_checks()
+            self._perform_consistency_checks()
 
-    def write_info_about_org_file(self):
+    def _write_info_about_org_file(self):
         """
         This function saves some attributes in org_info.
         """
@@ -88,25 +93,26 @@ class PaicosWriter:
         """
         Write a data set to the hdf5 file.
 
-        Parameters
-        ----------
+        Parameters:
 
-        name (str): Name of the data to be written.
+            name (str): Name of the data to be written.
 
-        data (obj): The data to be written (e.g. PaicosQuantity, PaicosTimeSeries,
-                    Astropy Quantity, numpy array).
+            data (obj): The data to be written (e.g. PaicosQuantity, PaicosTimeSeries,
+                        Astropy Quantity, numpy array).
 
-        data_attrs (dict): Dictionary of attributes for the data. E.g.
-                           {'info': 'Here I have written some extra information
-                                    about the data set'}. Defaults to an empty
-                                    dictionary.
+            data_attrs (dict):
+                Dictionary of attributes for the data. E.g.::
 
-        group (str, optional): Group in the HDF5 file where the data should
-                               be saved. Defaults to None in which case the
-                               data set is saved at the top level of the hdf5 file).
+                    {'info': 'Here I have written some extra information about the data set'}
 
-        group_attrs (dict, optional): Dictionary of attributes for the group.
-                                      Defaults to an empty dictionary.
+                Defaults to an empty dictionary.
+
+            group (str, optional): Group in the HDF5 file where the data should
+                                   be saved. Defaults to None in which case the
+                                   data set is saved at the top level of the hdf5 file).
+
+            group_attrs (dict, optional): Dictionary of attributes for the group.
+                                          Defaults to an empty dictionary.
         """
 
         # pylint: disable= dangerous-default-value
@@ -135,7 +141,7 @@ class PaicosWriter:
         util.save_dataset(file, name, data=data, data_attrs=data_attrs,
                           group=group, group_attrs=group_attrs)
 
-    def perform_extra_consistency_checks(self):
+    def _perform_extra_consistency_checks(self):
         """
         Perform extra consistency checks. This can be overloaded by
         subclasses.
@@ -143,7 +149,7 @@ class PaicosWriter:
         # pylint: disable=unnecessary-pass
         pass
 
-    def perform_consistency_checks(self):
+    def _perform_consistency_checks(self):
         """
         Perform consistency checks when trying to amend a file (to avoid
         saving data at different times, for instance)
@@ -152,11 +158,11 @@ class PaicosWriter:
             org_time = self.reader_object.Header['Time']
             assert f['Header'].attrs['Time'] == org_time
 
-        self.perform_extra_consistency_checks()
+        self._perform_extra_consistency_checks()
 
     def finalize(self):
         """
-        Move from a temporary to the final filename.
+        Move from a temporary filename to the final filename.
         """
         if self.mode == 'w':
             os.rename(self.tmp_filename, self.filename)

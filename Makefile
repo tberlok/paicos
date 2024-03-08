@@ -30,3 +30,6 @@ linting:
 dev_checks:
 	make checks
 	make linting
+
+docs:
+	sphinx-apidoc -f -o docs/source .; cd docs; make html

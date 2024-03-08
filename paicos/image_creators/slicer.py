@@ -34,10 +34,12 @@ class Slicer(ImageCreator):
             e.g. widths=[width_x, width_y, width_z] where one of the widths
             is zero (e.g. width_x=0 if direction='x').
 
-        direction : str
+        direction : str, Orientation
             Direction of the slicing, e.g. 'x', 'y' or 'z'. For instance,
             setting direction to 'x' gives a slice in the yz plane with the
             constant x-value set to be x_c.
+            For a more general orientation, one can pass an Orientation
+            instance.
 
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
@@ -176,11 +178,13 @@ class Slicer(ImageCreator):
 
         Parameters
         ----------
-        variable: a string or an array of shape (N, )
-                  representing the gas variable to slice
+            variable: str, arr
+                The variable to slice. For instance '0_Density' or snap['0_Density'].
 
-        Returns:
-        An array of shape (npix, npix) representing the sliced gas variable
+        Returns
+        -------
+            slice : 2d arr
+                A 2d array of the sliced variable.
         """
 
         # This calls _do_region_selection if resolution, Orientation,
@@ -199,6 +203,9 @@ class Slicer(ImageCreator):
 
     @property
     def depth(self):
+        """
+        Depth of the slice, which is zero by definition.
+        """
         if self.direction == 'x':
             return self.width_x
 

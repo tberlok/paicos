@@ -16,6 +16,8 @@ class NestedProjector(Projector):
     projections, and additional methods for dealing with resolution,
     digitizing particles, and summing up the different resolutions of the
     images.
+
+    Please see also the Projector class.
     """
 
     def __init__(self, snap, center, widths, direction,
@@ -27,41 +29,36 @@ class NestedProjector(Projector):
         the properties inherited from the Projector class, as well as the
         properties specific to nested projections.
 
-        Parameters
-        ----------
-        snap : Snapshot
-            A snapshot object of Snapshot class from paicos package.
+        Parameters:
+            snap (Snapshot): A snapshot object of Snapshot class from paicos package.
 
-        center : numpy array
-            Center of the region on which projection is to be done, e.g.
-            center = [x_c, y_c, z_c].
+            center (array): Center of the region on which projection is to be done, e.g.
+                            center = [x_c, y_c, z_c].
 
-        widths : numpy array
-            Widths of the region on which projection is to be done,
-            e.g.m widths=[width_x, width_y, width_z].
+            widths (array): Widths of the region on which projection is to be done,
+                            e.g.m widths=[width_x, width_y, width_z].
 
-        direction : str
-            Direction of the projection, e.g. 'x', 'y' or 'z'.
+            direction (str or Orientation): Direction of the projection, e.g. 'x', 'y' or 'z',
+                                            or its orientation (see Orientation class).
 
-        npix : int, optional
-            Number of pixels in the horizontal direction of the image,
-            by default 512.
 
-        nvol : int, optional
-            Integer used to determine the smoothing length, by default 8
+            npix (int, optional): Number of pixels in the horizontal direction of the image,
+                                  by default 512.
 
-        factor (int, optional): Multiplicative factor in digitizing, defaults to 3.
+            nvol (int, optional): Integer used to determine the smoothing length, by default 8
 
-        npix_min (int, optional): Minimum number of pixels, defaults to 128.
+            factor (int, optional): Multiplicative factor in digitizing, defaults to 3.
 
-        verbose (bool, optional): Flag for verbosity, defaults to False.
+            npix_min (int, optional): Minimum number of pixels, defaults to 128.
 
-        make_snap_with_selection (bool, optional):
-            a boolean indicating if a new snapshot object should be made with
-            the selected region, defaults to False
+            verbose (bool, optional): Flag for verbosity, defaults to False.
 
-        store_subimages (bool, optional): Flag for storing sub-images, which
-        is useful mainly for testing purposes. Defaults to False.
+            make_snap_with_selection (bool, optional):
+                a boolean indicating if a new snapshot object should be made with
+                the selected region, defaults to False.
+
+            store_subimages (bool, optional): Flag for storing sub-images, which
+                is useful mainly for testing purposes. Defaults to False.
 
         """
 
@@ -154,6 +151,8 @@ class NestedProjector(Projector):
         """
         Increase the number of pixes without changing the total 'mass'
         of the image
+
+        :meta private:
         """
         if factor == 1:
             return image
@@ -165,6 +164,8 @@ class NestedProjector(Projector):
     def sum_contributions(self, images):
         """
         Given the list of images at various resolutions, sum them up.
+
+        :meta private:
         """
         full_image = np.zeros(images[-1].shape)
         n = images[-1].shape[0]

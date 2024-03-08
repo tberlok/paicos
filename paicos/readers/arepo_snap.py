@@ -28,29 +28,43 @@ class Snapshot(PaicosReader):
     factor, and other properties of the snapshot, as well as the subfind
     catalog if present.
 
-    Important methods and attributes.
+    Important methods and attributes:
+    ---------------------------------
 
-    snap = Snapshot()
+        snap = Snapshot()
 
-    snap.Parameters (dict): Contains information from the parameter
-                            file used in the simulation (e.g. param.txt).
+        snap.Group : dict
+            Contains a dictionary of the FoF-catalog.
 
-    snap.Config (dict): Contains information from the Config
-                        file used in the simulation (e.g. Config.txt).
+        snap.Sub : dict
+            Contains a dictionary of the Subfind-catalog.
 
-    snap.Header (dict): Contains information about this particular snapshot
-                        such as its time (e.g scale factor).
+        snap.Parameters : dict
+            Contains information from the parameter file used in the simulation (e.g. param.txt).
 
-    snap.z (float): redshift
+        snap.Config : dict
+            Contains information from the Config file used in the simulation (e.g. Config.txt).
 
-    snap.h (float): reduced Hubble param (e.g. 0.67)
+        snap.Header : dict
+            Contains information about this particular catalog such as its time (e.g scale factor).
 
-    snap.age: the age of the Universe (only for cosmological runs)
-    snap.lookback_time: the age of the Universe (only for cosmological runs)
+        snap.z : float
+            The redshift.
 
-    snap.time: the time stamp of the snapshot (only for non-cosmological runs)
+        snap.h : float
+            Reduced Hubble param (e.g. 0.67).
 
-    snap.box_size: the dimensions of the simulation domain
+        snap.age : float
+            The age of the Universe (only for cosmological runs).
+
+        snap.lookback_time : float
+            The age of the Universe (only for cosmological runs).
+
+        snap.time : float
+            The time stamp of the snapshot (only for non-cosmological runs).
+
+        snap.box_size : array with length 3
+            The dimensions of the simulation domain.
 
     """
 
@@ -63,24 +77,24 @@ class Snapshot(PaicosReader):
 
         Parameters:
 
-        basedir (str): path of the directory containing the snapshot
-                       (e.g. the 'output' folder)
+            basedir (str): path of the directory containing the snapshot
+                           (e.g. the 'output' folder).
 
-        snapnum (int): snapshot number
+            snapnum (int): snapshot number.
 
-        basename (str): name of the snapshot file, default is "snap"
+            basename (str): name of the snapshot file, default is "snap".
 
-        verbose (bool): whether to print information about the snapshot,
-        default is False
+            verbose (bool): whether to print information about the snapshot,
+                            default is False.
 
-        no_snapdir (bool): whether there is no snap directory, i.e.,
-                           default is False
+            no_snapdir (bool): whether there is no snap directory, i.e.,
+                               default is False.
 
-        load_catalog (bool): whether to load the subfind catalog.
-                             The default None is internally changed to
-                             True for comoving simulations and to
-                             False for non-comoving simulations.
-    """
+            load_catalog (bool): whether to load the subfind catalog.
+                                 The default None is internally changed to
+                                 True for comoving simulations and to
+                                 False for non-comoving simulations.
+        """
 
         super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
                          load_all=load_all, to_physical=to_physical,
@@ -318,6 +332,8 @@ class Snapshot(PaicosReader):
         This is a helper function for 'get_derived_data'. It returns a
         function if info is False, and a list of all available
         functions for parttype = p_key[0] if info is True.
+
+        :meta private:
         """
 
         assert isinstance(p_key, str)
@@ -352,12 +368,24 @@ class Snapshot(PaicosReader):
         This function provides information about the keys of a certain
         particle type in a snapshot.
 
-        Args: PartType (int): An integer representing the particle type of
-        interest. verbose (bool, optional): A flag indicating whether or not
-        to print the keys to the console. Defaults to True.
+        Parameters
+        -----------
 
-        Returns: list or None : If the PartType exists in the file, a list of
-        keys for that PartType is returned, otherwise None.
+            partType (int):
+                           An integer representing the particle type of
+                           interest, e.g. 0 for gas, 1 for DM etc.
+
+            verbose (bool):
+                           A flag indicating whether or not
+                           to print the keys to the console.
+                           Defaults to True.
+
+        Returns
+        -------
+
+            list or None :
+                          If the requested PartType exists in the file, a list of
+                          keys for that PartType is returned, otherwise None.
         """
         parttype_str = f'PartType{parttype}'
         if parttype >= self.nspecies:
@@ -395,17 +423,16 @@ class Snapshot(PaicosReader):
 
     def _load_data_experimental(self, parttype, blockname):
         """
-        Load data from hdf5 file(s). Example usage:
+        Load data from hdf5 file(s). Example usage::
 
-        snap = Snapshot(...)
-
-        snap.load_data(0, 'Density')
+            snap = Snapshot(...)
+            snap.load_data(0, 'Density')
 
         Note that subsequent calls does not reload the data. Reloading
-        the data can be done explicitly:
+        the data can be done explicitly::
 
-        snap.remove_data(0, 'Density')
-        snap.load_data(0, 'Density')
+            snap.remove_data(0, 'Density')
+            snap.load_data(0, 'Density')
 
         """
 
@@ -436,7 +463,9 @@ class Snapshot(PaicosReader):
 
         def read_hdf5_file(filename, parttype, blockname):
             """
-            This helper function does the actual data loading
+            This helper function does the actual data loading.
+
+            :meta private:
             """
             parttype_str = f'PartType{parttype}'
             with h5py.File(filename, 'r') as f:
@@ -493,18 +522,16 @@ class Snapshot(PaicosReader):
 
     def load_data(self, parttype, blockname):
         """
-        Load data from hdf5 file(s). Example usage:
+        Load data from hdf5 file(s). Example usage::
 
-        snap = Snapshot(...)
-
-        snap.load_data(0, 'Density')
+            snap = Snapshot(...)
+            snap.load_data(0, 'Density')
 
         Note that subsequent calls does not reload the data. Reloading
-        the data can be done explicitly:
+        the data can be done explicitly::
 
-        snap.remove_data(0, 'Density')
-        snap.load_data(0, 'Density')
-
+            snap.remove_data(0, 'Density')
+            snap.load_data(0, 'Density')
         """
 
         assert parttype < self.nspecies
@@ -606,6 +633,7 @@ class Snapshot(PaicosReader):
 
         snap.get_derived_data(0, 'Temperatures')
 
+        :meta private:
         """
         # from .derived_variables import get_variable_function
 
@@ -733,9 +761,10 @@ class Snapshot(PaicosReader):
         Create a new snapshot object which will only contain
         cells with a selection_index.
 
-        Example use:
-        index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
-        selected_snap = snap.select(index, parttype=0)
+        Example use::
+
+            index = snap['0_Density'] > snap['0_Density'].unit_quantity*1e-6
+            selected_snap = snap.select(index, parttype=0)
 
         """
         if parttype is None:
@@ -790,9 +819,11 @@ class Snapshot(PaicosReader):
 
     def radial_select(self, center, r_max, r_min=0.0, parttype=None):
         """
-        A convenient function for selecting in radius
+        A convenience function for selecting in radius.
 
-        Returns a new snapshot with the radial selection
+        Returns a new snapshot with the radial selection.
+
+        :meta private:
         """
         from .. import util
         if parttype is None:
@@ -847,6 +878,8 @@ class Snapshot(PaicosReader):
         Find the sum of a 1D array.
 
         Equivalent to np.sum(arr, axis=0) but with open_mp
+
+        :meta private:
         """
         from .. import util
 
@@ -875,6 +908,8 @@ class Snapshot(PaicosReader):
         Find the sum of a 1D array times a 2D array
 
         Equivalent to np.sum(arr[:, None] * vector, axis=0) but with open_mp
+
+        :meta private:
         """
         from .. import util
         from ..cython.get_derived_variables import sum_arr_times_vector_omp
@@ -906,6 +941,8 @@ class Snapshot(PaicosReader):
         This code calculates sum_i (mass_i (coord_ij - center) x velocity_ij).
 
         That is, it returns the total angular momentum vector.
+
+        :meta private:
         """
         from .. import util
         from ..cython.get_derived_variables import sum_arr_times_vector_cross_product
@@ -940,13 +977,14 @@ class Snapshot(PaicosReader):
         """
         Finds the center of mass for the entire snapshot.
 
-        parttype (default None): if None, then all parttypes are included in the
+        parttype (default None):
+                                 If None, then all parttypes are included in the
                                  center-of-mass calculation. If e.g. parttype=0,
                                  then the center of mass of the gas is returned.
                                  if parttype=None, then the total center and
                                  a list of of the parttype centers are returned
 
-        Can be used in combination with self.select to find the
+        This method can be used in combination with the select method to find the
         center of mass of a selection.
         """
         if parttype is None:
@@ -970,11 +1008,12 @@ class Snapshot(PaicosReader):
 
         center: the center around which to calculate the angular momentum
 
-        parttype (default None): if None, then all parttypes are included in the
+        parttype (default None):
+                                 If None, then all parttypes are included in the
                                  calculation. If e.g. parttype=0,
                                  then total angular momentum of the gas is returned.
 
-        Can be used in combination with self.select to find the
+        This method can be used in combination with the select method to find the
         total angular momentum of a selection.
         """
         func = self.get_sum_of_arr_times_vector_cross_product

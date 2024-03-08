@@ -34,8 +34,9 @@ class TreeProjector(ImageCreator):
             Widths of the region on which projection is to be done,
             e.g. widths=[width_x, width_y, width_z].
 
-        direction : str
-            Direction of the projection, e.g. 'x', 'y' or 'z'.
+        direction : str, Orientation
+            Direction of the projection, e.g. 'x', 'y' or 'z',
+            or an Orientation instance.
 
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
@@ -56,7 +57,7 @@ class TreeProjector(ImageCreator):
 
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
-            the selected region, defaults to False
+            the selected region, defaults to False.
 
         """
 
@@ -237,38 +238,44 @@ class TreeProjector(ImageCreator):
 
         Parameters
         ----------
-        variable: a string or an array of shape (N, )
-                  representing the gas variable to project
+        variable : str, array
+            The variable to be projected, it can be passed as string
+            or a 1d array.
 
-        additive (bool): A boolean indicating whether the variable to be
-                    projected is additive (e.g. Masses, Volumes)
-                    or not (e.g. Temperature, density, achieved by
-                    setting additive=False). This parameter was previously
-                    named 'extrinsic'.
+        additive : bool
+            A boolean indicating whether the variable to be
+            projected is additive (e.g. Masses, Volumes)
+            or not (e.g. Temperature, density).
+            This parameter was previously named 'extrinsic'.
 
         Returns:
-            An array of shape (npix, npix) representing the projected gas variable
 
-            For non-additive (intrinsic) variables, the unit of the projection is
-            identical to the unit of the input variable. For additive (extrinsic)
-            variables, the projection unit is the input variable unit divided by area.
+            projection : 2d arr
+                A 2d array representing the projected gas variable.
+
+                For non-additive (intrinsic) variables, the unit of the projection is
+                identical to the unit of the input variable. For additive (extrinsic)
+                variables, the projection unit is the input variable unit divided by area.
 
         Examples
         ----------
 
-        We can compute the projected density in two ways.
+        We can compute the projected density in two ways, using either
+        additive or non-additive projetions. In both case,
+        we first need to create a TreeProjector object::
 
-        tree_projector = pa.TreeProjector(snap, center, widths, 'z')
+            tree_projector = pa.TreeProjector(snap, center, widths, 'z')
 
-        Method I (divide projected mass by projected volume):
-            tree_M = tree_projector.project_variable('0_Masses')
-            tree_V = tree_projector.project_variable('0_Volume')
+        Method I (divide projected mass by projected volume)::
+
+            tree_M = tree_projector.project_variable('0_Masses', additive=True)
+            tree_V = tree_projector.project_variable('0_Volume', additive=True)
 
             tree_rho = tree_M / tree_V
 
-        Method II (directly project the density):
+        Method II (directly project the density)::
 
-            rho = tree_projector.project_variable('0_Density', extrinsic=False)
+            rho = tree_projector.project_variable('0_Density', additive=False)
 
         """
         # This calls _do_region_selection if resolution, Orientation,

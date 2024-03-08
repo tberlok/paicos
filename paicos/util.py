@@ -252,10 +252,16 @@ def get_index_of_cubic_region(pos, center, widths, box):
     Get a boolean array to the position array, pos, which are inside a cubic
     region.
 
-    pos (array): position array with dimensions = (n, 3)
-    center (array with length 3): the center of the box (x, y, z)
-    widths (array with length 3): the widths of the box
-    box: the box size of the simulation (e.g. snap.box)
+    Parameters
+    ----------
+    pos : array
+         position array with dimensions = (n, 3)
+    center : array with length 3
+             The center of the box (x, y, z).
+    widths : array with length 3
+             The widths of the box.
+    box : float
+                 The box size of the simulation (e.g. snap.box).
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
@@ -270,11 +276,18 @@ def get_index_of_cubic_region_plus_thin_layer(pos, center, widths, thickness, bo
     Get a boolean array to the position array, pos, which are inside a cubic
     region plus a thin layer with a cell-dependent thickness
 
-    pos (array): position array with dimensions = (n, 3)
-    center (array with length 3): the center of the box (x, y, z)
-    widths (array with length 3): the widths of the box
-    thickness: (array): array with same length as the position array
-    box: the box size of the simulation (e.g. snap.box)
+    Parameters
+    ----------
+    pos : array
+         position array with dimensions = (n, 3)
+    center : array with length 3
+             The center of the box (x, y, z).
+    widths : array with length 3
+             The widths of the box.
+    thickness : array
+                Array with same length as the position array.
+    box : float
+         The box size of the simulation (e.g. snap.box).
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
@@ -289,11 +302,18 @@ def get_index_of_rotated_cubic_region(pos, center, widths, box, orientation):
     Get a boolean array to the position array, pos, which are inside a cubic
     region
 
-    pos (array): position array with dimensions = (n, 3)
-    center (array with length 3): the center of the box (x, y, z)
-    widths (array with length 3): the widths of the box
-    thickness: (array): array with same length as the position array
-    box: the box size of the simulation (e.g. snap.box)
+    Parameters
+    ----------
+    pos : array
+         position array with dimensions = (n, 3)
+    center : array with length 3
+             The center of the box (x, y, z).
+    widths : array with length 3
+             The widths of the box.
+    thickness : array
+                Array with same length as the position array.
+    box : float
+         The box size of the simulation (e.g. snap.box).
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
@@ -314,11 +334,18 @@ def get_index_of_rotated_cubic_region_plus_thin_layer(pos, center, widths, thick
     Get a boolean array to the position array, pos, which are inside a cubic
     region plus a thin layer with a cell-dependent thickness
 
-    pos (array): position array with dimensions = (n, 3)
-    center (array with length 3): the center of the box (x, y, z)
-    widths (array with length 3): the widths of the box
-    thickness: (array): array with same length as the position array
-    box: the box size of the simulation (e.g. snap.box)
+    Parameters
+    ----------
+    pos : array
+         position array with dimensions = (n, 3)
+    center : array with length 3
+             The center of the box (x, y, z).
+    widths : array with length 3
+             The widths of the box.
+    thickness : array
+                Array with same length as the position array.
+    box : float
+         The box size of the simulation (e.g. snap.box).
     """
     x_c, y_c, z_c = center[0], center[1], center[2]
     width_x, width_y, width_z = widths
@@ -332,10 +359,9 @@ def get_index_of_rotated_cubic_region_plus_thin_layer(pos, center, widths, thick
     return index
 
 
-def check_if_omp_has_issues(verbose=True):
+def _check_if_omp_has_issues(verbose=True):
     """
     Check if the parallelization via OpenMP works.
-
     Parameters
     ----------
     numthreads : int
@@ -375,7 +401,7 @@ def check_if_omp_has_issues(verbose=True):
             warnings.warn(msg)
 
 
-def copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
+def _copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
     """
     Copy over attributes from the original arepo snapshot.
     In this way we will have access to units used, redshift etc
