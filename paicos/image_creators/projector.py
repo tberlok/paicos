@@ -41,8 +41,9 @@ class Projector(ImageCreator):
             Widths of the region on which projection is to be done,
             e.g.m widths=[width_x, width_y, width_z].
 
-        direction : str
-            Direction of the projection, e.g. 'x', 'y' or 'z'.
+        direction : str, Orientation
+            Direction of the projection, e.g. 'x', 'y' or 'z'
+            or an Orientation instance.
 
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
@@ -191,13 +192,14 @@ class Projector(ImageCreator):
 
         Parameters
         ----------
-        variable : str, function, numpy array
-            variable, it can be passed as string or an array
+        variable : str, array
+            The variable to be projected, it can be passed as string
+            or a 1d array.
 
         Returns
         -------
         numpy array
-            The image of the projected variable
+            The image (2d array) of the projected variable.
         """
         self.do_unit_consistency_check()
         # This calls _do_region_selection if resolution, Orientation,

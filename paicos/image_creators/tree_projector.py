@@ -237,8 +237,9 @@ class TreeProjector(ImageCreator):
 
         Parameters
         ----------
-        variable: a string or an array of shape (N, )
-                  representing the gas variable to project
+        variable : str, array
+            The variable to be projected, it can be passed as string
+            or a 1d array.
 
         additive (bool): A boolean indicating whether the variable to be
                     projected is additive (e.g. Masses, Volumes)
@@ -247,7 +248,9 @@ class TreeProjector(ImageCreator):
                     named 'extrinsic'.
 
         Returns:
-                A 2D array representing the projected gas variable.
+
+            projection : 2d arr
+                A 2d array representing the projected gas variable.
 
                 For non-additive (intrinsic) variables, the unit of the projection is
                 identical to the unit of the input variable. For additive (extrinsic)

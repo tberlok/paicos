@@ -21,15 +21,16 @@ class ImageCreator:
         by subclasses such as Projector or Slicer.
 
         Parameters:
-            snap (object): Snapshot object from which the image is created
+            snap (object): Snapshot object from which the image is created.
 
-            center: Center of the image (3D coordinates)
+            center: Center of the image (3D coordinates).
 
             widths: Width of the image in each direction (3D coordinates)
 
-            direction (str): Direction of the image ('x', 'y', 'z')
+            direction (str, Orientation): Direction of the image ('x', 'y', 'z')
+                or an Orientation instance.
 
-            npix (int): Number of pixels in the image (default is 512)
+            npix (int): Number of pixels in the image (default is 512).
         """
 
         self._obervers = []
@@ -153,7 +154,7 @@ class ImageCreator:
     @property
     def center(self):
         """
-        Center of the image (3D coordinates)
+        Center of the image (3D coordinates).
         """
         return self._center
 

@@ -55,10 +55,10 @@ class NestedProjector(Projector):
 
             make_snap_with_selection (bool, optional):
                 a boolean indicating if a new snapshot object should be made with
-                the selected region, defaults to False
+                the selected region, defaults to False.
 
             store_subimages (bool, optional): Flag for storing sub-images, which
-            is useful mainly for testing purposes. Defaults to False.
+                is useful mainly for testing purposes. Defaults to False.
 
         """
 
@@ -151,6 +151,8 @@ class NestedProjector(Projector):
         """
         Increase the number of pixes without changing the total 'mass'
         of the image
+
+        :meta private:
         """
         if factor == 1:
             return image
@@ -162,6 +164,8 @@ class NestedProjector(Projector):
     def sum_contributions(self, images):
         """
         Given the list of images at various resolutions, sum them up.
+
+        :meta private:
         """
         full_image = np.zeros(images[-1].shape)
         n = images[-1].shape[0]
