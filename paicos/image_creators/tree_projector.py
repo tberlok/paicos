@@ -34,8 +34,9 @@ class TreeProjector(ImageCreator):
             Widths of the region on which projection is to be done,
             e.g. widths=[width_x, width_y, width_z].
 
-        direction : str
-            Direction of the projection, e.g. 'x', 'y' or 'z'.
+        direction : str, Orientation
+            Direction of the projection, e.g. 'x', 'y' or 'z',
+            or an Orientation instance.
 
         npix : int, optional
             Number of pixels in the horizontal direction of the image,
@@ -56,7 +57,7 @@ class TreeProjector(ImageCreator):
 
         make_snap_with_selection : bool
             a boolean indicating if a new snapshot object should be made with
-            the selected region, defaults to False
+            the selected region, defaults to False.
 
         """
 
@@ -241,11 +242,11 @@ class TreeProjector(ImageCreator):
             The variable to be projected, it can be passed as string
             or a 1d array.
 
-        additive (bool): A boolean indicating whether the variable to be
-                    projected is additive (e.g. Masses, Volumes)
-                    or not (e.g. Temperature, density, achieved by
-                    setting additive=False). This parameter was previously
-                    named 'extrinsic'.
+        additive : bool
+            A boolean indicating whether the variable to be
+            projected is additive (e.g. Masses, Volumes)
+            or not (e.g. Temperature, density).
+            This parameter was previously named 'extrinsic'.
 
         Returns:
 
