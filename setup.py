@@ -75,12 +75,16 @@ install_requires = ['scipy',
                     'numpy',
                     'h5py',
                     'astropy',
-                    'numba']
+                    'numba',
+                    'matplotlib']
 
 
 cur = os.path.abspath(__file__).replace('setup.py', '')
 with open(cur + 'README.md') as f:
     long_description = f.read()
+
+with open(cur + 'dev_requirements.txt') as f:
+    dev_requirements = f.read().strip().split('\n')
 
 setup(
     name='paicos',
@@ -95,6 +99,7 @@ setup(
     license='BSD 3-clause',
     packages=setuptools.find_packages(),
     install_requires=install_requires,
+    extras_require={'dev': dev_requirements},
     package_data={'paicos/cython': ['*.c', '*.so']},
     classifiers=['Programming Language :: Python :: 3'],
     ext_modules=cythonize(ext_modules,
