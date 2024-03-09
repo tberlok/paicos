@@ -172,7 +172,7 @@ class GpuSphProjector(ImageCreator):
 
     def __init__(self, snap, center, widths, direction,
                  npix=512, parttype=0, nvol=8, threadsperblock=8,
-                 do_pre_selection=False):
+                 do_pre_selection=False, sph_kernel_radius=4):
         """
         Initialize the Projector class.
 
@@ -201,6 +201,10 @@ class GpuSphProjector(ImageCreator):
 
         nvol : int, optional
             Integer used to determine the smoothing length, by default 8
+
+        sph_kernel_radius : int
+            Sets the kernel radius in units of the grid distance on the grid.
+            For testing purposes. 3 or 4 are probably reasonable values.
 
         """
 
@@ -238,7 +242,7 @@ class GpuSphProjector(ImageCreator):
         # TODO: add split into GPU and CPU based on cell sizes here.
         # Perhaps make the CPU do everything above grid8.
 
-        self._sph_kernel_radius = 4
+        self._sph_kernel_radius = sph_kernel_radius
 
         # Call selection
         self.has_do_region_selection_been_called = False
