@@ -868,6 +868,7 @@ class Snapshot(PaicosReader):
         with h5py.File(writer.tmp_filename, 'r+') as f:
             f['Header'].attrs["NumFilesPerSnapshot"] = 1
             f['Header'].attrs["NumPart_Total"] = np.array(new_npart)
+            f['Header'].attrs["NumPart_ThisFile"] = np.array(new_npart)
 
         writer.finalize()
 
