@@ -2,6 +2,7 @@
 import numpy as np
 import h5py
 from .paicos_readers import PaicosReader
+from ..writers.paicos_writer import PaicosWriter
 from .. import settings
 import numbers
 import warnings
@@ -218,3 +219,39 @@ class Catalog(PaicosReader):
                     field='subhalos')
                 if not hasattr(self.Sub[key], 'unit'):
                     del self.Sub[key]
+
+    def save_new_catalog(self, basename, single_precision=False):
+        """
+        Save a new catalog containing only the currently loaded
+        variables. Useful for reducing datasets to smaller sizes.
+        """
+        writer = PaicosWriter(self, self.basedir, basename, 'w')
+
+        for key in self.Group:
+            Ngroups_Total = self.Group[key].shape[0]
+
+            if single_precision:
+                data = self.Group[key].astype(np.float32)
+            else:
+                data = self.Group[key]
+            writer.write_data(key, data, group='Group')
+
+        for key in self.Sub:
+            Nsubgroups_Total = self.Sub[key].shape[0]
+
+            if single_precision:
+                data = self.Sub[key].astype(np.float32)
+            else:
+                data = self.Sub[key]
+            writer.write_data(key, data, group='Subhalo')
+
+        with h5py.File(writer.tmp_filename, 'r+') as f:
+            f['Header'].attrs["Ngroups_ThisFile"] = Ngroups_Total
+            f['Header'].attrs["Ngroups_Total"] = Ngroups_Total
+            f['Header'].attrs["Nsubgroups_ThisFile"] = Nsubgroups_Total
+            f['Header'].attrs["Nsubgroups_Total"] = Nsubgroups_Total
+            f['Header'].attrs["NumFiles"] = 1
+
+        writer.finalize()
+
+        return writer

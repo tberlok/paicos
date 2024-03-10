@@ -19,9 +19,10 @@ with Arepo.
 Installation instructions and tips on how to get started can be found
 on [readthedocs](https://paicos.readthedocs.io/en/latest/?badge=latest).
 
-If you have questions not answered there, then please feel free to send an email to tberlok ad nbi.ku.dk.
+If you have questions not answered there or if you simply can't get things working, then please feel free to create an issue or to send an email to tberlok ad nbi.ku.dk.
 
 # Reporting issues and/or requesting features
+
 Paicos uses GitHub Issues to track bugs and feature requests. Please search the existing issues before filing new issues to avoid duplicates.
 
 # Contributing 

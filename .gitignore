@@ -4,7 +4,7 @@
 *.html
 *__pycache__*
 build/
-user_settings.py
+paicos/paicos_user_settings.py
 paicos.egg-info
 dist/
 *-checkpoint.ipynb
