@@ -113,7 +113,7 @@ class Projector(ImageCreator):
             self.hsml = np.cbrt(self.nvol * (self.snap[f"{parttype}_Volume"])
                                 / (4.0 * np.pi / 3.0))
         elif f'{parttype}_SubfindHsml' in avail_list:
-            self.hsml = self.snap[f'{parttype}_SubfindHsml']
+            self.hsml = np.copy(self.snap[f'{parttype}_SubfindHsml'])
         else:
             raise RuntimeError(
                 'There is no smoothing length or volume for the projector')
