@@ -82,7 +82,7 @@ class Slicer(ImageCreator):
             thickness = 4.0 * np.cbrt((snap[f"{parttype}_Volume"])
                                       / (4.0 * np.pi / 3.0))
         elif f'{parttype}_SubfindHsml' in avail_list:
-            thickness = snap[f'{parttype}_SubfindHsml']
+            thickness = np.copy(snap[f'{parttype}_SubfindHsml'])
         else:
             raise RuntimeError(
                 'There is no smoothing length or volume for the thickness of the slice')
