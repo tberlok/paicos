@@ -118,7 +118,7 @@ class Projector(ImageCreator):
             raise RuntimeError(
                 'There is no smoothing length or volume for the projector')
 
-        self.pos = self.snap[f'{self.parttype}_Coordinates']
+        self.pos = np.copy(self.snap[f'{self.parttype}_Coordinates'])
 
         if settings.use_units:
             self.hsml = self.hsml.to(self.pos.unit)
