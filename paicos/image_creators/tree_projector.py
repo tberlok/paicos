@@ -87,7 +87,7 @@ class TreeProjector(ImageCreator):
         if f'{parttype}_Volume' in avail_list:
             thickness = 4.0 * np.cbrt((snap[f"{parttype}_Volume"]) / (4.0 * np.pi / 3.0))
         elif f'{parttype}_SubfindHsml' in avail_list:
-            thickness = snap[f'{parttype}_SubfindHsml']
+            thickness = np.copy(snap[f'{parttype}_SubfindHsml'])
         else:
             err_msg = ("There is no smoothing length or volume for calculating"
                        + "the thickness of the slice")
