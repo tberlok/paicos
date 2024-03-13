@@ -303,7 +303,14 @@ class TreeProjector(ImageCreator):
             avail_list = (list(self.snap.keys()) + self.snap._auto_list)
             if f'{parttype}_Volume' in avail_list:
                 variable_density = variable[self.index] / self.snap[f'{parttype}_Volume'][self.index]
-                projection = np.sum(variable_density * self.delta_depth, axis=2) / self.depth
+
+                projection = np.sum(variable_density * self.delta_depth, axis=2)
+                """
+                # Note that the above is equivalent to:
+                volume_per_voxel = area_per_pixel * self.delta_depth
+                projection = np.sum(variable_density * volume_per_voxel, axis=2) \
+                             / area_per_pixel
+                """
             else:
                 err_msg = (f"The volume field for parttype {parttype} is required when"
                            + "using additive=True")
@@ -311,5 +318,10 @@ class TreeProjector(ImageCreator):
         else:
             variable = variable[self.index]
             projection = np.sum(variable * self.delta_depth, axis=2) / self.depth
+            """
+            # Note that the above is equivalent to:
+            projection = np.mean(variable, axis=2)
+            since self.delta_depth is a constant.
+            """
 
         return projection
