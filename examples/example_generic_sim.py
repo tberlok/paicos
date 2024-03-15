@@ -29,28 +29,43 @@ pa.use_units(True)
 if pa.settings.use_units:
 
     # Initialize a GenericSnapshot and save it
-    if False:
-        snap = pa.GenericSnapshot(only_init=True)
-        snap.give_info(boxsize_in_code_units=boxsize_in_code_units,
-                       time_in_code_units=1,
-                       snapnum=0,
-                       length_unit=u.Unit('AU'), time_unit=u.Unit('Myr'),
-                       mass_unit=u.Unit('Msun'))
+    snap = pa.GenericSnapshot(only_init=True)
+    snap.give_info(boxsize_in_code_units=boxsize_in_code_units,
+                   time_in_code_units=1,
+                   snapnum=0,
+                   length_unit=u.Unit('AU'), time_unit=u.Unit('Myr'),
+                   mass_unit=u.Unit('Msun'))
 
-        snap.set_volumes(vol)
-        snap.set_positions(pos)
-        snap.set_data(mass, '0_Masses', 'Msun')
+    snap.set_volumes(vol)
+    snap.set_positions(pos)
+    snap.set_data(mass, '0_Masses', 'Msun')
 
-        writer = pa.PaicosWriter(snap, basedir='.', basename='paicos_file')
-        for key in snap:
-            writer.write_data(key, snap[key])
-        writer.finalize()
-    # Read previously saved snapshot
-    else:
-        snap = pa.GenericSnapshot('paicos_file_000.hdf5')
+    writer = pa.PaicosWriter(snap, basedir=f"{pa.data_dir}test_data", basename='paicos_file')
+    for key in snap:
+        writer.write_data(key, snap[key])
+    writer.finalize()
+    # Delete then read previously saved snapshot
+    del snap
+    snap = pa.GenericSnapshot(f"{pa.data_dir}test_data/paicos_file_000.hdf5")
 
 else:
-    snap = pa.GenericSnapshot('paicos_file_000.hdf5')
+    snap = pa.GenericSnapshot(only_init=True)
+    snap.give_info(boxsize_in_code_units=boxsize_in_code_units,
+                   time_in_code_units=1,
+                   snapnum=0)
+
+    snap.set_volumes(vol)
+    snap.set_positions(pos)
+    snap.set_data(mass, '0_Masses')
+
+    writer = pa.PaicosWriter(snap, basedir=f"{pa.data_dir}test_data", basename='paicos_file')
+    for key in snap:
+        writer.write_data(key, snap[key])
+    writer.finalize()
+
+    # Delete then read previously saved snapshot
+    del snap
+    snap = pa.GenericSnapshot(f"{pa.data_dir}test_data/paicos_file_000.hdf5")
 
     snap.set_volumes(vol)
     snap.set_positions(pos)
@@ -61,7 +76,7 @@ else:
 
 orientation = pa.Orientation(normal_vector=[1, 0, 0], perp_vector1=[0, 1, 0])
 
-if False:
+if True:
     widths = np.array([2000, 2000, 2000.])
     if True:
         projector = pa.Projector(snap, center, widths, orientation, npix=512,
@@ -74,6 +89,35 @@ if False:
 
     rho = Masses / Volume
     extent = projector.centered_extent
+
+    image_file = pa.ArepoImage(projector, basedir=pa.data_dir + 'test_data',
+                               basename='generic_sim')
+    image_file.save_image('0_Masses', Masses)
+    image_file.save_image('0_Volume', Volume)
+    image_file.finalize()
+
+    # Make a histogram
+    snap['0_Density'] = snap['0_Masses'] / snap['0_Volume']
+    rho_vol = pa.Histogram2D(snap, snap['0_Density'], snap['0_Volume'],
+                             bins_x=50,
+                             bins_y=50, logscale=True)
+    plt.figure(2)
+    plt.clf()
+
+    if pa.settings.use_units:
+        plt.pcolormesh(rho_vol.centers_x.value, rho_vol.centers_y.value,
+                       rho_vol.hist2d.value, norm=LogNorm())
+        plt.xlabel(rho_vol.centers_x.label('\\rho'))
+        plt.ylabel(rho_vol.centers_y.label('V'))
+    else:
+        plt.pcolormesh(rho_vol.centers_x, rho_vol.centers_y, rho_vol.hist,
+                       norm=LogNorm())
+    plt.title('paicos Histogram2D')
+    if rho_vol.logscale:
+        plt.xscale('log')
+        plt.yscale('log')
+
+    image = pa.ImageReader(f"{pa.data_dir}test_data/generic_sim_000.hdf5")
 else:
     widths = np.array([2000, 2000, 0.0])
     slicer = pa.Slicer(snap, center, widths, orientation, npix=128)
@@ -103,5 +147,4 @@ else:
                      extent=extent, norm=LogNorm())
     # Add a colorbar
     cbar = plt.colorbar(im, fraction=0.025, pad=0.04)
-
 plt.show()

@@ -164,19 +164,7 @@ class PaicosReader(dict):
         :meta private:
         """
         self._Time = self.Header['Time']
-        self._Redshift = self.Header['Redshift']
         self._HubbleParam = self.Parameters['HubbleParam']
-
-        unit_length = self.Parameters['UnitLength_in_cm'] * u.cm
-        unit_mass = self.Parameters['UnitMass_in_g'] * u.g
-        unit_velocity = self.Parameters['UnitVelocity_in_cm_per_s'] * u.cm / u.s
-        unit_time = unit_length / unit_velocity
-        unit_energy = unit_mass * unit_velocity**2
-        unit_pressure = (unit_mass / unit_length) / unit_time**2
-        unit_density = unit_mass / unit_length**3
-        Omega0 = self.Parameters['Omega0']
-        OmegaBaryon = self.Parameters['OmegaBaryon']
-        OmegaLambda = self.Parameters['OmegaLambda']
 
         ComovingIntegrationOn = self.Parameters['ComovingIntegrationOn']
 
@@ -184,6 +172,12 @@ class PaicosReader(dict):
         self.comoving_sim = self.ComovingIntegrationOn
 
         if self.ComovingIntegrationOn:
+            self._Redshift = self.Header['Redshift']
+
+            Omega0 = self.Parameters['Omega0']
+            OmegaBaryon = self.Parameters['OmegaBaryon']
+            OmegaLambda = self.Parameters['OmegaLambda']
+
             # Set up LambdaCDM cosmology to calculate times, etc
             self.cosmo = LambdaCDM(H0=100 * self.h, Om0=Omega0,
                                    Ob0=OmegaBaryon, Ode0=OmegaLambda)
@@ -191,13 +185,31 @@ class PaicosReader(dict):
             self._age = self.get_age(self.z)
             self._lookback_time = self.get_lookback_time(self.z)
 
-        self.arepo_units_in_cgs = {'unit_length': unit_length,
-                                   'unit_mass': unit_mass,
-                                   'unit_velocity': unit_velocity,
-                                   'unit_time': unit_time,
-                                   'unit_energy': unit_energy,
-                                   'unit_pressure': unit_pressure,
-                                   'unit_density': unit_density}
+        missing_unitinfo = True
+        if 'UnitLength_in_cm' in self.Parameters:
+            if 'UnitMass_in_g' in self.Parameters:
+                if 'UnitVelocity_in_cm_per_s' in self.Parameters:
+                    missing_unitinfo = False
+
+        if settings.use_units and missing_unitinfo:
+            raise RuntimeError("Units mssing in self.Parameters!")
+
+        if not missing_unitinfo:
+            unit_length = self.Parameters['UnitLength_in_cm'] * u.cm
+            unit_mass = self.Parameters['UnitMass_in_g'] * u.g
+            unit_velocity = self.Parameters['UnitVelocity_in_cm_per_s'] * u.cm / u.s
+            unit_time = unit_length / unit_velocity
+            unit_energy = unit_mass * unit_velocity**2
+            unit_pressure = (unit_mass / unit_length) / unit_time**2
+            unit_density = unit_mass / unit_length**3
+
+            self.arepo_units_in_cgs = {'unit_length': unit_length,
+                                       'unit_mass': unit_mass,
+                                       'unit_velocity': unit_velocity,
+                                       'unit_time': unit_time,
+                                       'unit_energy': unit_energy,
+                                       'unit_pressure': unit_pressure,
+                                       'unit_density': unit_density}
 
         if settings.use_units:
 

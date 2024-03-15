@@ -89,6 +89,7 @@ class GenericSnapshot(PaicosReader):
                        + " via a previous call to give_info"
                        + " or by the PaicosReader base class")
             raise RuntimeError(err_msg)
+
         self.Parameters = {}
         self.Header = {}
         self.Config = {}
@@ -96,47 +97,54 @@ class GenericSnapshot(PaicosReader):
         self.snapnum = snapnum
 
         self.Header['Time'] = time_in_code_units
-        self.Header['Redshift'] = redshift
         self.Parameters['HubbleParam'] = hubble_param
         self.Header["BoxSize"] = boxsize_in_code_units
 
-        err_msg = ('It is expected that you pass'
-                   + ' this unit when pa.settings.use_units is True')
+        if settings.use_units:
+            err_msg = ('It is expected that you pass'
+                       + ' this unit when pa.settings.use_units is True')
 
-        assert length_unit is not None, err_msg
-        assert time_unit is not None, err_msg
-        assert mass_unit is not None, err_msg
+            assert length_unit is not None, err_msg
+            assert time_unit is not None, err_msg
+            assert mass_unit is not None, err_msg
 
-        unit_length = 1.0 * length_unit
-        unit_time = 1.0 * time_unit
-        unit_mass = 1.0 * mass_unit
-        assert isinstance(unit_length, u.Quantity)
-        assert isinstance(unit_time, u.Quantity)
-        assert isinstance(unit_mass, u.Quantity)
+            unit_length = 1.0 * length_unit
+            unit_time = 1.0 * time_unit
+            unit_mass = 1.0 * mass_unit
+            assert isinstance(unit_length, u.Quantity)
+            assert isinstance(unit_time, u.Quantity)
+            assert isinstance(unit_mass, u.Quantity)
 
-        unit_velocity = unit_length / unit_time
+            unit_velocity = unit_length / unit_time
 
-        self.Parameters['UnitLength_in_cm'] = unit_length.to('cm').value
-        self.Parameters['UnitMass_in_g'] = unit_mass.to('g').value
-        self.Parameters['UnitVelocity_in_cm_per_s'] = unit_velocity.to('cm/s').value
-
-        self.Parameters['Omega0'] = Omega0
-        self.Parameters['OmegaBaryon'] = OmegaBaryon
-        self.Parameters['OmegaLambda'] = OmegaLambda
+            self.Parameters['UnitLength_in_cm'] = unit_length.to('cm').value
+            self.Parameters['UnitMass_in_g'] = unit_mass.to('g').value
+            self.Parameters['UnitVelocity_in_cm_per_s'] = unit_velocity.to('cm/s').value
 
         if comoving_sim:
+            self.Header['Redshift'] = redshift
             self.Parameters['ComovingIntegrationOn'] = 1
+            self.Parameters['Omega0'] = Omega0
+            self.Parameters['OmegaBaryon'] = OmegaBaryon
+            self.Parameters['OmegaLambda'] = OmegaLambda
         else:
             self.Parameters['ComovingIntegrationOn'] = 0
 
         # Enable units
         self.get_units_and_other_parameters()
-        self.enable_units()
+        if settings.use_units:
+            self.enable_units()
 
         self.box = self.Header["BoxSize"]
         self.box_size = np.array([self.box, self.box, self.box])
         if settings.use_units:
             self.box_size = self.box_size * self.length
+
+        if self.comoving_sim:
+            raise RuntimeError("comoving_sim not tested - please create an issue!")
+
+        if self._HubbleParam != 1:
+            raise RuntimeError("h!=1 not tested - please create an issue!")
 
     def set_volumes(self, data, unit='arepo_length^3'):
         """
