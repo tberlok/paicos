@@ -286,3 +286,6 @@ if settings.load_cuda_functionality_on_startup:
 
 # Do this at start up
 util._check_if_omp_has_issues()
+
+if settings.generic_sim:
+    from .readers.generic_snap import GenericSnapshot

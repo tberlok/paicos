@@ -308,4 +308,4 @@ class Histogram2D:
             for key, attr in attrs.items():
                 hdf5file[name].attrs[key] = attr
 
-        util._copy_over_snapshot_information(self.snap.filename, filename)
+        util._copy_over_snapshot_information(self.snap, filename)

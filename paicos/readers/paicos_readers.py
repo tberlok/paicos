@@ -127,9 +127,10 @@ class PaicosReader(dict):
             keys = list(f.keys())
 
         # Enable units
-        self.get_units_and_other_parameters()
-        self.enable_units()
-        self.add_user_units()
+            self.get_units_and_other_parameters()
+        if settings.use_units:
+            self.enable_units()
+            self.add_user_units()
 
         # Find the adiabatic index
         self.gamma = self.get_adiabiatic_index()
@@ -162,7 +163,6 @@ class PaicosReader(dict):
 
         :meta private:
         """
-
         self._Time = self.Header['Time']
         self._Redshift = self.Header['Redshift']
         self._HubbleParam = self.Parameters['HubbleParam']
@@ -191,75 +191,6 @@ class PaicosReader(dict):
             self._age = self.get_age(self.z)
             self._lookback_time = self.get_lookback_time(self.z)
 
-        _ns = globals()
-
-        try:
-            arepo_mass = u.def_unit(
-                ["arepo_mass"],
-                unit_mass,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo mass unit",
-                format={"latex": r"arepo\_mass"},
-            )
-            arepo_time = u.def_unit(
-                ["arepo_time"],
-                unit_time,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo time unit",
-                format={"latex": r"arepo\_time"},
-            )
-            arepo_length = u.def_unit(
-                ["arepo_length"],
-                unit_length,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo length unit",
-                format={"latex": r"arepo\_length"},
-            )
-            arepo_velocity = u.def_unit(
-                ["arepo_velocity"],
-                unit_velocity,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo velocity unit",
-                format={"latex": r"arepo\_velocity"},
-            )
-            arepo_pressure = u.def_unit(
-                ["arepo_pressure"],
-                unit_pressure,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo pressure unit",
-                format={"latex": r"arepo\_pressure"},
-            )
-            arepo_energy = u.def_unit(
-                ["arepo_energy"],
-                unit_energy,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo energy unit",
-                format={"latex": r"arepo\_energy"},
-            )
-            arepo_density = u.def_unit(
-                ["arepo_density"],
-                unit_density,
-                prefixes=False,
-                namespace=_ns,
-                doc="Arepo density unit",
-                format={"latex": r"arepo\_density"},
-            )
-        except ValueError:
-            # print(e)
-            traceback.print_exc()
-            err_msg = ("Re-declaration of arepo code units attempted "
-                       + "within same Python session. "
-                       + "See https://github.com/tberlok/paicos/issues/59")
-            raise RuntimeError(err_msg)
-        # except Exception as e:
-        #     print(e)
-
         self.arepo_units_in_cgs = {'unit_length': unit_length,
                                    'unit_mass': unit_mass,
                                    'unit_velocity': unit_velocity,
@@ -268,13 +199,81 @@ class PaicosReader(dict):
                                    'unit_pressure': unit_pressure,
                                    'unit_density': unit_density}
 
-        self.arepo_units = {'unit_length': arepo_length,
-                            'unit_mass': arepo_mass,
-                            'unit_velocity': arepo_velocity,
-                            'unit_time': arepo_time,
-                            'unit_energy': arepo_energy,
-                            'unit_pressure': arepo_pressure,
-                            'unit_density': arepo_density}
+        if settings.use_units:
+
+            _ns = globals()
+
+            try:
+                arepo_mass = u.def_unit(
+                    ["arepo_mass"],
+                    unit_mass,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo mass unit",
+                    format={"latex": r"arepo\_mass"},
+                )
+                arepo_time = u.def_unit(
+                    ["arepo_time"],
+                    unit_time,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo time unit",
+                    format={"latex": r"arepo\_time"},
+                )
+                arepo_length = u.def_unit(
+                    ["arepo_length"],
+                    unit_length,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo length unit",
+                    format={"latex": r"arepo\_length"},
+                )
+                arepo_velocity = u.def_unit(
+                    ["arepo_velocity"],
+                    unit_velocity,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo velocity unit",
+                    format={"latex": r"arepo\_velocity"},
+                )
+                arepo_pressure = u.def_unit(
+                    ["arepo_pressure"],
+                    unit_pressure,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo pressure unit",
+                    format={"latex": r"arepo\_pressure"},
+                )
+                arepo_energy = u.def_unit(
+                    ["arepo_energy"],
+                    unit_energy,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo energy unit",
+                    format={"latex": r"arepo\_energy"},
+                )
+                arepo_density = u.def_unit(
+                    ["arepo_density"],
+                    unit_density,
+                    prefixes=False,
+                    namespace=_ns,
+                    doc="Arepo density unit",
+                    format={"latex": r"arepo\_density"},
+                )
+            except ValueError:
+                traceback.print_exc()
+                err_msg = ("Re-declaration of arepo code units attempted "
+                           + "within same Python session. "
+                           + "See https://github.com/tberlok/paicos/issues/59")
+                raise RuntimeError(err_msg)
+
+            self.arepo_units = {'unit_length': arepo_length,
+                                'unit_mass': arepo_mass,
+                                'unit_velocity': arepo_velocity,
+                                'unit_time': arepo_time,
+                                'unit_energy': arepo_energy,
+                                'unit_pressure': arepo_pressure,
+                                'unit_density': arepo_density}
 
     def enable_units(self):
         """

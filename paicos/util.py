@@ -401,15 +401,17 @@ def _check_if_omp_has_issues(verbose=True):
             warnings.warn(msg)
 
 
-def _copy_over_snapshot_information(org_filename, new_filename, mode='r+'):
+def _copy_over_snapshot_information(snap, new_filename, mode='r+'):
     """
     Copy over attributes from the original arepo snapshot.
     In this way we will have access to units used, redshift etc
     """
-    g = h5py.File(org_filename, 'r')
+    info_dic = {}
+    info_dic['Header'] = dict(snap.Header)
+    info_dic['Parameters'] = dict(snap.Parameters)
+    info_dic['Config'] = dict(snap.Config)
     with h5py.File(new_filename, mode) as f:
         for group in ['Header', 'Parameters', 'Config']:
             f.create_group(group)
-            for key in g[group].attrs.keys():
-                f[group].attrs[key] = g[group].attrs[key]
-    g.close()
+            for key in info_dic[group]:
+                f[group].attrs[key] = info_dic[group][key]
