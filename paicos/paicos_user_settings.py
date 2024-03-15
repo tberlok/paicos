@@ -18,7 +18,7 @@ pa.numthreads(4)
 pa.give_openMP_warnings(True)
 
 # Whether to load GPU/cuda functionality on startup
-pa.load_cuda_functionality_on_startup(False)
+pa.load_cuda_functionality_on_startup(True)
 
 # Explicitly set data directory (only needed for pip installations)
-data_dir = '/Users/berlok/projects/paicos/data'
+data_dir = '/groups/astro/lperrone/paicos/data'

@@ -93,10 +93,10 @@ def get_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, real_t zc,
 
         # Index calculation
         index[ip] = 0
-        if (x < (sidelength_x + thickness[ip])/2.0) and (x > -(sidelength_x + thickness[ip])/2.0):
-            if (y < (sidelength_y + thickness[ip])/2.0) and (y > -(sidelength_y + thickness[ip])/2.0):
-                if (z < (sidelength_z + thickness[ip])/2.0):
-                    if (z > -(sidelength_z + thickness[ip])/2.0):
+        if (x < (sidelength_x/2.0 + thickness[ip])) and (x > -(sidelength_x/2.0 + thickness[ip])):
+            if (y < (sidelength_y/2.0 + thickness[ip])) and (y > -(sidelength_y/2.0 + thickness[ip])):
+                if (z < (sidelength_z/2.0 + thickness[ip])):
+                    if (z > -(sidelength_z/2.0 + thickness[ip])):
                         index[ip] = 1
 
     # Return a numpy boolean array
@@ -205,10 +205,10 @@ def get_rotated_cube_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc, re
 
         # Index calculation
         index[ip] = 0
-        if (x_dot_ex < (sidelength_x + thickness[ip])/2.0) and (x_dot_ex > -(sidelength_x + thickness[ip])/2.0):
-            if (x_dot_ey < (sidelength_y + thickness[ip])/2.0) and (x_dot_ey > -(sidelength_y + thickness[ip])/2.0):
-                if (x_dot_ez < (sidelength_z + thickness[ip])/2.0):
-                    if (x_dot_ez > -(sidelength_z + thickness[ip])/2.0):
+        if (x_dot_ex < (sidelength_x/2.0 + thickness[ip])) and (x_dot_ex > -(sidelength_x/2.0 + thickness[ip])):
+            if (x_dot_ey < (sidelength_y/2.0 + thickness[ip])) and (x_dot_ey > -(sidelength_y/2.0 + thickness[ip])):
+                if (x_dot_ez < (sidelength_z/2.0 + thickness[ip])):
+                    if (x_dot_ez > -(sidelength_z/2.0 + thickness[ip])):
                         index[ip] = 1
 
     # Return a numpy boolean array
@@ -278,8 +278,9 @@ def get_radial_range_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc,
     cdef int ip
     cdef real_t x, y, z, r2
 
-    cdef real_t r2_min = r_min*r_min
-    cdef real_t r2_max = r_max*r_max
+    # cdef real_t r2_min = r_min*r_min
+    # cdef real_t r2_max = r_max*r_max
+    cdef real_t r2_min, r2_max
 
     cdef int[:] index = np.zeros(Np, dtype=np.intc)
 
@@ -292,9 +293,14 @@ def get_radial_range_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc,
 
         r2 = x*x + y*y + z*z
 
+        r2_min = 0.0
+        if (r_min > thickness[ip]):
+            r2_min = (r_min - thickness[ip])*(r_min - thickness[ip])
+        r2_max = (r_max + thickness[ip])*(r_max + thickness[ip])
+        
         # Index calculation
         index[ip] = 0
-        if (r2 < (r2_max + thickness[ip])) and (r2 > (r2_min - thickness[ip])):
+        if (r2 < r2_max) and (r2 > r2_min):
             index[ip] = 1
 
     # Return a numpy boolean array
