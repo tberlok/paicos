@@ -35,6 +35,8 @@ Density = u.Unit('arepo_density small_h2 / small_a3')
 # internal velocity, w, divided by internal coordinates
 VelocityGradient = InternalVelocities / Coordinates
 
+Pressure = u.Unit('arepo_pressure  small_h^2 small_a^-3')
+
 default = {
     'Coordinates': Coordinates,
     'Masses': Masses,
@@ -69,14 +71,16 @@ voronoi_cells = {
     'NeutralHydrogenAbundance': unit_less,
     'ParticleIDs': unit_less,
     'Potential': Potential,
-    'Pressure': 'arepo_pressure  small_h^2 small_a^-3',
+    'Pressure': Pressure,
     'StarFormationRate': StarFormationRate,
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
     'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities,
-    'VelocityGradient': VelocityGradient
+    'VelocityGradient': VelocityGradient,
+    'DensityGradient': Density / Coordinates,
+    'PressureGradient': Pressure / Coordinates
 }
 
 dark_matter = {
