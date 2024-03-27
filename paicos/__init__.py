@@ -106,6 +106,19 @@ def add_user_function(variable_string, function):
         pa.add_user_function('0_TM2', TemperaturesTimesMassesSquared)
 
     """
+    from inspect import signature
+    if ' ' in variable_string:
+        raise RuntimeError(f'{variable_string} contains space(s)!')
+
+    sig = signature(function)
+    if len(sig.parameters) == 2:
+        dependencies = function(None, True)
+        assert isinstance(dependencies, list)
+        err_msg = 'Problem with list of dependencies!'
+        for item in dependencies:
+            assert isinstance(item, str), err_msg
+            assert ' ' not in item, err_msg
+
     derived_variables.user_functions.update({variable_string: function})
 
 

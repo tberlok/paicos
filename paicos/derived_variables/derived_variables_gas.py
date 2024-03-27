@@ -67,7 +67,7 @@ def Pressure(snap, get_dependencies=False):
         raise RuntimeError(msg)
     gm1 = snap.gamma - 1
     variable = snap["0_InternalEnergy"] * snap["0_Density"] * gm1
-    return variable
+    return variable.to('arepo_pressure')
 
 
 def PressureTimesVolume(snap, get_dependencies=False):
