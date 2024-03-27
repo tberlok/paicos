@@ -666,6 +666,17 @@ class ImageReader(PaicosReader):
         self.dw = self.width / self.npix_width
         self.dh = self.height / self.npix_height
 
+        # Get derived images
+        self.get_derived_images()
+
+    @np.errstate(divide='ignore', invalid='ignore')
+    def get_derived_images(self):
+        """
+        Calculate images automatically for convenience,
+        e.g., 0_MagneticFieldSquaredTimesVolume and 0_Volume
+        are divided to obtain a 2D-array with 0_MagneticFieldSquared
+        """
+
         # Get derived images from projection-files
         keys = list(self.keys())
         for key in keys:
