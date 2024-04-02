@@ -127,8 +127,8 @@ the GPU-optimized tree-construction algorithm described in [@Karras2012] and
 the implementation of it found in the publicly available Cornerstone
 Octree GPU-library [@Keller2023]. Using our SPH-like
 implementation on an [Nvidia A100 GPU](https://www.nvidia.com/en-us/data-center/a100/),
-it takes 0.15 seconds to
-project 93 mio. particles onto an image plane with $2048^2$ pixels. This
+it takes less than a second to project 100 mio. particles onto an image plane with
+$4096^2$ pixels. This
 speed enables interactive data exploration. We provide an example IPython
 widget illustrating this feature. Finally, we note that the returned images
 include physical units and can be used for scientific analysis.
