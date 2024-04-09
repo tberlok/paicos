@@ -1,7 +1,6 @@
 import pytest
 
 
-@pytest.mark.xfail(raises=RuntimeError)
 def test_gpu_binary_tree():
     try:
         import cupy as cp

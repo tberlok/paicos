@@ -16,6 +16,7 @@ def test_gpu_ray_projector(show=False):
     import paicos as pa
     import numpy as np
     pa.use_units(True)
+    pa.gpu_init()
 
     # Load snapshot
     snap = pa.Snapshot(pa.data_dir, 247)
