@@ -1,2 +1,4 @@
 global-include *.pyx
 global-exclude *.c
+include requirements.txt
+include dev_requirements.txt

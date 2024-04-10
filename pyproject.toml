@@ -3,3 +3,11 @@ requires = ["cython>=0.29.21",
             "numpy>=1.20",
             "setuptools",
             "wheel"]
+
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = {file = ["dev_requirements.txt"]}
