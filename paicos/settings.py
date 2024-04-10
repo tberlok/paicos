@@ -28,5 +28,4 @@ spherical_coords = False
 cyl_coords = False
 
 # Whether to load GPU/cuda functionality on startup
-load_cuda_functionality_on_startup = True
-
+load_cuda_functionality_on_startup = False
