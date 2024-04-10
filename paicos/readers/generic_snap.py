@@ -12,6 +12,9 @@ class GenericSnapshot(PaicosReader):
     This is a very simple Snapshot class, which
     was written for use with general data (e.g. if one
     wants to make images of Ramses simulations).
+
+    Detailed documentation/example usage remains to be written,
+    so please create an issue if you have trouble getting this to work.
     """
 
     def __init__(self, basedir='.', snapnum=None, basename="snap",
@@ -19,8 +22,7 @@ class GenericSnapshot(PaicosReader):
                  only_init=False,
                  verbose=False):
         """
-        Please use the methods 'give_info'
-        or 'read_file'.
+        Please use see the docstring for the method 'give_info'.
         """
 
         try:

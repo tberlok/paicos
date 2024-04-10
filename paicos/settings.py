@@ -30,7 +30,3 @@ cyl_coords = False
 # Whether to load GPU/cuda functionality on startup
 load_cuda_functionality_on_startup = True
 
-# Setting this option to True enables
-# the pa.GenericSnapshot class for use with non-Arepo
-# simulations
-generic_sim = True

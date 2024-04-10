@@ -30,6 +30,8 @@ from .util import root_dir
 from .readers.arepo_snap import Snapshot
 from .readers.arepo_catalog import Catalog
 from .readers.paicos_readers import PaicosReader, ImageReader, Histogram2DReader
+from .readers.generic_snap import GenericSnapshot
+
 
 # HDF5 file writers
 from .writers.paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
@@ -312,5 +314,3 @@ if settings.load_cuda_functionality_on_startup:
 # Do this at start up
 util._check_if_omp_has_issues()
 
-if settings.generic_sim:
-    from .readers.generic_snap import GenericSnapshot
