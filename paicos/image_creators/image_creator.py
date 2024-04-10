@@ -37,7 +37,8 @@ class ImageCreator:
 
         self.snap = snap
 
-        code_length = self.snap.length
+        if settings.use_units:
+            code_length = self.snap.length
 
         if hasattr(center, 'unit'):
             self._center = center.copy

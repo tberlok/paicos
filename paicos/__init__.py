@@ -30,6 +30,8 @@ from .util import root_dir
 from .readers.arepo_snap import Snapshot
 from .readers.arepo_catalog import Catalog
 from .readers.paicos_readers import PaicosReader, ImageReader, Histogram2DReader
+from .readers.generic_snap import GenericSnapshot
+
 
 # HDF5 file writers
 from .writers.paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
@@ -267,10 +269,27 @@ else:
 
 # Import of GPU functionality only if
 # a simple test with cupy and numba works.
-if settings.load_cuda_functionality_on_startup:
+def gpu_init(gpu_num=0):
+    """
+    Calling this function initializes the GPU parts of the code.
+
+    You can set settings.load_cuda_functionality_on_startup = True,
+    to do this automatically on startup, but you should be aware
+    that loading cupy and numba can be a bit time-consuming,
+    so that this significantly affects the import time.
+
+    Parameters:
+    ----------
+
+        gpu_num (int): The GPU that you want to use for computations,
+                       i.e., we call cupy.cuda.Device(gpu_num).use()
+    """
+
     try:
         import cupy as cp
         from numba import cuda
+
+        cp.cuda.Device(gpu_num).use()
 
         @cuda.jit
         def my_kernel(io_array):
@@ -288,6 +307,9 @@ if settings.load_cuda_functionality_on_startup:
         # Test above worked, do the imports
         from .image_creators.gpu_sph_projector import GpuSphProjector
         from .image_creators.gpu_ray_projector import GpuRayProjector
+        import paicos
+        paicos.GpuSphProjector = GpuSphProjector
+        paicos.GpuRayProjector = GpuRayProjector
     except Exception as e:
         import warnings
         print(e)
@@ -296,6 +318,11 @@ if settings.load_cuda_functionality_on_startup:
                    'cupy and numba for installation procedure. Note that you need '
                    'a GPU that supports CUDA.\n')
         warnings.warn(err_msg)
+
+
+if settings.load_cuda_functionality_on_startup:
+    gpu_init()
+
 
 # Do this at start up
 util._check_if_omp_has_issues()
