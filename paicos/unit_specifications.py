@@ -14,7 +14,14 @@ unit_less = u.Unit('')
 
 Coordinates = u.Unit('arepo_length small_a / small_h')
 Masses = u.Unit('arepo_mass / small_h')
+
+# The velocity output has this scaling for historical reasons
 Velocities = u.Unit('arepo_velocity  small_a^(1/2)')
+
+# Gas velocities have a different scaling internally in Arepo,
+# i.e., they are given in terms of w = u a,
+# where u is the peculiar velocity
+InternalVelocities = u.Unit('arepo_velocity  small_a^(-1)')
 
 Potential = u.Unit('arepo_velocity^2 / small_a')
 
@@ -23,6 +30,12 @@ MagneticField = u.Unit('arepo_pressure^(1/2) small_a^-2 small_h')
 Volume = Coordinates**3
 Density = Masses / Volume
 Density = u.Unit('arepo_density small_h2 / small_a3')
+
+# NOTE: Velocity gradients are written out in unit of
+# internal velocity, w, divided by internal coordinates
+VelocityGradient = InternalVelocities / Coordinates
+
+Pressure = u.Unit('arepo_pressure  small_h^2 small_a^-3')
 
 default = {
     'Coordinates': Coordinates,
@@ -58,14 +71,16 @@ voronoi_cells = {
     'NeutralHydrogenAbundance': unit_less,
     'ParticleIDs': unit_less,
     'Potential': Potential,
-    'Pressure': 'arepo_pressure  small_h^2 small_a^-3',
+    'Pressure': Pressure,
     'StarFormationRate': StarFormationRate,
     'SubfindDMDensity': Density,
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
     'SubfindVelDisp': 'arepo_velocity',
     'Velocities': Velocities,
-    'VelocityGradient': Velocities / Coordinates
+    'VelocityGradient': VelocityGradient,
+    'DensityGradient': Density / Coordinates,
+    'PressureGradient': Pressure / Coordinates
 }
 
 dark_matter = {

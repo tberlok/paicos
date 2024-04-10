@@ -542,6 +542,9 @@ class PaicosQuantity(Quantity):
         modifying the a and h factors. This method allows
         changing the units in one go.
         """
+        if isinstance(new_unit, str):
+            new_unit = u.Unit(new_unit)
+
         u_unit, pu_unit = separate_units(new_unit)
         new_quant = self.to(u_unit)
         new_quant = new_quant.to_comoving(pu_unit)

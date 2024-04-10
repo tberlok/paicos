@@ -266,7 +266,7 @@ class Snapshot(PaicosReader):
         This function goes through all the implemented functions
         for getting derived variables. Checking their dependencies,
         it then figures out which derived variables are actually possible
-        for this particular snapshot. For instance, you can calculate the
+        for this particular snapshot. For instance, you cannot calculate the
         magnetic field strength if the magnetic field is not stored in
         the hdf5 file.
         """
@@ -301,7 +301,7 @@ class Snapshot(PaicosReader):
         # We then trim the dependency dictionary
 
         # This will fail for very nested dependencies.
-        for _ in range(3):
+        for _ in range(4):
             # First substitute all dependencies that are
             # at the top level of the dictionary
             for func_name, deps in dependency_dic.items():
