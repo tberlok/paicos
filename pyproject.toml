@@ -1,13 +1,29 @@
+[project]
+name = "Paicos"
+authors = [
+    { name="Thomas Berlok", email="tberlok@gmail.com" },
+]
+readme = "README.md"
+requires-python = ">3.8.0"
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dynamic = ["dependencies", "optional-dependencies", "license", "description", "version"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = {file = ["dev_requirements.txt"]}
+
 [build-system]
 requires = ["cython>=0.29.21",
             "numpy>=1.20",
             "setuptools",
             "wheel"]
 
-dynamic = ["dependencies", "optional-dependencies"]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-
-[tool.setuptools.dynamic.optional-dependencies]
-dev = {file = ["dev_requirements.txt"]}
