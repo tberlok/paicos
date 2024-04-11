@@ -200,11 +200,11 @@ class GpuRayProjector(ImageCreator):
             if self.direction != 'orientation':
                 get_index = util.get_index_of_cubic_region_plus_thin_layer
                 self.index = get_index(self.snap[f"{parttype}_Coordinates"],
-                                       center, widths, 2.0 * self.hsml, snap.box)
+                                       center, widths, self.hsml, snap.box)
             else:
                 get_index = util.get_index_of_rotated_cubic_region_plus_thin_layer
                 self.index = get_index(snap[f"{parttype}_Coordinates"],
-                                       center, widths, 2.0 * self.hsml, snap.box,
+                                       center, widths, self.hsml, snap.box,
                                        self.orientation)
 
             self.hsml = self.hsml[self.index]
