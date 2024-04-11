@@ -60,7 +60,9 @@ from . import cython
 # pylint: disable=W0621
 
 # The place where __init__.py (this file) is located
-code_dir = os.path.dirname(os.path.abspath(__file__)) + '/'
+code_dir = os.path.dirname(os.path.abspath(__file__))
+# This is the user home_dir
+home_dir = os.path.expanduser('~')
 
 
 def use_units(use_units):
@@ -241,20 +243,25 @@ def set_aliases(aliases):
     settings.use_aliases = True
 
 
-def user_settings_exists():
+def import_user_settings():
     """
-    Checks if user settings exist in the root directory of Paicos.
+    Import user settings if they exist in the root directory of Paicos
+    or as a hidden file at the users home directory.
 
     :meta private:
     """
     if os.path.exists(code_dir + '/paicos_user_settings.py'):
-        return True
-    return False
+        from . import paicos_user_settings
+    if os.path.exists(home_dir + '/.paicos_user_settings.py'):
+        filepath = home_dir + '/.paicos_user_settings.py'
+        import importlib
+        spec = importlib.util.spec_from_file_location('paicos_settings',
+                                                      location=filepath)
+        foo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(foo)
 
 
-if user_settings_exists():
-    # pylint: disable=E0401
-    from . import paicos_user_settings
+import_user_settings()
 
 if os.path.exists(root_dir + 'data/'):
     data_dir = root_dir + 'data/'

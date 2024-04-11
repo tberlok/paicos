@@ -42,6 +42,7 @@ def get_project_root_dir():
 
 # Set the root_dir for Paicos
 root_dir = get_project_root_dir()
+home_dir = os.path.expanduser('~') + '/'
 
 
 def _split_filename(filenamewithpath):

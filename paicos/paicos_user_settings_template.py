@@ -3,6 +3,8 @@ import paicos as pa
 """
 Set up your own default settings by renaming this file as paicos_user_settings.py
 and saving it at the directory found at: pa.code_dir
+or as a hidden file in your home directory (pa.home_dir), e.g.
+on my (Thomas Berlok) laptop '/Users/berlok/.paicos_user_settings.py'
 
 Here we are overriding the defaults set in settings.py, so you only need
 to add things you want to change.
@@ -16,7 +18,7 @@ pa.use_only_user_functions(False)
 pa.print_info_when_deriving_variables(False)
 
 # Number of threads to use in calculations
-pa.numthreads(8)
+pa.numthreads(16)
 
 # Info about the openMP setup
 pa.give_openMP_warnings(False)
