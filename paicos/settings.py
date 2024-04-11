@@ -2,7 +2,7 @@
 use_units = True
 
 # Number of threads to use in calculations
-numthreads = 16
+numthreads = 8
 
 # Settings for automatic calculation of derived variables
 use_only_user_functions = False
