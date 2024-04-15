@@ -17,15 +17,18 @@ Below we provide three differens ways of getting Paicos up and running,
 git clone git@github.com:tberlok/paicos.git
 cd paicos
 pip install -r requirements.txt
+pip install -r dev_requirements.txt
 make
-make checks
 ```
 
 Add the directory to your PYTHONPATH, e.g., I have
 ```
 export PYTHONPATH=$PYTHONPATH:/Users/berlok/projects/paicos
 ```
-in my `.bash_profile`.
+in my `.bash_profile`. Finally, run the tests
+```
+make checks
+```
 
 #### Compiling on MacOs
 
@@ -79,7 +82,8 @@ python -c "import paicos"
 ```
 git clone git@github.com:tberlok/paicos.git
 cd paicos
-pip install -r requirements.txt 
+pip install -r requirements.txt
+pip install -r dev_requirements.txt
 python3 -m pip install -e .
 make checks
 ```

@@ -1,11 +1,6 @@
 scipy >= 1.7.3
 numpy
-cython
 matplotlib
 h5py
 astropy >= 4.3
 numba
-
-# For testing
-pytest
-pytest-order

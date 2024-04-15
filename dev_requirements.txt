@@ -1,2 +1,6 @@
+cython
+# For testing
+pytest
+pytest-order
 flake8
 pylint
