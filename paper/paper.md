@@ -145,6 +145,8 @@ cosmological simulations including magnetic fields.
 
 # Acknowledgements
 
+We thank the JOSS referees, Kyle Oman and Terrence Tricco, and the editor,
+Josh Borrow, for constructive feedback that greatly helped improve Paicos.
 We are grateful to Christoph Pfrommer for support and advice. We thank Rüdiger
 Pakmor, Rosie Talbot and Timon Thomas for useful discussions as well as
 Matthias Weber, Lorenzo Maria Perrone, Arne Trabert and Joseph Whittingham
