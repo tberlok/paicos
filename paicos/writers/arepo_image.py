@@ -122,3 +122,6 @@ class ArepoImage(PaicosWriter):
                 np.testing.assert_array_equal(widths, self.widths)
 
             assert f['image_info'].attrs['direction'] == self.direction
+
+
+ImageWriter = ArepoImage
