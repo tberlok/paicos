@@ -30,7 +30,7 @@ jobs:
       with:
         python-versions: 'cp310-cp310 cp311-cp311'
         build-requirements: 'cython numpy astropy h5py scipy'
-    - name: Publish distribution 📦 to Test PyPI
+    - name: Publish distribution 📦 to PyPI
       env:
         # TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         # TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
