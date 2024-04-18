@@ -55,7 +55,7 @@ Paicos relies heavily on well-established open source software libraries such
 as NumPy [@numpy; @Harris2020], Scipy [@Virtanen2020], h5py [@h5py], Cython
 [@Behnel2011] and astropy [@astropy] and contains features for interactive
 data analysis inside Ipython terminals [@Perez2007] and Jupyter notebooks
-[@Kluyver2016], i.e., tab completion of data keywords and Latex rendering of
+[@Kluyver2016], e.g., tab completion of data keywords and Latex rendering of
 data units. Paicos also contains a number of tests that are automated using
 pytest [@pytest7.4], CircleCi and GitHub workflows.
 
