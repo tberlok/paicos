@@ -527,9 +527,13 @@ class PaicosReader(dict):
 
         if unit is False:
             msg = ('\n\nUnit for field:{}, blockname:{} not implemented!'
-                   + '\nPlease add it to unit_specifications '
+                   + '\nYou can get rid of this error by changing your '
+                   + 'settings, i.e.,\n\npa.settings.strict_units = False\n\n'
+                   + 'However, this means that this quantity will not be read in. '
+                   + 'If you need this quantity, then the best way forward is to '
+                   + 'add it to the unit_specifications '
                    + 'by using the pa.add_user_units '
-                   + 'function. You can also add the pa.add_user_units call to your'
+                   + 'function. You can also add the pa.add_user_units call to your '
                    + 'Paicos user settings to avoid having to do this more than once. '
                    + 'Alternatively, please create an issue on GitHub if you think '
                    + 'others could benefit from that.'

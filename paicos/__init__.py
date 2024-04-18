@@ -35,7 +35,7 @@ from .readers.generic_snap import GenericSnapshot
 
 # HDF5 file writers
 from .writers.paicos_writer import PaicosWriter, PaicosTimeSeriesWriter
-from .writers.arepo_image import ArepoImage
+from .writers.arepo_image import ImageWriter, ArepoImage
 
 # Image creators
 from .image_creators.image_creator import ImageCreator
@@ -250,8 +250,13 @@ def import_user_settings():
 
     :meta private:
     """
+    data_dir = None
+    if os.path.exists(root_dir + 'data/'):
+        data_dir = root_dir + 'data/'
     if os.path.exists(code_dir + '/paicos_user_settings.py'):
         from . import paicos_user_settings
+        if hasattr(paicos_user_settings, 'data_dir'):
+            data_dir = paicos_user_settings.data_dir
     if os.path.exists(home_dir + '/.paicos_user_settings.py'):
         filepath = home_dir + '/.paicos_user_settings.py'
         import importlib
@@ -259,19 +264,17 @@ def import_user_settings():
                                                       location=filepath)
         foo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(foo)
+        if hasattr(foo, 'data_dir'):
+            data_dir = foo.data_dir
 
-
-import_user_settings()
-
-if os.path.exists(root_dir + 'data/'):
-    data_dir = root_dir + 'data/'
-else:
-    try:
-        from .paicos_user_settings import data_dir
+    if data_dir is not None:
         if data_dir[-1] != '/':
             data_dir += '/'
-    except:  # noqa: E722
-        data_dir = None
+
+    return data_dir
+
+
+data_dir = import_user_settings()
 
 
 # Import of GPU functionality only if
@@ -296,7 +299,8 @@ def gpu_init(gpu_num=0):
         import cupy as cp
         from numba import cuda
 
-        cp.cuda.Device(gpu_num).use()
+        if gpu_num != 0:
+            cp.cuda.Device(gpu_num).use()
 
         @cuda.jit
         def my_kernel(io_array):
