@@ -133,12 +133,24 @@ and then setting the path to the CUDA installation in .bashrc as e.g.
 export CUDA_HOME=/software/astro/cuda/11.2 # numba
 export CUDA_PATH=/software/astro/cuda/11.2 # cupy
 ```
-
-Finally, you need to add
+If it worked, you should be able to do this:
+```
+import cupy as cp
+from numba import cuda
+```
+The parts of Paicos that are GPU-enabled need to be initialized,
+i.e., running
+```
+import paicos as pa
+pa.gpu_init()
+```
+will enable the GPU-code.
+You can add 
 ```
 # Whether to load GPU/cuda functionality on startup
 pa.load_cuda_functionality_on_startup(True)
 ```
-to your `paicos_user_settings.py` (see details under 'User configuration').
+to your `paicos_user_settings.py` (see details under 'User configuration')
+to do this automatically when paicos is imported.
 
 
