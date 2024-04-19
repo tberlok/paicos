@@ -2,7 +2,7 @@
 
 Paicos provides a few ways of configuring its default behaviour. These are described here.
 
-We recommend that you work through notebook 1a before reading on (the notebooks
+We recommend that you work through notebook 1 before reading on (the notebooks
 can be seen on the sidebar on the left).
 
 ## Turn units/automatic derivations on/off
