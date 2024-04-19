@@ -94,7 +94,6 @@ would use 24 cores in the parts of the code that are parallelized.
 
 You can save a `.paicos_user_settings.py` script as a hidden file in your home directory,
 which will then be imported when you do `import paicos`.
-The location of this directory depends on whether you have done a pip installation or not.
 If you are unsure where to put it, then you can find the correct filepath by executing this block:
 
 ```
