@@ -4,15 +4,51 @@
 
 We recommend installing conda if you don’t already have it. Follow instructions at <https://github.com/conda-forge/miniforge/#download>
 
-Once you have that working you can create an environment and activate it
+Once you have that working, you can test that you can create an environment and activate it.
+
+Below we then provide a few different ways of getting Paicos up and running inside your conda environment:
+
+## Option 1: Installing directly via PyPi or conda-forge
+
+This is probably the simplest way of installing Paicos. Note however, that
+these installations do not include the tests, examples and example data.
+You can always download these separately or simply peruse the examples documented online.
+
+#### Installation using the conda-forge distribution
+
+Copy-paste below commands into a terminal:
 ```
-conda create -q -n paicos python=3.10
-conda activate paicos
+conda create -q -n paicos-conda python=3.11 --yes
+conda activate paicos-conda
+conda install paicos --yes
+# conda install pytest pytest-order cython --yes # Uncomment this line to also install developer dependencies
 ```
 
-Below we provide three differens ways of getting Paicos up and running,
+#### Installation using the PyPi distribution 
 
-## Option 1: Compile the code and add its path to your PYTHONPATH 
+Copy-paste below commands into a terminal:
+```
+conda create -q -n paicos-pypi python=3.10 --yes
+conda activate paicos-pypi
+pip install paicos[dev]
+```
+
+On MacOs you might have to do something like this (see details below in "Compiling on MacOs")
+```
+CC=gcc-13 pip install paicos[dev]
+```
+
+#### Check that the installation succeeded
+
+If the installation succeeded then you can proceed:
+```
+# Check if installation worked and that you can import Paicos 
+python -c "import paicos"
+```
+
+## Option 2 (Developer installation): Compile the code and add its path to your PYTHONPATH 
+
+You should use this option if you intend to make changes to Paicos ([this would be very welcome, see here for details on making contributions])(https://github.com/tberlok/paicos/blob/main/.github/CONTRIBUTING.md)
 ```
 git clone git@github.com:tberlok/paicos.git
 cd paicos
@@ -57,27 +93,7 @@ make clean
 make
 ```
 
-## Option 2: Installing directly via pip
-
-This is probably the simplest way of installing Paicos, i.e. you run
-```
-pip install paicos
-```
-in a terminal.
-
-Note however, that this installation does not include the tests, examples
-and example data.
-
-On MacOs you might have to do something like (see details above)
-```
-CC=gcc-13 pip install paicos
-```
-If the installation succeeded then you can proceed:
-```
-# Check if installation worked and that you can import Paicos 
-python -c "import paicos"
-```
-
+<!---
 ## Option 3: Installing the development version using pip 
 ```
 git clone git@github.com:tberlok/paicos.git
@@ -87,6 +103,7 @@ pip install -r dev_requirements.txt
 python3 -m pip install -e .
 make checks
 ```
+-->
 
 ## GPU/CUDA requirements
 
