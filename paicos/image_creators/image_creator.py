@@ -190,6 +190,14 @@ class ImageCreator:
             self._center = np.array(value)
         self._properties_changed = True
 
+    def reset_center(self):
+        """
+        Resets the center of the image creator to the
+        value it had at initialization.
+        """
+        self.center = self.center - self._diff_center
+        self._diff_center = np.zeros_like(self._diff_center)
+
     @property
     def npix(self):
         """
