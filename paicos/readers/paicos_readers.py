@@ -672,8 +672,8 @@ class ImageReader(PaicosReader):
 
         if len(list(self.keys())) > 0:
             arr_shape = self[list(self.keys())[0]].shape
-            self.npix = self.npix_width = arr_shape[0]
-            self.npix_height = arr_shape[1]
+            self.npix = self.npix_width = arr_shape[1]
+            self.npix_height = arr_shape[0]
 
         self.area_per_pixel = self.area / (self.npix_width * self.npix_height)
         self.volume_per_pixel = self.volume / (self.npix_width * self.npix_height)

@@ -493,9 +493,9 @@ class ImageCreator:
         The number of pixels of an image in the vertical direction.
         """
         if settings.use_units:
-            return int((self.height / self.width).value * self.npix_width)
+            return int(round((self.height / self.width).value * self.npix_width))
         else:
-            return int((self.height / self.width) * self.npix_width)
+            return int(round((self.height / self.width) * self.npix_width))
 
     @property
     def area(self):

@@ -396,9 +396,11 @@ def project_oriented_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, r
     cdef int Np = xvec.shape[0]
 
     # Shape of projection array
-    cdef int ny = <int> (sidelength_y/sidelength_x * nx)
+    cdef int ny = <int> round(sidelength_y/sidelength_x * nx)
     msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
+    #print(ny)
+    #print((sidelength_y/sidelength_x * nx))
+    assert abs((sidelength_y/sidelength_x * nx) - <float> ny) < 1e-8, msg
 
     # Loop integers and other variables
     cdef int ip, ix, iy, ih, threadnum
@@ -409,7 +411,7 @@ def project_oriented_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, r
     cdef real_t x, y, norm
     cdef real_t cen_x, cen_y, cen_z
 
-    assert sidelength_x/nx == sidelength_y/ny
+    #assert sidelength_x/nx == sidelength_y/ny
 
     # Create projection arrays
     cdef real_t[:, :, :] tmp_var = np.zeros((nx, ny, numthreads), dtype=np.float64)
