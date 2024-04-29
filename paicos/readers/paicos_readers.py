@@ -641,7 +641,7 @@ class ImageReader(PaicosReader):
             self.image_creator = f['image_info'].attrs['image_creator']
 
             if 'npix_width' in f['image_info'].attrs:
-                self.npix_width = f['image_info'].attrs['npix_width']
+                self.npix = self.npix_width = f['image_info'].attrs['npix_width']
             if 'npix_height' in f['image_info'].attrs:
                 self.npix_height = f['image_info'].attrs['npix_height']
 
