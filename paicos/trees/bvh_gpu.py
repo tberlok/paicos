@@ -464,6 +464,19 @@ class GpuBinaryTree:
             self._to_tree_coordinates(query_points), dists, ids)
         return dists / self.conversion_factor, self._tree_node_ids_to_data_ids(ids)
 
+    def __del__(self):
+        """
+        Clean up like this? Not sure it is needed...
+        """
+        del self._pos
+        del self._pos_uint
+        del self.morton_keys
+        del self.sort_index
+        del self.children
+        del self.parents
+        del self.bounds
+        cp._default_memory_pool.free_all_blocks()
+
 
 if __name__ == '__main__':
     import paicos as pa
