@@ -361,7 +361,7 @@ class GpuRayProjector(ImageCreator):
 
     def release_gpu_memory(self):
         if hasattr(self, 'gpu_variables'):
-            for key in self.gpu_variables:
+            for key in list(self.gpu_variables):
                 del self.gpu_variables[key]
             del self.gpu_variables
         if hasattr(self, 'tree'):
