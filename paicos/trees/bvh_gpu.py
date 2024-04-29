@@ -468,13 +468,23 @@ class GpuBinaryTree:
         """
         Clean up like this? Not sure it is needed...
         """
-        del self._pos
-        del self._pos_uint
-        del self.morton_keys
-        del self.sort_index
-        del self.children
-        del self.parents
-        del self.bounds
+        self.release_gpu_memory()
+
+    def release_gpu_memory(self):
+        if hasattr(self, '_pos'):
+            del self._pos
+        if hasattr(self, '_pos_uin'):
+            del self._pos_uint
+        if hasattr(self, 'morton_k'):
+            del self.morton_keys
+        if hasattr(self, 'sort_ind'):
+            del self.sort_index
+        if hasattr(self, 'children'):
+            del self.children
+        if hasattr(self, 'parents'):
+            del self.parents
+        if hasattr(self, 'bounds'):
+            del self.bounds
         cp._default_memory_pool.free_all_blocks()
 
 

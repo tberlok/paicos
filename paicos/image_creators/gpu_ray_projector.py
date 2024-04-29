@@ -357,6 +357,15 @@ class GpuRayProjector(ImageCreator):
         """
         Clean up like this? Not sure it is needed...
         """
-        del self.gpu_variables
-        del self.tree
+        self.release_gpu_memory()
+
+    def release_gpu_memory(self):
+        if hasattr(self, 'gpu_variables'):
+            for key in self.gpu_variables:
+                del self.gpu_variables[key]
+            del self.gpu_variables
+        if hasattr(self, 'tree'):
+            self.tree.release_gpu_memory()
+            del self.tree
+
         cp._default_memory_pool.free_all_blocks()
