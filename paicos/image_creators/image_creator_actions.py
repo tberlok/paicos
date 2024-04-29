@@ -1,8 +1,11 @@
 import numpy as np
+from ..writers.arepo_image import ImageWriter
+from ..readers.paicos_readers import ImageReader
 
 
 def find_angle_subdivisions(angle, max_angle):
     kk = 1
+    angle = abs(angle)
     new_angle = angle / kk
     while new_angle > max_angle:
         kk += 1
@@ -24,18 +27,26 @@ def find_zoom_sub_divisions(zoom, zoom_max):
 
 
 class Actions:
-    def __init__(self, snapnum=None, image_creator=None):
+    def __init__(self, snapnum=None, image_creator=None, dry_run=True):
+
+        self.dry_run = dry_run
+
         self.first_call = True
         if snapnum is None:
-            assert image_creator is not None
-            self.image_creator = image_creator
+            if image_creator is not None:
+                self.image_creator = image_creator
+            else:
+                msg = ("self.image_creator not set, you'll "
+                       + "nedd to do this manually or read "
+                       + "a log file using Actions.read_log")
+                print(msg)
         else:
             self.make_image_creator(snapnum)
         self.first_call = False
 
         self.logging = False
-        self.zoom_max = 10000
-        self.max_angle = 360
+        self.zoom_max = 10000000.
+        self.max_angle = 360.
 
     def make_image_creator(self, snapnum):
         """
@@ -60,12 +71,8 @@ class Actions:
         self.mylogger(outfolder)
         self.mylogger(basename)
         im_creator = self.image_creator
-        image_file = pa.ArepoImage(im_creator, basedir=outfolder,
-                                   basename=f'{basename}_logfile_start')
-
-        zeros = np.zeros((im_creator.npix_width, im_creator.npix_height))
-        uq = im_creator.snap.uq('')
-        image_file.save_image('Zeros', zeros * uq)
+        image_file = ImageWriter(im_creator, basedir=outfolder,
+                                 basename=f'{basename}_logfile_start')
 
         # Move from temporary filename to final filename
         image_file.finalize()
@@ -77,21 +84,26 @@ class Actions:
             filename = f'{outfolder}/{basename}.log'
         with open(filename, 'r') as f:
             lines = f.readlines()
-        outfolder = lines[1].strip()
-        basename = lines[2].strip()
+        self.outfolder = outfolder = lines[1].strip()
+        self.basename = basename = lines[2].strip()
         self.logfile_start = lines[3].strip()
         self.lines = lines
         self.frame_num = 0
         self.line_index = 4
+        self.num_steps = len(self.lines) - self.line_index
+        self.image_creator = ImageReader(self.logfile_start)
+        self.first_call = False
+        self.make_image_creator(self.image_creator.snapnum)
 
-    def step(self):
+    def step(self, verbose=False):
         line = self.lines[self.line_index].strip()
         parts = line.split(',')
         command = parts[0]
 
         im_creator = self.image_creator
 
-        # print(line, command)
+        if verbose:
+            print(line)
         if command == 'center_on_sub' or command == 'center_on_group':
             cx, cy, cz = float(parts[2]), float(parts[3]), float(parts[4])
             new_center = np.array([cx, cy, cz]) * im_creator.center.uq
@@ -104,6 +116,8 @@ class Actions:
                 new_zoom_fac = zoom_fac**(1 / kk)
                 for _ in range(kk):
                     self.zoom(new_zoom_fac)
+            else:
+                self.zoom(zoom_fac)
         elif command == 'width':
             self.width(float(parts[1]))
         elif command == 'height':
@@ -112,53 +126,66 @@ class Actions:
             self.depth(float(parts[1]))
         elif command == 'rotate_around_perp_vector1':
             angle = float(parts[1])
-            if angle > self.max_angle:
+            if abs(angle) > self.max_angle:
                 kk = find_angle_subdivisions(angle, self.max_angle)
                 for _ in range(kk):
                     self.rotate_around_perp_vector1(angle / kk)
+            else:
+                self.rotate_around_perp_vector1(angle)
 
         elif command == 'rotate_around_perp_vector2':
             angle = float(parts[1])
-            if angle > self.max_angle:
+            if abs(angle) > self.max_angle:
                 kk = find_angle_subdivisions(angle, self.max_angle)
                 for _ in range(kk):
                     self.rotate_around_perp_vector2(angle / kk)
+            else:
+                self.rotate_around_perp_vector2(angle)
         elif command == 'rotate_around_normal_vector':
             angle = float(parts[1])
-            if angle > self.max_angle:
+            if abs(angle) > self.max_angle:
                 kk = find_angle_subdivisions(angle, self.max_angle)
                 for _ in range(kk):
                     self.rotate_around_normal_vector(angle / kk)
+            else:
+                self.rotate_around_normal_vector(angle)
         elif command == 'half_resolution':
             self.half_resolution()
         elif command == 'double_resolution':
             self.double_resolution()
         elif command == 'move_center':
-            diff_x, diff_y, diff_z = float(parts[1]), float(parts[2]), float(parts[3])
+            diff_x, diff_y, diff_z = float(
+                parts[1]), float(parts[2]), float(parts[3])
             diff = np.array([diff_x, diff_y, diff_z]) * im_creator.center.uq
             self.move_center(diff)
         elif command == 'move_center_sim_coordinates':
-            diff_x, diff_y, diff_z = float(parts[1]), float(parts[2]), float(parts[3])
+            diff_x, diff_y, diff_z = float(
+                parts[1]), float(parts[2]), float(parts[3])
             diff = np.array([diff_x, diff_y, diff_z]) * im_creator.center.uq
             self.move_center_sim_coordinates(diff)
         elif command == 'reset_center':
             self.reset_center()
+        elif command == 'change_snapnum':
+            self.change_snapnum(int(parts[1]))
         else:
             raise RuntimeError(f'unknown command in log file!\n{line}\n{command}')
 
         self.frame_num += 1
         self.line_index += 1
 
-    def expand_log(self, outfolder='.', basename='image', zoom_max=1.02, max_angle=1):
+    def expand_log(self, outfolder='.', basename='image', zoom_max=1.02, max_angle=1, verbose=False):
         self.zoom_max = zoom_max
         self.max_angle = max_angle
-        self.outfolder = outfolder
-        self.basename = basename + '_expanded'
-        self.create_log(outfolder=self.outfolder, basename=self.basename)
+
         self.read_log(outfolder=self.outfolder, basename=basename)
 
+        self.outfolder = outfolder
+        self.basename = basename + '_expanded'
+
+        self.create_log(outfolder=self.outfolder, basename=self.basename)
+
         for ii in range(4, len(self.lines)):
-            self.step()
+            self.step(verbose=verbose)
 
     def change_snapnum(self, snapnum):
         self.make_image_creator(snapnum)
@@ -252,69 +279,3 @@ class Actions:
         im_creator._diff_center += diff
         if self.logging:
             self.mylogger(f"move_center_sim_coordinates,{diff[0].value},{diff[1].value},{diff[2].value}")
-
-
-if __name__ == '__main__':
-    import paicos as pa
-
-    class Actions2(Actions):
-        def make_image_creator(self, snapnum):
-            snap = pa.Snapshot(pa.data_dir, snapnum)
-
-            if self.first_call:
-                center = snap.Cat.Group['GroupPos'][0]
-                widths = [15000., 15000., 15000.]
-                orientation = pa.Orientation(normal_vector=[0, 0, 1], perp_vector1=[1, 0, 0])
-            else:
-                orientation = self.image_creator.orientation.copy
-                widths = np.copy(self.image_creator.widths)
-                center = np.copy(self.image_creator.center)
-                del self.image_creator
-            self.image_creator = pa.ImageCreator(snap, center, widths, orientation)
-
-    actions = Actions2(247)
-    actions.create_log(outfolder='.', basename='image')
-    actions.rotate_around_normal_vector(10)
-    actions.zoom(10.)
-    actions.change_snapnum(500)
-    actions.rotate_around_normal_vector(10)
-    actions.rotate_around_perp_vector1(-20)
-    actions.rotate_around_perp_vector2(15)
-    actions.move_center(actions.image_creator.center * 0.05)
-    actions.move_center_sim_coordinates(-actions.image_creator.center * 0.05)
-    actions.zoom(10.)
-    actions.reset_center()
-
-    # Now, let's expand the log file
-    actions = Actions(247)
-    actions.read_log(outfolder='.', basename='image')
-    # TODO: read_log should also set the image creator
-    info = pa.ImageReader(actions.logfile_start)
-    actions.expand_log(outfolder='.', basename='image')
-
-# if __name__ == '__main__':
-#     import paicos as pa
-#     snap = pa.Snapshot(pa.data_dir + 'snap_247.hdf5')
-#     center = snap.Cat.Group['GroupPos'][0]
-#     R200c = snap.Cat.Group['Group_R_Crit200'][0].value
-#     widths = [15000., 15000., 15000.]
-#     orientation = pa.Orientation(
-#         normal_vector=[0, 0, 1], perp_vector1=[1, 0, 0])
-#     im = pa.ImageCreator(snap, center, widths, orientation)
-
-#     actions = Actions(im)
-#     actions.create_log(outfolder='.', basename='image')
-# actions.rotate_around_normal_vector(10)
-# actions.rotate_around_perp_vector1(-20)
-# actions.rotate_around_perp_vector2(15)
-# actions.move_center(center * 0.05)
-# actions.move_center_sim_coordinates(-center * 0.05)
-# actions.zoom(10.)
-# actions.reset_center()
-
-#     # Now, let's expand the log file
-#     actions = Actions(im)
-#     actions.read_log(outfolder='.', basename='image')
-#     info = pa.ImageReader(actions.logfile_start)
-#     im = pa.ImageCreator(snap, info.center, info.widths, info.orientation)
-#     actions.expand_log(outfolder='.', basename='image')

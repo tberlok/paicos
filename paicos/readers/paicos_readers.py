@@ -640,6 +640,11 @@ class ImageReader(PaicosReader):
             self.direction = direction = f['image_info'].attrs['direction']
             self.image_creator = f['image_info'].attrs['image_creator']
 
+            if 'npix_width' in f['image_info'].attrs:
+                self.npix_width = f['image_info'].attrs['npix_width']
+            if 'npix_height' in f['image_info'].attrs:
+                self.npix_height = f['image_info'].attrs['npix_height']
+
             # Recreate orientation object if it is saved
             if direction == 'orientation':
                 normal_vector = f['image_info'].attrs['normal_vector']
@@ -670,10 +675,16 @@ class ImageReader(PaicosReader):
         self.area = self._im.area
         self.volume = self._im.volume
 
-        if len(list(self.keys())) > 0:
-            arr_shape = self[list(self.keys())[0]].shape
-            self.npix = self.npix_width = arr_shape[1]
-            self.npix_height = arr_shape[0]
+        if hasattr(self, 'npix_width') and hasattr(self, 'npix_height'):
+            pass
+        else:
+            if len(list(self.keys())) > 0:
+                arr_shape = self[list(self.keys())[0]].shape
+                self.npix = self.npix_width = arr_shape[1]
+                self.npix_height = arr_shape[0]
+            else:
+                import warnings
+                warnings.warn('Unable to read pixel dimensions')
 
         self.area_per_pixel = self.area / (self.npix_width * self.npix_height)
         self.volume_per_pixel = self.volume / (self.npix_width * self.npix_height)
