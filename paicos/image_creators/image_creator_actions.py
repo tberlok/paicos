@@ -3,6 +3,7 @@ from ..writers.arepo_image import ImageWriter
 from ..readers.paicos_readers import ImageReader
 import os
 
+
 def find_angle_subdivisions(angle, max_angle):
     kk = 1
     angle = abs(angle)
@@ -146,8 +147,8 @@ class Actions:
         if self.line_index == 4:
             return None
         else:
-            return self.lines[self.line_index-1].strip()
-    
+            return self.lines[self.line_index - 1].strip()
+
     def step(self, verbose=False):
         line = self.next_action
         parts = line.split(',')
@@ -158,8 +159,8 @@ class Actions:
         if verbose:
             print(line)
         if command == 'center_on_sub' or command == 'center_on_group':
-            cx, cy, cz = float(parts[2]), float(parts[3]), float(parts[4])
-            new_center = np.array([cx, cy, cz]) * im_creator.center.uq
+            # cx, cy, cz = float(parts[2]), float(parts[3]), float(parts[4])
+            # new_center = np.array([cx, cy, cz]) * im_creator.center.uq
             raise RuntimeError("not implemented")
             # self.reset_center(new_center)
         elif command == 'zoom':
@@ -228,23 +229,22 @@ class Actions:
         self.line_index += 1
 
     def _make_waypoint(self, waypoint_folder, basename, frame_num):
-            
+
         image_file = ImageWriter(self.image_creator, basedir=waypoint_folder,
                                  basename=f'waypoint_{basename}_frame_{frame_num}')
         image_file.finalize()
-        
 
     def expand_log(self, zoom_max=1.02, max_angle=1, verbose=False, outfolder=None, basename=None):
         self.zoom_max = zoom_max
         self.max_angle = max_angle
 
         self.read_log(outfolder=self.outfolder, basename=self.basename)
-        
+
         if outfolder is not None:
             self.outfolder = outfolder
         if basename is not None:
             self.basename = basename
-        
+
         self.basename = self.basename + '_expanded'
 
         self.create_log(outfolder=self.outfolder, basename=self.basename)
