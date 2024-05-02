@@ -1,7 +1,7 @@
 import numpy as np
 from ..writers.arepo_image import ImageWriter
 from ..readers.paicos_readers import ImageReader
-
+import os
 
 def find_angle_subdivisions(angle, max_angle):
     kk = 1
@@ -58,28 +58,44 @@ class Actions:
                    + "Please see the docstring of this method")
         raise RuntimeError(err_msg)
 
-    def mylogger(self, string, line_ending='\n', mode='a'):
+    def mylogger(self, string, line_ending='\n', mode='a', command=True):
         outfolder = self.outfolder
         basename = self.basename
         with open(f'{outfolder}/{basename}.log', mode) as f:
             f.write(string + line_ending)
 
+        if self.make_waypoints and command:
+            self.frame_num += 1
+            waypoint_folder = f'{self.outfolder}/{self.basename}_waypoints'
+            self._make_waypoint(waypoint_folder, self.basename, self.frame_num)
+
     def create_log(self, outfolder='.', basename='image'):
+
+        if outfolder[-1] != '/':
+            outfolder += '/'
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+
+        self.make_waypoints = True
+        self.frame_num = 0
         self.outfolder = outfolder
         self.basename = basename
-        self.mylogger('# Paicos image log file', mode='w')
-        self.mylogger(outfolder)
-        self.mylogger(basename)
-        im_creator = self.image_creator
-        image_file = ImageWriter(im_creator, basedir=outfolder,
-                                 basename=f'{basename}_logfile_start')
+        self.mylogger('# Paicos image log file', mode='w', command=False)
+        self.mylogger(outfolder, command=False)
+        self.mylogger(basename, command=False)
 
-        # Move from temporary filename to final filename
+        image_file = ImageWriter(self.image_creator, basedir=outfolder,
+                                 basename=f'{basename}_logfile_start')
         image_file.finalize()
-        self.mylogger(image_file.filename)
+        self.mylogger(image_file.filename, command=False)
         self.logging = True
 
+        if self.make_waypoints:
+            waypoint_folder = f'{self.outfolder}{self.basename}_waypoints/'
+            self._make_waypoint(waypoint_folder, self.basename, 0)
+
     def read_log(self, filename=None, outfolder='.', basename='image'):
+        self.make_waypoints = False
         if filename is None:
             filename = f'{outfolder}/{basename}.log'
         with open(filename, 'r') as f:
@@ -88,6 +104,7 @@ class Actions:
         self.basename = basename = lines[2].strip()
         self.logfile_start = lines[3].strip()
         self.lines = lines
+        self.commands = self.lines[4:]
         self.frame_num = 0
         self.line_index = 4
         self.num_steps = len(self.lines) - self.line_index
@@ -95,8 +112,44 @@ class Actions:
         self.first_call = False
         self.make_image_creator(self.image_creator.snapnum)
 
+        waypoint_folder = f'{self.outfolder}/{self.basename}_waypoints/'
+        if os.path.exists(waypoint_folder):
+            import glob
+            files = glob.glob(f'{waypoint_folder}*.hdf5')
+            framenums = [int(file.split('_')[-2]) for file in files]
+            snapnums = [int(file[-8:-5]) for file in files]
+            index = np.argsort(framenums)
+            files = [files[ii] for ii in index]
+            self.waypoints = {}
+            framenums = np.array(framenums)[index]
+            snapnums = np.array(snapnums)[index]
+            for ii, frame_num in enumerate(framenums):
+                self.waypoints[frame_num] = files[ii]
+
+    def resume_from_waypoint(self, frame_num):
+        self.frame_num = frame_num
+        self.line_index = self.frame_num + 4
+
+        self.image_creator = ImageReader(self.waypoints[frame_num])
+        self.first_call = False
+        self.make_image_creator(self.image_creator.snapnum)
+
+    def resume_from_image(self, filename, frame_num):
+        raise RuntimeError('not implemented, try resume_from_waypoint instead')
+
+    @property
+    def next_action(self):
+        return self.lines[self.line_index].strip()
+
+    @property
+    def previous_action(self):
+        if self.line_index == 4:
+            return None
+        else:
+            return self.lines[self.line_index-1].strip()
+    
     def step(self, verbose=False):
-        line = self.lines[self.line_index].strip()
+        line = self.next_action
         parts = line.split(',')
         command = parts[0]
 
@@ -170,17 +223,29 @@ class Actions:
         else:
             raise RuntimeError(f'unknown command in log file!\n{line}\n{command}')
 
-        self.frame_num += 1
+        if not self.logging:
+            self.frame_num += 1
         self.line_index += 1
 
-    def expand_log(self, outfolder='.', basename='image', zoom_max=1.02, max_angle=1, verbose=False):
+    def _make_waypoint(self, waypoint_folder, basename, frame_num):
+            
+        image_file = ImageWriter(self.image_creator, basedir=waypoint_folder,
+                                 basename=f'waypoint_{basename}_frame_{frame_num}')
+        image_file.finalize()
+        
+
+    def expand_log(self, zoom_max=1.02, max_angle=1, verbose=False, outfolder=None, basename=None):
         self.zoom_max = zoom_max
         self.max_angle = max_angle
 
-        self.read_log(outfolder=self.outfolder, basename=basename)
-
-        self.outfolder = outfolder
-        self.basename = basename + '_expanded'
+        self.read_log(outfolder=self.outfolder, basename=self.basename)
+        
+        if outfolder is not None:
+            self.outfolder = outfolder
+        if basename is not None:
+            self.basename = basename
+        
+        self.basename = self.basename + '_expanded'
 
         self.create_log(outfolder=self.outfolder, basename=self.basename)
 
