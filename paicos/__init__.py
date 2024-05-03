@@ -22,6 +22,7 @@ import astropy
 # Settings and utility functions
 from . import util
 from . import settings
+from . import units
 
 # One folder up from __init__ (i.e. repo directory or installation directory)
 from .util import root_dir
