@@ -373,13 +373,13 @@ class ImageCreator:
         if settings.use_units:
             assert hasattr(value, 'unit')
         if self.direction == 'x':
-            self._widths[1] = value.copy
+            self._widths[1] = np.copy(value)
 
         elif self.direction == 'y':
-            self._widths[2] = value.copy
+            self._widths[2] = np.copy(value)
 
         elif self.direction == 'z' or self.direction == 'orientation':
-            self._widths[0] = value.copy
+            self._widths[0] = np.copy(value)
         self._properties_changed = True
 
     @height.setter
@@ -387,13 +387,13 @@ class ImageCreator:
         if settings.use_units:
             assert hasattr(value, 'unit')
         if self.direction == 'x':
-            self._widths[2] = value.copy
+            self._widths[2] = np.copy(value)
 
         elif self.direction == 'y':
-            self._widths[0] = value.copy
+            self._widths[0] = np.copy(value)
 
         elif self.direction == 'z' or self.direction == 'orientation':
-            self._widths[1] = value.copy
+            self._widths[1] = np.copy(value)
         self._properties_changed = True
 
     @depth.setter
@@ -401,13 +401,13 @@ class ImageCreator:
         if settings.use_units:
             assert hasattr(value, 'unit')
         if self.direction == 'x':
-            self._widths[0] = value.copy
+            self._widths[0] = np.copy(value)
 
         elif self.direction == 'y':
-            self._widths[1] = value.copy
+            self._widths[1] = np.copy(value)
 
         elif self.direction == 'z' or self.direction == 'orientation':
-            self._widths[2] = value.copy
+            self._widths[2] = np.copy(value)
         self._properties_changed = True
 
     def double_resolution(self):
