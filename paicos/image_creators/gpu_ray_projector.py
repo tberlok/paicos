@@ -291,7 +291,7 @@ class GpuRayProjector(ImageCreator):
         projection = cp.asnumpy(image)
         return projection
 
-    def _send_variable_to_gpu(variable, gpu_key='projection_variable');
+    def _send_variable_to_gpu(self, variable, gpu_key='projection_variable'):
         if isinstance(variable, str):
             variable_str = str(variable)
             err_msg = 'projector uses a different parttype'
@@ -322,7 +322,7 @@ class GpuRayProjector(ImageCreator):
             self.gpu_variables[variable_str] = self.gpu_variables[variable_str][
                 self.tree.sort_index]
 
-        if isinstance(variable, pa.units.PaicosQuantity):
+        if isinstance(variable, units.PaicosQuantity):
             unit_quantity = variable.unit_quantity
         else:
             unit_quantity = None
