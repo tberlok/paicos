@@ -412,6 +412,8 @@ class GpuBinaryTree:
         self._pos = self._pos[self.sort_index, :]
         self._pos_uint = self._pos_uint[self.sort_index, :]
 
+        del self._pos_uint
+        
         # Allocate arrays
         self.children = -1 * cp.ones((self.num_internal_nodes, 2), dtype=int)
         self.parents = -1 * cp.ones(self.num_leafs_and_nodes, dtype=int)
@@ -419,8 +421,9 @@ class GpuBinaryTree:
         # This sets the parent and children properties
         generateHierarchy[blocks_nodes, threadsperblock](self.morton_keys, self.children,
                                                          self.parents)
+        del self.morton_keys
 
-        # Set the boundaries for the leafs
+    # Set the boundaries for the leafs
         self.bounds = cp.zeros(
             (self.num_leafs_and_nodes, 3, 2), dtype=cp.uint64)
 
@@ -466,18 +469,19 @@ class GpuBinaryTree:
 
     def __del__(self):
         """
-        Clean up like this? Not sure it is needed...
+        Clean up like this? Apparently quite sporadic
+        when  __del__ is called.
         """
         self.release_gpu_memory()
 
     def release_gpu_memory(self):
         if hasattr(self, '_pos'):
             del self._pos
-        if hasattr(self, '_pos_uin'):
+        if hasattr(self, '_pos_uint'):
             del self._pos_uint
-        if hasattr(self, 'morton_k'):
+        if hasattr(self, 'morton_keys'):
             del self.morton_keys
-        if hasattr(self, 'sort_ind'):
+        if hasattr(self, 'sort_index'):
             del self.sort_index
         if hasattr(self, 'children'):
             del self.children
