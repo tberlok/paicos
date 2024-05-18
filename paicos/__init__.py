@@ -43,6 +43,7 @@ from .image_creators.image_creator import ImageCreator
 from .image_creators.projector import Projector
 from .image_creators.nested_projector import NestedProjector
 from .image_creators.tree_projector import TreeProjector
+from .image_creators.ray_projector import RayProjector
 from .image_creators.slicer import Slicer
 
 # Histograms

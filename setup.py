@@ -16,7 +16,7 @@ import glob
 #     os.environ['CC'] = 'gcc-13'
 #     os.environ['CXX'] = 'g++-13'
 
-Options.annotate = False
+Options.annotate = True
 compiler_directives = {"boundscheck": False, "cdivision": True,
                        "wraparound": False, 'language_level': "3"}
 
@@ -64,6 +64,13 @@ ext_modules = [
     Extension(
         name='paicos.trees.bvh_tree',
         sources=['paicos/trees/bvh_tree.pyx'],
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args
+    ),
+    Extension(
+        name='paicos.image_creators.cpu_ray_cython',
+        sources=['paicos/image_creators/cpu_ray_cython.pyx'],
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
