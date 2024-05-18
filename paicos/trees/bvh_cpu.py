@@ -2,6 +2,7 @@ import numba
 import math
 import numpy as np
 from .bvh_tree import leading_zeros_cython as count_leading_zeros
+from .bvh_tree import generateHierarchy, propagate_bounds_upwards
 
 # Hardcoded for uint64 coordinates (don't change without also changing morton
 # code functions)
@@ -64,7 +65,6 @@ def get_morton_keys64(pos):
     return morton_keys
 
 
-# @numba.jit(nopython=True, inline='always')
 def findSplit(sortedMortonCodes, first, last):
     # Identical Morton codes => split the range in the middle.
 
@@ -99,8 +99,7 @@ def findSplit(sortedMortonCodes, first, last):
     return split
 
 
-# @numba.jit(nopython=True)
-def generateHierarchy(sortedMortonCodes, tree_children, tree_parents):
+def generateHierarchy_python(sortedMortonCodes, tree_children, tree_parents):
     """
     Generate tree using the sorted Morton code.
     This is done in parallel, see this blogpost
@@ -144,7 +143,6 @@ def generateHierarchy(sortedMortonCodes, tree_children, tree_parents):
         tree_parents[childB] = idx
 
 
-# @numba.jit(nopython=True, inline='always')
 def determineRange(sortedMortonCodes, n_codes, idx):
     """
     The determine range function needed by the generateHierarchy function.
@@ -217,6 +215,7 @@ def find_bounding_volume_as_sfc_keys(center, hsml):
     return sfc_key_min, sfc_key_max
 
 
+@numba.jit(nopython=True)
 def set_leaf_bounding_volumes(tree_bounds, points, half_size, conversion_factor):
     num_internal_nodes = half_size.shape[0] - 1
     num_leafs = half_size.shape[0]
@@ -241,7 +240,7 @@ def set_leaf_bounding_volumes(tree_bounds, points, half_size, conversion_factor)
         tree_bounds[ip + num_internal_nodes, 2, 1] = z_max
 
 
-def propagate_bounds_upwards(tree_bounds, tree_parents, tree_children):
+def propagate_bounds_upwards_python(tree_bounds, tree_parents, tree_children):
     num_internal_nodes = tree_children.shape[0]
     num_leafs = num_internal_nodes + 1
 
@@ -479,7 +478,9 @@ class BinaryTree:
 
         # Calculate the bounding volumes for internal nodes,
         # by propagating the information upwards in the tree
-        propagate_bounds_upwards(self.bounds, self.parents, self.children)
+        # propagate_bounds_upwards_python(self.bounds, self.parents, self.children)
+        propagate_bounds_upwards(self.bounds, self.parents, self.num_leafs,
+                                 self.num_internal_nodes)
 
     def _to_tree_coordinates(self, pos):
         return (pos - self.off_sets[None, :]) * self.conversion_factor
