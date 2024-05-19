@@ -179,7 +179,7 @@ class RayProjector(ImageCreator):
 
         image = np.zeros((nx, ny))
 
-        trace_rays(self.tree._pos, self.tree.parents, self.tree.children,
+        trace_rays(self.tree._pos, self.tree.children,
                    self.tree.bounds, variable, hsml, widths, center,
                    tree_scale_factor, tree_offsets, image,
                    rotation_matrix, self.tol, settings.numthreads)
