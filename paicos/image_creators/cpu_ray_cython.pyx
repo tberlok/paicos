@@ -25,7 +25,7 @@ cdef inline int nearest_neighbor_device(double[:, :] points, long[: ]tree_parent
 
     cdef int L = 21
     cdef int queue_index, min_index, node_id
-    cdef unsigned long childA, childB
+    cdef long childA, childB
     cdef bint is_leafA, is_leafB, point_in_A, point_in_B, traverseA, traverseB
     cdef double min_dist
 
