@@ -21,10 +21,9 @@ def test_gpu_binary_tree():
 
     index = pa.util.get_index_of_cubic_region_plus_thin_layer(
         snap['0_Coordinates'], center, widths,
-        2.0 * snap['0_Diameters'], snap.box)
+        snap['0_Diameters'], snap.box)
 
     snap = snap.select(index, parttype=0)
-
     pos_cpu = snap['0_Coordinates']
     pos = cp.array(pos_cpu)
     sizes = cp.array(snap['0_Diameters'])

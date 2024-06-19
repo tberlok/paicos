@@ -845,12 +845,15 @@ class Snapshot(PaicosReader):
 
         return selected_snap
 
-    def save_new_snapshot(self, basename, single_precision=False):
+    def save_new_snapshot(self, basename, basedir=None, single_precision=False):
         """
         Save a new snapshot containing the currently loaded (derived)
         variables. Useful for reducing datasets to smaller sizes.
         """
-        writer = PaicosWriter(self, self.basedir, basename, 'w')
+        if basedir is None:
+            writer = PaicosWriter(self, self.basedir, basename, 'w')
+        else:
+            writer = PaicosWriter(self, basedir, basename, 'w')
 
         new_npart = [0] * self.nspecies
         for key in self:

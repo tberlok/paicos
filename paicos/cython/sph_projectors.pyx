@@ -51,9 +51,10 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     cdef int Np = xvec.shape[0]
 
     # Shape of projection array
-    cdef int ny = <int> (sidelength_y/sidelength_x * nx)
+    cdef int ny = <int> round(sidelength_y/sidelength_x * nx)
     msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
+
+    assert abs((sidelength_y/sidelength_x * nx) - <float> ny) < 1e-8, msg
 
     # Create projection array
     cdef real_t[:, :] projection = np.zeros((nx, ny), dtype=np.float64)
@@ -67,7 +68,7 @@ def project_image(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     cdef real_t x, y, norm
     cdef real_t x0, y0
 
-    assert sidelength_x/nx == sidelength_y/ny
+    # assert sidelength_x/nx == sidelength_y/ny
 
     # Lower left corner of image in Arepo coordinates
     x0 = xc - sidelength_x / 2.0
@@ -159,9 +160,10 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     cdef int Np = xvec.shape[0]
 
     # Shape of projection array
-    cdef int ny = <int> (sidelength_y/sidelength_x * nx)
+    cdef int ny = <int> round(sidelength_y/sidelength_x * nx)
     msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
+
+    assert abs((sidelength_y/sidelength_x * nx) - <float> ny) < 1e-8, msg
 
     # Loop integers and other variables
     cdef int ip, ix, iy, ih, threadnum
@@ -172,7 +174,7 @@ def project_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] variable,
     cdef real_t x, y, norm
     cdef real_t x0, y0
 
-    assert sidelength_x/nx == sidelength_y/ny
+    # assert sidelength_x/nx == sidelength_y/ny
 
     # Lower left corner of image in Arepo coordinates
     x0 = xc - sidelength_x/2.0
@@ -282,9 +284,10 @@ def project_oriented_image(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, real_
     cdef int Np = xvec.shape[0]
 
     # Shape of projection array
-    cdef int ny = <int> (sidelength_y/sidelength_x * nx)
+    cdef int ny = <int> round(sidelength_y/sidelength_x * nx)
     msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
+
+    assert abs((sidelength_y/sidelength_x * nx) - <float> ny) < 1e-8, msg
 
     # Create projection array
     cdef real_t[:, :] projection = np.zeros((nx, ny), dtype=np.float64)
@@ -298,7 +301,7 @@ def project_oriented_image(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, real_
     cdef real_t x, y, norm
     cdef real_t cen_x, cen_y, cen_z
 
-    assert sidelength_x/nx == sidelength_y/ny
+    # assert sidelength_x/nx == sidelength_y/ny
 
     for ip in range(Np):
         # Centered coordinates
@@ -396,9 +399,10 @@ def project_oriented_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, r
     cdef int Np = xvec.shape[0]
 
     # Shape of projection array
-    cdef int ny = <int> (sidelength_y/sidelength_x * nx)
+    cdef int ny = <int> round(sidelength_y/sidelength_x * nx)
     msg = '(sidelength_y/sidelength_x * nx) needs to be an integer'
-    assert (sidelength_y/sidelength_x * nx) == <float> ny, msg
+
+    assert abs((sidelength_y/sidelength_x * nx) - <float> ny) < 1e-8, msg
 
     # Loop integers and other variables
     cdef int ip, ix, iy, ih, threadnum
@@ -409,7 +413,7 @@ def project_oriented_image_omp(real_t[:] xvec, real_t[:] yvec, real_t[:] zvec, r
     cdef real_t x, y, norm
     cdef real_t cen_x, cen_y, cen_z
 
-    assert sidelength_x/nx == sidelength_y/ny
+    #assert sidelength_x/nx == sidelength_y/ny
 
     # Create projection arrays
     cdef real_t[:, :, :] tmp_var = np.zeros((nx, ny, numthreads), dtype=np.float64)

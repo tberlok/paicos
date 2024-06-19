@@ -84,6 +84,8 @@ class ArepoImage(PaicosWriter):
                 util.save_dataset(file, 'extent', self.extent, group='image_info')
                 file['image_info'].attrs['direction'] = self.direction
                 file['image_info'].attrs['image_creator'] = str(image_creator)
+                file['image_info'].attrs['npix_width'] = image_creator.npix_width
+                file['image_info'].attrs['npix_height'] = image_creator.npix_height
 
                 if self.direction == 'orientation':
                     file['image_info'].attrs['normal_vector'] = self.orientation.normal_vector
