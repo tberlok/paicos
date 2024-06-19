@@ -28,6 +28,15 @@ def find_zoom_sub_divisions(zoom, zoom_max):
 
 
 class Actions:
+    """
+    The purpose of this class is to simplify the steps
+    that are usually involved in creating animations
+    and/or interactive widgets.
+
+    This is very much work in progress and subject
+    to change. Send Thomas an email if you would like
+    a working example.
+    """
     def __init__(self, snapnum=None, image_creator=None, dry_run=True):
 
         self.dry_run = dry_run

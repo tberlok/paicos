@@ -413,7 +413,7 @@ class GpuBinaryTree:
         self._pos_uint = self._pos_uint[self.sort_index, :]
 
         del self._pos_uint
-        
+
         # Allocate arrays
         self.children = -1 * cp.ones((self.num_internal_nodes, 2), dtype=int)
         self.parents = -1 * cp.ones(self.num_leafs_and_nodes, dtype=int)
