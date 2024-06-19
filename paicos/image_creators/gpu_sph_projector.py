@@ -439,7 +439,12 @@ class GpuSphProjector(ImageCreator):
         """
         Clean up like this? Not sure it is needed...
         """
-        del self.gpu_variables
-        # for key in list(self.gpu_variables.keys):
-        #     del self.gpu_variables[key]
+        self.release_gpu_memory()
+
+    def release_gpu_memory(self):
+        if hasattr(self, 'gpu_variables'):
+            for key in list(self.gpu_variables):
+                del self.gpu_variables[key]
+            del self.gpu_variables
+
         cp._default_memory_pool.free_all_blocks()

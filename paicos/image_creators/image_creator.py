@@ -190,6 +190,14 @@ class ImageCreator:
             self._center = np.array(value)
         self._properties_changed = True
 
+    def reset_center(self):
+        """
+        Resets the center of the image creator to the
+        value it had at initialization.
+        """
+        self.center = self.center - self._diff_center
+        self._diff_center = np.zeros_like(self._diff_center)
+
     @property
     def npix(self):
         """
@@ -365,13 +373,13 @@ class ImageCreator:
         if settings.use_units:
             assert hasattr(value, 'unit')
         if self.direction == 'x':
-            self._widths[1] = value.copy
+            self._widths[1] = np.copy(value)
 
         elif self.direction == 'y':
-            self._widths[2] = value.copy
+            self._widths[2] = np.copy(value)
 
         elif self.direction == 'z' or self.direction == 'orientation':
-            self._widths[0] = value.copy
+            self._widths[0] = np.copy(value)
         self._properties_changed = True
 
     @height.setter
@@ -379,13 +387,13 @@ class ImageCreator:
         if settings.use_units:
             assert hasattr(value, 'unit')
         if self.direction == 'x':
-            self._widths[2] = value.copy
+            self._widths[2] = np.copy(value)
 
         elif self.direction == 'y':
-            self._widths[0] = value.copy
+            self._widths[0] = np.copy(value)
 
         elif self.direction == 'z' or self.direction == 'orientation':
-            self._widths[1] = value.copy
+            self._widths[1] = np.copy(value)
         self._properties_changed = True
 
     @depth.setter
@@ -393,13 +401,13 @@ class ImageCreator:
         if settings.use_units:
             assert hasattr(value, 'unit')
         if self.direction == 'x':
-            self._widths[0] = value.copy
+            self._widths[0] = np.copy(value)
 
         elif self.direction == 'y':
-            self._widths[1] = value.copy
+            self._widths[1] = np.copy(value)
 
         elif self.direction == 'z' or self.direction == 'orientation':
-            self._widths[2] = value.copy
+            self._widths[2] = np.copy(value)
         self._properties_changed = True
 
     def double_resolution(self):
@@ -485,9 +493,9 @@ class ImageCreator:
         The number of pixels of an image in the vertical direction.
         """
         if settings.use_units:
-            return int((self.height / self.width).value * self.npix_width)
+            return int(round((self.height / self.width).value * self.npix_width))
         else:
-            return int((self.height / self.width) * self.npix_width)
+            return int(round((self.height / self.width) * self.npix_width))
 
     @property
     def area(self):

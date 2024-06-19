@@ -220,12 +220,15 @@ class Catalog(PaicosReader):
                 if not hasattr(self.Sub[key], 'unit'):
                     del self.Sub[key]
 
-    def save_new_catalog(self, basename, single_precision=False):
+    def save_new_catalog(self, basename, basedir=None, single_precision=False):
         """
         Save a new catalog containing only the currently loaded
         variables. Useful for reducing datasets to smaller sizes.
         """
-        writer = PaicosWriter(self, self.basedir, basename, 'w')
+        if basedir is None:
+            writer = PaicosWriter(self, self.basedir, basename, 'w')
+        else:
+            writer = PaicosWriter(self, basedir, basename, 'w')
 
         for key in self.Group:
             Ngroups_Total = self.Group[key].shape[0]

@@ -257,17 +257,22 @@ class GpuRayProjector(ImageCreator):
             self.gpu_variables['widths'] = cp.array(self.widths)
             self.gpu_variables['center'] = cp.array(self.center)
 
-    def _gpu_project(self, variable_str):
+    def _gpu_project(self, variable_str, additive):
         """
         Private method for projecting using cuda code
         """
-        rotation_matrix = self.gpu_variables['rotation_matrix']
-        widths = self.gpu_variables['widths']
-        center = self.gpu_variables['center']
-        hsml = self.gpu_variables['hsml']
+        gpu_vars = self.gpu_variables
+        rotation_matrix = gpu_vars['rotation_matrix']
+        widths = gpu_vars['widths']
+        center = gpu_vars['center']
+        hsml = gpu_vars['hsml']
         nx = self.npix_width
         ny = self.npix_height
-        variable = self.gpu_variables[variable_str]
+
+        if additive:
+            variable = gpu_vars[variable_str] / gpu_vars[f'{self.parttype}_Volume']
+        else:
+            variable = gpu_vars[variable_str]
 
         tree_scale_factor = self.tree.conversion_factor
         tree_offsets = self.tree.off_sets
@@ -285,6 +290,44 @@ class GpuRayProjector(ImageCreator):
 
         projection = cp.asnumpy(image)
         return projection
+
+    def _send_variable_to_gpu(self, variable, gpu_key='projection_variable'):
+        if isinstance(variable, str):
+            variable_str = str(variable)
+            err_msg = 'projector uses a different parttype'
+            assert int(variable[0]) == self.parttype, err_msg
+            variable = self.snap[variable]
+        else:
+            variable_str = 'projection_variable'
+            if not isinstance(variable, np.ndarray):
+                raise RuntimeError('Unexpected type for variable')
+
+        assert len(variable.shape) == 1, 'only scalars can be projected'
+
+        # Select same part of array that the projector has selected
+        if self.do_pre_selection:
+            # TODO: Check that this is not applied more than once...
+            variable = variable[self.index]
+
+        if variable_str in self.gpu_variables and variable_str != gpu_key:
+            pass
+        else:
+            # Send variable to gpu
+            if settings.use_units:
+                self.gpu_variables[variable_str] = cp.array(variable.value)
+            else:
+                self.gpu_variables[variable_str] = cp.array(variable)
+
+            # Sort the variable according to Morton code sorting
+            self.gpu_variables[variable_str] = self.gpu_variables[variable_str][
+                self.tree.sort_index]
+
+        if isinstance(variable, units.PaicosQuantity):
+            unit_quantity = variable.unit_quantity
+        else:
+            unit_quantity = None
+
+        return variable_str, unit_quantity
 
     def project_variable(self, variable, additive=False):
         """
@@ -305,41 +348,12 @@ class GpuRayProjector(ImageCreator):
         # widths or center changed
         self._check_if_properties_changed()
 
+        variable_str, unit_quantity = self._send_variable_to_gpu(variable)
         if additive:
-            err_msg = "GPU ray tracer does not yet support additive=True"
-            raise RuntimeError(err_msg)
-
-        if isinstance(variable, str):
-            variable_str = str(variable)
-            err_msg = 'projector uses a different parttype'
-            assert int(variable[0]) == self.parttype, err_msg
-            variable = self.snap[variable]
-        else:
-            variable_str = 'projection_variable'
-            if not isinstance(variable, np.ndarray):
-                raise RuntimeError('Unexpected type for variable')
-
-        assert len(variable.shape) == 1, 'only scalars can be projected'
-
-        # Select same part of array that the projector has selected
-        if self.do_pre_selection:
-            variable = variable[self.index]
-
-        if variable_str in self.gpu_variables and variable_str != 'projection_variable':
-            pass
-        else:
-            # Send variable to gpu
-            if settings.use_units:
-                self.gpu_variables[variable_str] = cp.array(variable.value)
-            else:
-                self.gpu_variables[variable_str] = cp.array(variable)
-
-            # Sort the variable according to Morton code sorting
-            self.gpu_variables[variable_str] = self.gpu_variables[variable_str][
-                self.tree.sort_index]
+            _, vol_unit_quantity = self._send_variable_to_gpu(f'{self.parttype}_Volume')
 
         # Do the projection
-        projection = self._gpu_project(variable_str)
+        projection = self._gpu_project(variable_str, additive)
 
         # Transpose
         projection = projection.T
@@ -347,16 +361,30 @@ class GpuRayProjector(ImageCreator):
         assert projection.shape[0] == self.npix_height
         assert projection.shape[1] == self.npix_width
 
-        if isinstance(variable, units.PaicosQuantity):
+        if unit_quantity is not None:
             unit_length = self.snap['0_Coordinates'].uq
-            projection = projection * variable.unit_quantity * unit_length
+            projection = projection * unit_quantity * unit_length
+            if additive:
+                projection = projection / vol_unit_quantity
 
-        return projection / self.depth
+        if additive:
+            return projection
+        else:
+            return projection / self.depth
 
     def __del__(self):
         """
         Clean up like this? Not sure it is needed...
         """
-        del self.gpu_variables
-        del self.tree
+        self.release_gpu_memory()
+
+    def release_gpu_memory(self):
+        if hasattr(self, 'gpu_variables'):
+            for key in list(self.gpu_variables):
+                del self.gpu_variables[key]
+            del self.gpu_variables
+        if hasattr(self, 'tree'):
+            self.tree.release_gpu_memory()
+            del self.tree
+
         cp._default_memory_pool.free_all_blocks()
