@@ -6,7 +6,8 @@ Here we specify the units used in all the different fields commonly used
 in Arepo simulations.
 
 These units have been gathered by looking at the source code
-and cross-referencing with the overview at:
+and cross-referencing with the overviews at:
+https://arepo-code.org/wp-content/userguide/snapshotformat.html
 https://www.tng-project.org/data/docs/specifications/
 """
 
@@ -23,17 +24,20 @@ Velocities = u.Unit('arepo_velocity  small_a^(1/2)')
 # where u is the peculiar velocity
 InternalVelocities = u.Unit('arepo_velocity  small_a^(-1)')
 
+PeculiarVelocities = InternalVelocities * u.Unit('small_a')
+
 Potential = u.Unit('arepo_velocity^2 / small_a')
 
 MagneticField = u.Unit('arepo_pressure^(1/2) small_a^-2 small_h')
 
 Volume = Coordinates**3
+Area = Coordinates**2
 Density = Masses / Volume
 Density = u.Unit('arepo_density small_h2 / small_a3')
 
-# NOTE: Velocity gradients are written out in unit of
-# internal velocity, w, divided by internal coordinates
-VelocityGradient = InternalVelocities / Coordinates
+# NOTE: VelocityGradient is written out in units of
+# peculiar velocities divided by internal coordinates
+VelocityGradient = PeculiarVelocities / Coordinates
 
 Pressure = u.Unit('arepo_pressure  small_h^2 small_a^-3')
 
@@ -47,6 +51,7 @@ default = {
 StarFormationRate = u.Unit('Msun/yr')
 
 voronoi_cells = {
+    'Acceleration': PeculiarVelocities**2 / Coordinates,  # OUTPUTACCELERATION, differs from internal
     'AllowRefinement': unit_less,
     'BfieldGradient': MagneticField / Coordinates,
     'CenterOfMass': Coordinates,
@@ -77,10 +82,17 @@ voronoi_cells = {
     'SubfindDensity': Density,
     'SubfindHsml': Coordinates,
     'SubfindVelDisp': 'arepo_velocity',
+    'SoundSpeed': 'arepo_velocity',  # OUTPUT_CSND
     'Velocities': Velocities,
+    'VelocityDivergence': InternalVelocities * Area / Volume,  # OUTPUT_DIVVEL
+    'VelocityCurl': VelocityGradient,  # OUTPUT_CURLVEL
+    'CurlVel': VelocityGradient,
     'VelocityGradient': VelocityGradient,
     'DensityGradient': Density / Coordinates,
-    'PressureGradient': Pressure / Coordinates
+    'PressureGradient': Pressure / Coordinates,
+    'CoolingHeatingEnergy': 'arepo_energy / arepo_time',
+    'SurfaceArea': Area,
+    'NumFacesCell': unit_less
 }
 
 dark_matter = {
