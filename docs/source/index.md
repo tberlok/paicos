@@ -8,6 +8,7 @@ caption: Getting started
 installation
 examples
 configuration
+citing
 ```
 
 ```{toctree}
