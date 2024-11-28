@@ -296,7 +296,13 @@ class PaicosQuantity(Quantity):
         if hasattr(self._a, 'unit'):
             return self._a
         else:
-            return self._a * u.Unit('arepo_time')
+            time = self._a * u.Unit('arepo_time')
+            if self._h != 1.0:
+                time = PaicosQuantity(self._a, 'arepo_time/small_h', a=self._a, h=self.h,
+                                      comoving_sim=self.comoving_sim, copy=True)
+            else:
+                time = self._a * u.Unit('arepo_time')
+            return time
 
     @property
     def unit_quantity(self):

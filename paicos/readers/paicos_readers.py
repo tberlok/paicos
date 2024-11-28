@@ -417,7 +417,11 @@ class PaicosReader(dict):
         if self.comoving_sim:
             msg = 'time not defined for comoving sim'
             raise RuntimeError(msg)
-        return self._Time * self.arepo_units['unit_time']
+
+        time = self._Time * self.arepo_units['unit_time']
+        if self._HubbleParam != 1.0:
+            time = self._Time * self.unit_quantity('arepo_time / small_h')
+        return time
 
     def rho_crit(self, z):
         """
@@ -555,7 +559,7 @@ class PaicosReader(dict):
         unit = u.Unit(astropy_unit_str)
         return pu.PaicosQuantity(1.0, unit, a=self._Time, h=self.h,
                                  comoving_sim=self.comoving_sim,
-                                 dtype=float)
+                                 dtype=float, copy=True)
 
     def uq(self, astropy_unit_str):
         """
