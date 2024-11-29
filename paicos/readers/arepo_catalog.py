@@ -262,7 +262,6 @@ class Catalog(PaicosReader):
                 field='groups')
             if not hasattr(self.Group[ikey], 'unit'):
                 del self.Group[ikey]
-                raise RuntimeError(f"can't load {ikey} with units on...")
 
     def load_sub_data(self, ikey):
         """
@@ -330,7 +329,6 @@ class Catalog(PaicosReader):
                 field='subhalos')
             if not hasattr(self.Sub[ikey], 'unit'):
                 del self.Sub[ikey]
-                raise RuntimeError(f"can't load {ikey} with units on...")
 
     def load_all_data(self):
         """
