@@ -199,7 +199,7 @@ class Catalog(PaicosReader):
         not_implemented_sub_keys = []
         implemented_sub_keys = []
         for key in list(sub_keys):
-            if key in unit_specifications.unit_dict['subs']:
+            if key in unit_specifications.unit_dict['subhalos']:
                 implemented_sub_keys.append(key)
             else:
                 not_implemented_sub_keys.append(key)
