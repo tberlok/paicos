@@ -180,10 +180,10 @@ class Catalog(PaicosReader):
         if not settings.use_units:
             if verbose:
                 if len(group_keys) > 0:
-                    print('group_keys are:', group_keys)
+                    print('Available group_keys are:', group_keys)
 
                 if len(sub_keys) > 0:
-                    print('sub_keys are:', sub_keys)
+                    print('\nAvailable sub_keys are:', sub_keys)
             return group_keys, sub_keys
         else:
             from .. import unit_specifications
@@ -206,14 +206,14 @@ class Catalog(PaicosReader):
 
         if verbose:
             if len(group_keys) > 0:
-                print('implemented group_keys are:', implemented_group_keys)
+                print('Available group_keys are:', implemented_group_keys)
                 if len(not_implemented_group_keys) > 0:
-                    print('not implemented group_keys are:', not_implemented_group_keys)
+                    print('\nNot implemented group_keys are:', not_implemented_group_keys)
 
             if len(sub_keys) > 0:
-                print('implemented sub_keys are:', implemented_sub_keys)
+                print('\nAvailable sub_keys are:', implemented_sub_keys)
                 if len(not_implemented_sub_keys) > 0:
-                    print('not implemented sub_keys are:', not_implemented_sub_keys)
+                    print('\nNot implemented sub_keys are:', not_implemented_sub_keys)
 
         return implemented_group_keys, implemented_sub_keys
 
