@@ -311,7 +311,7 @@ class PaicosQuantity(Quantity):
         PaicosQuantity and a numeric value of 1.
         """
         return PaicosQuantity(1., self.unit, a=self._a, h=self.h,
-                              comoving_sim=self.comoving_sim)
+                              comoving_sim=self.comoving_sim, copy=True)
 
     @property
     def copy(self):
