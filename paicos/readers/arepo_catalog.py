@@ -229,10 +229,10 @@ class Catalog(PaicosReader):
             if ifile == 0:
                 if "Group" in file:
                     if len(file["Group/" + ikey].shape) == 1:
-                        self.Group[ikey] = np.empty(
+                        data = np.empty(
                             self.ngroups, dtype=file["Group/" + ikey].dtype)
                     elif len(file["Group/" + ikey].shape) == 2:
-                        self.Group[ikey] = np.empty(
+                        data = np.empty(
                             (self.ngroups, file["Group/" + ikey].shape[1]),
                             dtype=file["Group/" + ikey].dtype)
                     else:
@@ -240,7 +240,7 @@ class Catalog(PaicosReader):
 
             # read group data
             if ng > 0:
-                self.Group[ikey][skip_gr:skip_gr + ng] = file["Group/" + ikey]
+                data[skip_gr:skip_gr + ng] = file["Group/" + ikey]
 
             skip_gr += ng
 
@@ -248,8 +248,8 @@ class Catalog(PaicosReader):
 
         # Load all variables with double precision
         if settings.double_precision:
-            if not issubclass(self.Group[ikey].dtype.type, numbers.Integral):
-                self.Group[ikey] = self.Group[ikey].astype(np.float64)
+            if not issubclass(data.dtype.type, numbers.Integral):
+                data = data.astype(np.float64)
 
         else:
             warnings.warn('\n\nThe cython routines expect double precision '
@@ -258,10 +258,12 @@ class Catalog(PaicosReader):
 
         if settings.use_units:
             self.Group[ikey] = self.get_paicos_quantity(
-                self.Group[ikey], ikey,
+                data, ikey,
                 field='groups')
             if not hasattr(self.Group[ikey], 'unit'):
                 del self.Group[ikey]
+        else:
+            self.Group[ikey] = data
 
     def load_sub_data(self, ikey):
         """
@@ -297,10 +299,10 @@ class Catalog(PaicosReader):
             if ifile == 0:
                 if "Subhalo" in file:
                     if len(file["Subhalo/" + ikey].shape) == 1:
-                        self.Sub[ikey] = np.empty(
+                        data = np.empty(
                             self.nsubs, dtype=file["Subhalo/" + ikey].dtype)
                     elif len(file["Subhalo/" + ikey].shape) == 2:
-                        self.Sub[ikey] = np.empty(
+                        data = np.empty(
                             (self.nsubs, file["Subhalo/" + ikey].shape[1]),
                             dtype=file["Subhalo/" + ikey].dtype)
                     else:
@@ -308,7 +310,7 @@ class Catalog(PaicosReader):
 
             # read subhalo data
             if ns > 0:
-                self.Sub[ikey][skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
+                data[skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
 
             skip_sub += ns
 
@@ -316,8 +318,8 @@ class Catalog(PaicosReader):
 
         # Load all variables with double precision
         if settings.double_precision:
-            if not issubclass(self.Sub[ikey].dtype.type, numbers.Integral):
-                self.Sub[ikey] = self.Sub[ikey].astype(np.float64)
+            if not issubclass(data.dtype.type, numbers.Integral):
+                data = data.astype(np.float64)
         else:
             warnings.warn('\n\nThe cython routines expect double precision '
                           + 'and will fail unless settings.double_precision '
@@ -325,10 +327,12 @@ class Catalog(PaicosReader):
 
         if settings.use_units:
             self.Sub[ikey] = self.get_paicos_quantity(
-                self.Sub[ikey], ikey,
+                data, ikey,
                 field='subhalos')
             if not hasattr(self.Sub[ikey], 'unit'):
                 del self.Sub[ikey]
+        else:
+            self.Sub[ikey] = data
 
     def load_all_data(self):
         """
