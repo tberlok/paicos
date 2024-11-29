@@ -177,18 +177,45 @@ class Catalog(PaicosReader):
 
         file.close()
 
+        if not settings.use_units:
+            if verbose:
+                if len(group_keys) > 0:
+                    print('group_keys are:', group_keys)
+
+                if len(sub_keys) > 0:
+                    print('sub_keys are:', sub_keys)
+            return group_keys, sub_keys
+        else:
+            from .. import unit_specifications
+
+        not_implemented_group_keys = []
+        implemented_group_keys = []
+        for key in list(group_keys):
+            if key in unit_specifications.unit_dict['groups']:
+                implemented_group_keys.append(key)
+            else:
+                not_implemented_group_keys.append(key)
+
+        not_implemented_sub_keys = []
+        implemented_sub_keys = []
+        for key in list(sub_keys):
+            if key in unit_specifications.unit_dict['subs']:
+                implemented_sub_keys.append(key)
+            else:
+                not_implemented_sub_keys.append(key)
+
         if verbose:
             if len(group_keys) > 0:
-                print('group_keys are:', group_keys)
-            else:
-                print('no group_keys')
+                print('implemented group_keys are:', implemented_group_keys)
+                if len(not_implemented_group_keys) > 0:
+                    print('not implemented group_keys are:', not_implemented_group_keys)
 
             if len(sub_keys) > 0:
-                print('sub_keys are:', sub_keys)
-            else:
-                print('no sub_keys')
+                print('implemented sub_keys are:', implemented_sub_keys)
+                if len(not_implemented_sub_keys) > 0:
+                    print('not implemented sub_keys are:', not_implemented_sub_keys)
 
-        return group_keys, sub_keys
+        return implemented_group_keys, implemented_sub_keys
 
     def load_data(self):
         """
@@ -208,6 +235,8 @@ class Catalog(PaicosReader):
 
         if ikey in self.Group:
             return
+
+        data = None  # to get rid of linting error
 
         for ifile in range(self.nfiles):
             if self.multi_file is False:
@@ -262,6 +291,7 @@ class Catalog(PaicosReader):
                 field='groups')
             if not hasattr(self.Group[ikey], 'unit'):
                 del self.Group[ikey]
+                raise RuntimeError(f"{ikey} does not have units implemented!")
         else:
             self.Group[ikey] = data
 
@@ -269,11 +299,15 @@ class Catalog(PaicosReader):
         """
         Load subhalo dato. See self.info for valid ikeys
 
+        TODO: Merge with load_group_data, lot's of duplicate code here...
+
         :meta private:
         """
 
         if ikey in self.Sub:
             return
+
+        data = None  # to get rid of linting error
 
         skip_sub = 0
         for ifile in range(self.nfiles):
@@ -331,6 +365,7 @@ class Catalog(PaicosReader):
                 field='subhalos')
             if not hasattr(self.Sub[ikey], 'unit'):
                 del self.Sub[ikey]
+                raise RuntimeError(f"{ikey} does not have units implemented!")
         else:
             self.Sub[ikey] = data
 
