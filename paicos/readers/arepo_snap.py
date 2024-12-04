@@ -193,8 +193,8 @@ class Snapshot(PaicosReader):
                     self._first_indices = self.Cat.Group['GroupOffsetType'][fofnum]
                     self._last_indices = self.Cat.Group['GroupOffsetType'][fofnum + 1]
                 else:
-                    self._first_indices = np.sum(self.Cat.Sub['GroupLenType'][0:fofnum], axis=0)
-                    self._last_indices = np.sum(self.Cat.Sub['GroupLenType'][0:fofnum + 1], axis=0)
+                    self._first_indices = np.sum(self.Cat.Group['GroupLenType'][0:fofnum], axis=0)
+                    self._last_indices = np.sum(self.Cat.Group['GroupLenType'][0:fofnum + 1], axis=0)
 
         self.P_attrs = {}  # attributes
 
