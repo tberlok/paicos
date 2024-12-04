@@ -180,13 +180,21 @@ class Snapshot(PaicosReader):
         self.fofnum = fofnum
         if self.subselection:
             if self.subhalonum is not None:
-                self._first_indices = self.Cat.Sub['SubhaloOffsetType'][subhalonum]
-                self._last_indices = self.Cat.Sub['SubhaloOffsetType'][subhalonum + 1]
                 self._len_subfofs = self.Cat.Sub['SubhaloLenType'][subhalonum]
+                if 'SubhaloOffsetType' in self.Cat.Sub:
+                    self._first_indices = self.Cat.Sub['SubhaloOffsetType'][subhalonum]
+                    self._last_indices = self.Cat.Sub['SubhaloOffsetType'][subhalonum + 1]
+                else:
+                    self._first_indices = np.sum(self.Cat.Sub['SubhaloLenType'][0:subhalonum], axis=0)
+                    self._last_indices = np.sum(self.Cat.Sub['SubhaloLenType'][0:subhalonum + 1], axis=0)
             else:
-                self._first_indices = self.Cat.Group['GroupOffsetType'][fofnum]
-                self._last_indices = self.Cat.Group['GroupOffsetType'][fofnum + 1]
                 self._len_subfofs = self.Cat.Group['GroupLenType'][fofnum]
+                if 'GroupOffsetType' in self.Cat.Group:
+                    self._first_indices = self.Cat.Group['GroupOffsetType'][fofnum]
+                    self._last_indices = self.Cat.Group['GroupOffsetType'][fofnum + 1]
+                else:
+                    self._first_indices = np.sum(self.Cat.Sub['GroupLenType'][0:fofnum], axis=0)
+                    self._last_indices = np.sum(self.Cat.Sub['GroupLenType'][0:fofnum + 1], axis=0)
 
         self.P_attrs = {}  # attributes
 
