@@ -684,7 +684,6 @@ class Snapshot(PaicosReader):
 
             f.close()
 
-        
         if self.subselection:
             err_msg = f'missing particles!, {subfof_skip_part}/{length}'
             assert subfof_skip_part == length, err_msg
