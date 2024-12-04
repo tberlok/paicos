@@ -684,10 +684,13 @@ class Snapshot(PaicosReader):
 
             f.close()
 
+        
         if self.subselection:
-            assert subfof_skip_part == length, 'missing particles!'
+            err_msg = f'missing particles!, {subfof_skip_part}/{length}'
+            assert subfof_skip_part == length, err_msg
         else:
-            assert skip_part == length, 'missing particles!'
+            err_msg = f'missing particles!, {skip_part}/{length}'
+            assert skip_part == length, err_msg
 
         if settings.double_precision:
             # Load all variables with double precision
