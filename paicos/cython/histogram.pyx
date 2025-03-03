@@ -69,7 +69,7 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
     for ip in range(Np):
         x = xvec[ip]
         y = yvec[ip]
-        if (x > lower_x) and (x < upper_x) and (y > lower_y) and (y < upper_y):
+        if (x >= lower_x) and (x <= upper_x) and (y >= lower_y) and (y <= upper_y):
             if logspace:
                 ix = <int> ((log10(x) - log10lower_x)*dx)
                 iy = <int> ((log10(y) - log10lower_y)*dy)
@@ -77,8 +77,8 @@ def get_hist2d_from_weights(real_t [:] xvec, real_t [:] yvec,
                 ix = <int> ((x - lower_x)*dx)
                 iy = <int> ((y - lower_y)*dy)
 
-        if (ix >= 0) and (ix < nbins_x) and (iy >= 0) and (iy < nbins_y):
-            hist2d[ix, iy] += weights[ip]
+            if (ix >= 0) and (ix < nbins_x) and (iy >= 0) and (iy < nbins_y):
+                hist2d[ix, iy] += weights[ip]
 
     # Fix to avoid returning a memory-view
     tmp = np.zeros((nbins_x, nbins_y), dtype=np.float64)
@@ -130,7 +130,7 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
 
             x = xvec[ip]
             y = yvec[ip]
-            if (x > lower_x) and (x < upper_x) and (y > lower_y) and (y < upper_y):
+            if (x >= lower_x) and (x <= upper_x) and (y >= lower_y) and (y <= upper_y):
                 if logspace:
                     ix = <int> ((log10(x) - log10lower_x)*dx)
                     iy = <int> ((log10(y) - log10lower_y)*dy)
@@ -138,8 +138,8 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
                     ix = <int> ((x - lower_x)*dx)
                     iy = <int> ((y - lower_y)*dy)
 
-            if (ix >= 0) and (ix < nbins_x) and (iy >= 0) and (iy < nbins_y):
-                tmp_variable[ix, iy, threadnum] = tmp_variable[ix, iy, threadnum] + weights[ip]
+                if (ix >= 0) and (ix < nbins_x) and (iy >= 0) and (iy < nbins_y):
+                    tmp_variable[ix, iy, threadnum] = tmp_variable[ix, iy, threadnum] + weights[ip]
 
     # Add up contributions from each thread
     for threadnum in range(numthreads):
@@ -152,25 +152,3 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
     tmp[:, :] = hist2d[:, :]
 
     return tmp
-
-
-def find_normalizing_norm_of_2d_hist(real_t [:, :] hist2d, real_t[:] edges_x,
-                                     real_t[:] edges_y):
-    """
-    This is a cython helper function for calculating the normalization of
-    a 2D histogram.
-    """
-
-    cdef int ix, iy
-    cdef real_t dx, dy, cell_area
-    cdef real_t norm = 0
-
-    cdef int nx = hist2d.shape[0]
-    cdef int ny = hist2d.shape[1]
-    for ix in range(nx):
-        for iy in range(ny):
-            dx = edges_x[ix+1] - edges_x[ix]
-            dy = edges_y[iy+1] - edges_y[iy]
-            cell_area = dx*dy
-            norm += hist2d[ix, iy]*cell_area
-    return norm

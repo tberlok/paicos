@@ -71,7 +71,8 @@ class Snapshot(PaicosReader):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, basedir, snapnum=None, basename="snap", load_all=False,
-                 to_physical=False, load_catalog=None, verbose=False):
+                 to_physical=False, load_catalog=None, subhalonum=None, fofnum=None,
+                 verbose=False):
         """
         Initialize the Snapshot class.
 
@@ -94,6 +95,10 @@ class Snapshot(PaicosReader):
                                  The default None is internally changed to
                                  True for comoving simulations and to
                                  False for non-comoving simulations.
+
+            subhalonum (int): optional parameter to only load a single subhalo.
+
+            fofnum (int): optional parameter to only load a single FoF group.
         """
 
         super().__init__(basedir=basedir, snapnum=snapnum, basename=basename,
@@ -143,6 +148,10 @@ class Snapshot(PaicosReader):
             except FileNotFoundError:
                 self.Cat = None
 
+                if subhalonum is not None:
+                    err_msg = f'No subhalo catalog found, cannot load subhalo={subhalonum}'
+                    raise RuntimeError(err_msg)
+
             # If no subfind catalog found, then try for a fof catalog
             if self.Cat is None:
                 try:
@@ -151,6 +160,41 @@ class Snapshot(PaicosReader):
                         subfind_catalog=False)
                 except FileNotFoundError:
                     warnings.warn('no catalog found')
+
+                    if subhalonum is not None:
+                        err_msg = f'No FoF catalog found, cannot load fof={fofnum}'
+                        raise RuntimeError(err_msg)
+
+        if fofnum is not None and subhalonum is not None:
+            err_msg = f'Cannot select both fofnum={fofnum} and subhalonum={subhalonum}'
+            raise RuntimeError(err_msg)
+        elif fofnum is None and subhalonum is None:
+            self.subselection = False
+        else:
+            self.subselection = True
+
+        if self.subselection and not load_catalog:
+            raise RuntimeError('Catalog needed!')
+
+        self.subhalonum = subhalonum
+        self.fofnum = fofnum
+        if self.subselection:
+            if self.subhalonum is not None:
+                self._len_subfofs = self.Cat.Sub['SubhaloLenType'][subhalonum]
+                if 'SubhaloOffsetType' in self.Cat.Sub:
+                    self._first_indices = self.Cat.Sub['SubhaloOffsetType'][subhalonum]
+                    self._last_indices = self.Cat.Sub['SubhaloOffsetType'][subhalonum + 1]
+                else:
+                    self._first_indices = np.sum(self.Cat.Sub['SubhaloLenType'][0:subhalonum], axis=0)
+                    self._last_indices = np.sum(self.Cat.Sub['SubhaloLenType'][0:subhalonum + 1], axis=0)
+            else:
+                self._len_subfofs = self.Cat.Group['GroupLenType'][fofnum]
+                if 'GroupOffsetType' in self.Cat.Group:
+                    self._first_indices = self.Cat.Group['GroupOffsetType'][fofnum]
+                    self._last_indices = self.Cat.Group['GroupOffsetType'][fofnum + 1]
+                else:
+                    self._first_indices = np.sum(self.Cat.Group['GroupLenType'][0:fofnum], axis=0)
+                    self._last_indices = np.sum(self.Cat.Group['GroupLenType'][0:fofnum + 1], axis=0)
 
         self.P_attrs = {}  # attributes
 
@@ -193,7 +237,10 @@ class Snapshot(PaicosReader):
                 if parttype in snap.dic_selection_index:
                     npart = snap.dic_selection_index[parttype].shape[0]
                 else:
-                    npart = snap.npart[parttype]
+                    if not snap.subselection:
+                        npart = snap.npart[parttype]
+                    else:
+                        npart = snap._len_subfofs[parttype]
                 return np.ones(npart) * snap.masstable[parttype]
 
         # Add function to the ones available
@@ -520,7 +567,7 @@ class Snapshot(PaicosReader):
         if self.verbose:
             print("... done! (took", time.time() - start_time, "s)")
 
-    def load_data(self, parttype, blockname):
+    def load_data(self, parttype, blockname, debug=False):
         """
         Load data from hdf5 file(s). Example usage::
 
@@ -561,6 +608,25 @@ class Snapshot(PaicosReader):
             start_time = time.time()
 
         skip_part = 0
+        if self.subselection:
+            subfof_skip_part = 0
+
+        # Initialize array
+        if not self.subselection:
+            length = self.npart[parttype]
+        else:
+            length = len_subfof = self._len_subfofs[parttype]
+
+        if length == 0:
+            err_msg = f'{p_key} has zero length, not able to load anything'
+            RuntimeError(err_msg)
+
+        shape = self._part_specs[parttype][blockname]['shape']
+        dtype = self._part_specs[parttype][blockname]['dtype']
+        if len(shape) == 1:
+            self[alias_key] = np.empty(length, dtype=dtype)
+        else:
+            self[alias_key] = np.empty((length, shape[1]), dtype=dtype)
 
         for ifile in range(self.nfiles):
             if self.multi_file is False:
@@ -575,18 +641,63 @@ class Snapshot(PaicosReader):
 
             np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])
 
-            if ifile == 0:   # initialize array
-                shape = self._part_specs[parttype][blockname]['shape']
-                dtype = self._part_specs[parttype][blockname]['dtype']
-                if len(shape) == 1:
-                    self[alias_key] = np.empty(self.npart[parttype], dtype=dtype)
+            if not self.subselection:
+                if np_file > 0:
+                    self[alias_key][skip_part:skip_part + np_file] = f[datname]
+            else:
+                # Global indices
+                file_first = skip_part
+                file_last = skip_part + np_file
+                subfof_first = self._first_indices[parttype]
+                subfof_last = self._last_indices[parttype]
+                found_something = False
+                if subfof_first >= file_first and subfof_first < file_last:
+                    found_something = True
+                    first = subfof_first - file_first
+                    last = np.min([np_file, subfof_last - file_first])
+                elif subfof_last > file_first and subfof_last < file_last:
+                    found_something = True
+                    first = 0
+                    last = np.min([np_file, subfof_last - file_first])
+                elif subfof_first <= file_first and subfof_last >= file_last:
+                    found_something = True
+                    first = 0
+                    last = np_file
                 else:
-                    self[alias_key] = np.empty((self.npart[parttype], shape[1]),
-                                               dtype=dtype)
-            if np_file > 0:
-                self[alias_key][skip_part:skip_part + np_file] = f[datname]
+                    found_something = False
+                    if debug:
+                        pass
+                if found_something:
+                    np_file_subfof = last - first
+                    if debug:
+                        if self.subhalonum is not None:
+                            print(f'ifile={ifile}, subhalo {self.subhalonum} in file')
+                        else:
+                            print(f'ifile={ifile}, fofnum {self.fofnum} in file')
+                        print('file_first, file_last', file_first, file_last)
+                        print('(subfof_first, subfof_last', subfof_first, subfof_last)
+                        print('np_file, np_file_subfof', np_file, np_file_subfof)
+                        print("len_subfof", len_subfof)
+
+                    self[alias_key][subfof_skip_part:subfof_skip_part + np_file_subfof] = f[datname][first:last]
+                    subfof_skip_part += np_file_subfof
 
             skip_part += np_file
+
+            if debug:
+                if self.subselection:
+                    print(subfof_skip_part, length)
+                else:
+                    print(skip_part, length)
+
+            f.close()
+
+        if self.subselection:
+            err_msg = f'missing particles!, {subfof_skip_part}/{length}'
+            assert subfof_skip_part == length, err_msg
+        else:
+            err_msg = f'missing particles!, {skip_part}/{length}'
+            assert skip_part == length, err_msg
 
         if settings.double_precision:
             # Load all variables with double precision

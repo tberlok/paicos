@@ -62,6 +62,10 @@ class PaicosReader(dict):
         """
 
         self.to_physical = to_physical
+        if to_physical and not settings.use_units:
+            err_msg = "to_physical=True requires that units are enabled"
+            raise RuntimeError(err_msg)
+
         self.verbose = verbose
 
         if '.hdf5' in basedir:
