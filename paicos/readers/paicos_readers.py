@@ -454,10 +454,10 @@ class PaicosReader(dict):
         if settings.use_units:
             a = 1.0 / (z + 1.)
             if isinstance(a, np.ndarray):
-                time = pu.PaicosTimeSeries(time, a=a, h=self.h,
+                time = pu.PaicosTimeSeries(time, a=a, h=self.h, copy=True,
                                            comoving_sim=self.comoving_sim)
             else:
-                time = pu.PaicosQuantity(time, a=a, h=self.h,
+                time = pu.PaicosQuantity(time, a=a, h=self.h, copy=True,
                                          comoving_sim=self.comoving_sim)
         return time
 
