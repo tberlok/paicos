@@ -139,7 +139,7 @@ class Histogram:
         if self.logscale:
             self.area_per_bin = np.diff(np.log10(edges))
             if settings.use_units:
-                self.area_per_bin =  self.area_per_bin * u.Unit('dex')
+                self.area_per_bin = self.area_per_bin * u.Unit('dex')
         else:
             self.area_per_bin = np.diff(edges)
             if settings.use_units:
@@ -148,6 +148,5 @@ class Histogram:
         if normalize:
             total_weight = np.sum(hist)
             hist = hist / (total_weight * self.area_per_bin)
-
 
         return hist

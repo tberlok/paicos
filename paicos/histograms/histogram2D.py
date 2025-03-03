@@ -152,7 +152,6 @@ class Histogram2D:
             self.centers_x_mat = centers_x_mat
             self.centers_y_mat = centers_y_mat
 
-
     def get_colorlabel(self, x_symbol, y_symbol, weight_symbol=None):
         """
         Method to generate a color label for the histogram with units
