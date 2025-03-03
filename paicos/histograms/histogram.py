@@ -3,6 +3,7 @@ This module defines a class for 1D histograms.
 """
 import time
 import numpy as np
+from astropy import units as u
 from .. import util
 from .. import settings
 from ..cython.histogram import get_hist_from_weights_and_idigit as func
@@ -100,7 +101,7 @@ class Histogram:
         if self.verbose:
             print(f'This took {time.time() - t:1.2f} seconds')
 
-    def hist(self, weights):
+    def hist(self, weights=None, normalize=False):
         """
         Compute the histogram of the data.
 
@@ -111,12 +112,42 @@ class Histogram:
             array: Histogram of the data.
         """
 
+        if weights is None and settings.use_units:
+            weights = np.ones(self.idigit.shape[0]) * u.Unit('')
+        elif weights is None and not settings.use_units:
+            weights = np.ones(self.idigit.shape[0])
+
+        if settings.use_units:
+            uq = self.bin_edges.unit_quantity
+            uq = uq / uq  # unitless_paicos_quanity
+            hist_unit = uq * weights.unit
+
         get_hist_from_weights_and_idigit = util.remove_astro_units(func)
 
         # compute histogram using pre-digitized x-coordinates and given weights
         hist = get_hist_from_weights_and_idigit(self.edges.shape[0], weights,
                                                 self.idigit)
+
         if settings.use_units:
-            hist = hist * weights.unit_quantity
+            hist = hist * hist_unit
+
+        if settings.use_units:
+            edges = self.bin_edges.value
+        else:
+            edges = self.bin_edges
+
+        if self.logscale:
+            self.area_per_bin = np.diff(np.log10(edges))
+            if settings.use_units:
+                self.area_per_bin =  self.area_per_bin * u.Unit('dex')
+        else:
+            self.area_per_bin = np.diff(edges)
+            if settings.use_units:
+                self.area_per_bin = self.area_per_bin * self.bin_edges.unit
+
+        if normalize:
+            total_weight = np.sum(hist)
+            hist = hist / (total_weight * self.area_per_bin)
+
 
         return hist
