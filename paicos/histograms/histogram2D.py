@@ -8,7 +8,6 @@ from .. import units as pu
 from .. import util
 from .. import settings
 from .histogram import _make_bins
-from ..cython.histogram import find_normalizing_norm_of_2d_hist
 
 
 class Histogram2D:
