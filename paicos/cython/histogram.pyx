@@ -152,25 +152,3 @@ def get_hist2d_from_weights_omp(real_t [:] xvec, real_t [:] yvec,
     tmp[:, :] = hist2d[:, :]
 
     return tmp
-
-
-def find_normalizing_norm_of_2d_hist(real_t [:, :] hist2d, real_t[:] edges_x,
-                                     real_t[:] edges_y):
-    """
-    This is a cython helper function for calculating the normalization of
-    a 2D histogram.
-    """
-
-    cdef int ix, iy
-    cdef real_t dx, dy, cell_area
-    cdef real_t norm = 0
-
-    cdef int nx = hist2d.shape[0]
-    cdef int ny = hist2d.shape[1]
-    for ix in range(nx):
-        for iy in range(ny):
-            dx = edges_x[ix+1] - edges_x[ix]
-            dy = edges_y[iy+1] - edges_y[iy]
-            cell_area = dx*dy
-            norm += hist2d[ix, iy]*cell_area
-    return norm
