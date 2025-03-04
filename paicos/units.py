@@ -310,8 +310,9 @@ class PaicosQuantity(Quantity):
         Returns a new PaicosQuantity with the same units as the current
         PaicosQuantity and a numeric value of 1.
         """
-        return PaicosQuantity(1., self.unit, a=self._a, h=self.h,
-                              comoving_sim=self.comoving_sim, copy=True)
+
+        return PaicosQuantity(1., self.unit, a=self._a, h=self.h, copy=True,
+                              comoving_sim=self.comoving_sim)
 
     @property
     def copy(self):
