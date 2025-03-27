@@ -170,7 +170,7 @@ def load_dataset(hdf5file, name, group=None):
                                              comoving_sim=comoving_sim)
             else:
                 data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
-                                         comoving_sim=comoving_sim)
+                                         comoving_sim=comoving_sim, copy=True)
     return data
 
 
