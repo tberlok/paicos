@@ -124,8 +124,8 @@ def save_dataset(hdf5file, name, data=None, data_attrs={},
         else:
             err_msg = ("All PaicosTimeSeries need to have the same array "
                        + "of scale factors when saving to the same file")
-            np.testing.assert_array_equal(path['scale_factor'][...], data.a,
-                                          err_msg=err_msg, rtol=1e-14, atol=1e-14)
+            np.testing.assert_allclose(path['scale_factor'][...], data.a,
+                                       err_msg=err_msg, rtol=1e-14, atol=1e-14)
 
 
 def load_dataset(hdf5file, name, group=None):
