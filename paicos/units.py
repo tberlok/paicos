@@ -557,7 +557,7 @@ class PaicosQuantity(Quantity):
         new_quant = new_quant.to_comoving(pu_unit)
         return new_quant
 
-    def adjust_time(self, snap_or_quant=None, a=None, z=None):
+    def adjust_time(self, a=None, z=None):
         """
         Return a PaicosQuantity with its time (i.e. scale factor, a, and
         redshift, z, set to new values *without* changing the physical
@@ -600,10 +600,7 @@ class PaicosQuantity(Quantity):
         codic, _ = get_unit_dictionaries(self.unit)
         # factor = self.h**codic[small_h]
 
-        if snap_or_quant is not None:
-            assert hasattr(snap_or_quant, a)
-            new_a = snap_or_quant.a
-        elif a is not None:
+        if a is not None:
             new_a = a
         elif z is not None:
             new_a = 1 / (z + 1)
@@ -616,7 +613,7 @@ class PaicosQuantity(Quantity):
                               comoving_sim=self.comoving_sim,
                               dtype=data.dtype, copy=True)
 
-    def set_time(self, snap_or_quant=None, a=None, z=None):
+    def set_time(self, a=None, z=None):
         """
         Return a PaicosQuantity with its time (i.e. scale factor, a, and
         redshift, z, set to new values *while changing* the physical
@@ -655,10 +652,7 @@ class PaicosQuantity(Quantity):
         if not self.comoving_sim:
             raise RuntimeError('Only implemented for comoving simulations')
 
-        if snap_or_quant is not None:
-            assert hasattr(snap_or_quant, a)
-            new_a = snap_or_quant.a
-        elif a is not None:
+        if a is not None:
             new_a = a
         elif z is not None:
             new_a = 1 / (z + 1)
