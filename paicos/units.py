@@ -557,6 +557,121 @@ class PaicosQuantity(Quantity):
         new_quant = new_quant.to_comoving(pu_unit)
         return new_quant
 
+    def adjust_time(self, a=None, z=None):
+        """
+        Return a PaicosQuantity with its time (i.e. scale factor, a, and
+        redshift, z, set to new values *without* changing the physical
+        value of the quantity).
+
+        Note the difference between this method and the "adjust_time" method!
+
+        Use the "adjust_time" method if you want to keep the physical value fixed.
+        Use the "set_time" method if you want to keep the comoving value fixed.
+
+        Both are illustrated in the example below:
+
+        For instance, we initialize a length of 100 comoving kpc
+        (using a snap object with a = 1)
+
+            In [2]:  L = 100 * snap.uq('kpc / small_a')
+               ...:  L_fixed_physical = L.adjust_time(a=0.5)
+               ...:  L_fixed_comoving = L.set_time(a=0.5)
+
+            In [3]: L_fixed_physical
+            Out[3]: <PaicosQuantity 50. kpc / small_a>
+
+            In [4]: L_fixed_comoving
+            Out[4]: <PaicosQuantity 100. kpc / small_a>
+
+            In [5]: L.to_physical
+            Out[5]: <PaicosQuantity 100. kpc>
+
+            In [6]: L_fixed_physical.to_physical
+            Out[6]: <PaicosQuantity 100. kpc>
+
+            In [7]: L_fixed_comoving.to_physical
+            Out[7]: <PaicosQuantity 200. kpc>
+
+        """
+
+        if not self.comoving_sim:
+            raise RuntimeError('Only implemented for comoving simulations')
+
+        codic, _ = get_unit_dictionaries(self.unit)
+        # factor = self.h**codic[small_h]
+
+        if a is not None:
+            new_a = a
+        elif z is not None:
+            new_a = 1 / (z + 1)
+        else:
+            raise RuntimeError('You need to give an input to this method')
+
+        factor = (self.a / new_a)**codic[small_a]
+        data = self.value * factor
+        return PaicosQuantity(data, self.unit, a=new_a, h=self.h,
+                              comoving_sim=self.comoving_sim,
+                              dtype=data.dtype, copy=True)
+
+    def set_time(self, a=None, z=None):
+        """
+        Return a PaicosQuantity with its time (i.e. scale factor, a, and
+        redshift, z, set to new values *while changing* the physical
+        value of the quantity).
+
+        Note the difference between this method and the "adjust_time" method!
+
+        Use the "adjust_time" method if you want to keep the physical value fixed.
+        Use the "set_time" method if you want to keep the comoving value fixed.
+
+        Both are illustrated in the example below:
+
+        For instance, we initialize a length of 100 comoving kpc
+        (using a snap object with a = 1)
+
+            In [2]:  L = 100 * snap.uq('kpc / small_a')
+               ...:  L_fixed_physical = L.adjust_time(a=0.5)
+               ...:  L_fixed_comoving = L.set_time(a=0.5)
+
+            In [3]: L_fixed_physical
+            Out[3]: <PaicosQuantity 50. kpc / small_a>
+
+            In [4]: L_fixed_comoving
+            Out[4]: <PaicosQuantity 100. kpc / small_a>
+
+            In [5]: L.to_physical
+            Out[5]: <PaicosQuantity 100. kpc>
+
+            In [6]: L_fixed_physical.to_physical
+            Out[6]: <PaicosQuantity 100. kpc>
+
+            In [7]: L_fixed_comoving.to_physical
+            Out[7]: <PaicosQuantity 200. kpc>
+
+        """
+        if not self.comoving_sim:
+            raise RuntimeError('Only implemented for comoving simulations')
+
+        if a is not None:
+            new_a = a
+        elif z is not None:
+            new_a = 1 / (z + 1)
+        else:
+            raise RuntimeError('You need to give an input to this method')
+
+        data = self.value
+        return PaicosQuantity(data, self.unit, a=new_a, h=self.h,
+                              comoving_sim=self.comoving_sim,
+                              dtype=data.dtype, copy=True)
+
+    @property
+    def astropy_quantity(self):
+        """
+        Returns an astropy Quantity, i.e., the units are retained but
+        we no longer have access to the information about the values of a and h.
+        """
+        return Quantity(self.value, self.unit, dtype=self.value.dtype, copy=True)
+
     def __scaling_and_scaling_str(self, unit):
         """
         Helper function to create labels
