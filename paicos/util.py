@@ -122,7 +122,10 @@ def save_dataset(hdf5file, name, data=None, data_attrs={},
         if 'scale_factor' not in path.keys():
             path.create_dataset('scale_factor', data=data.a)
         else:
-            np.testing.assert_array_equal(path['scale_factor'][...], data.a)
+            err_msg = ("All PaicosTimeSeries need to have the same array "
+                       + "of scale factors when saving to the same file")
+            np.testing.assert_allclose(path['scale_factor'][...], data.a,
+                                       err_msg=err_msg, rtol=1e-14, atol=1e-14)
 
 
 def load_dataset(hdf5file, name, group=None):
@@ -170,7 +173,7 @@ def load_dataset(hdf5file, name, group=None):
                                              comoving_sim=comoving_sim)
             else:
                 data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
-                                         comoving_sim=comoving_sim)
+                                         comoving_sim=comoving_sim, copy=True)
     return data
 
 
