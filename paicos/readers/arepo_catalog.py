@@ -79,7 +79,8 @@ class Catalog(PaicosReader):
 
     """
     def __init__(self, basedir='.', snapnum=None, load_all=False,
-                 to_physical=False, subfind_catalog=True, verbose=False):
+                 to_physical=False, subfind_catalog=True, readonly_first_file=False,
+                 verbose=False):
         """
         Initializes the Catalog class.
 
@@ -103,6 +104,11 @@ class Catalog(PaicosReader):
             subfind_catalog : bool
                 whether the simulation has subfind catalogs,
                 when False the code will look for FoF-catalogs only.
+
+            readonly_first_file : bool
+                when set to True the code will only read one catalog file (the first).
+                This can significantly speed things up when one is only interested in the
+                properties of the most massive groups in a simulation.
 
             verbose : bool
                 whether to print information, default is False.
@@ -135,6 +141,8 @@ class Catalog(PaicosReader):
         self.Sub = PaicosDict(self, subfind_catalog=True)
 
         self.to_physical = to_physical
+
+        self.readonly_first_file = readonly_first_file
 
         if to_physical and not settings.use_units:
             err_msg = "to_physical=True requires that units are enabled"
@@ -231,47 +239,69 @@ class Catalog(PaicosReader):
 
         :meta private:
         """
-        skip_gr = 0
 
         if ikey in self.Group:
             return
 
         data = None  # to get rid of linting error
 
-        for ifile in range(self.nfiles):
-            if self.multi_file is False:
-                cur_filename = self.filename
-            else:
-                if self.no_subdir:
-                    cur_filename = self.multi_wo_dir.format(ifile)
+        if not self.readonly_first_file:
+            skip_gr = 0
+
+            for ifile in range(self.nfiles):
+                if self.multi_file is False:
+                    cur_filename = self.filename
                 else:
-                    cur_filename = self.multi_filename.format(ifile)
-
-            if self.verbose:
-                print("reading file", cur_filename)
-
-            file = h5py.File(cur_filename, "r")
-
-            ng = int(file["Header"].attrs["Ngroups_ThisFile"])
-
-            # initialize arrays
-            if ifile == 0:
-                if "Group" in file:
-                    if len(file["Group/" + ikey].shape) == 1:
-                        data = np.empty(
-                            self.ngroups, dtype=file["Group/" + ikey].dtype)
-                    elif len(file["Group/" + ikey].shape) == 2:
-                        data = np.empty(
-                            (self.ngroups, file["Group/" + ikey].shape[1]),
-                            dtype=file["Group/" + ikey].dtype)
+                    if self.no_subdir:
+                        cur_filename = self.multi_wo_dir.format(ifile)
                     else:
-                        assert False
+                        cur_filename = self.multi_filename.format(ifile)
+
+                if self.verbose:
+                    print("reading file", cur_filename)
+
+                file = h5py.File(cur_filename, "r")
+
+                ng = int(file["Header"].attrs["Ngroups_ThisFile"])
+
+                # initialize arrays
+                if ifile == 0:
+                    if "Group" in file:
+                        if len(file["Group/" + ikey].shape) == 1:
+                            data = np.empty(
+                                self.ngroups, dtype=file["Group/" + ikey].dtype)
+                        elif len(file["Group/" + ikey].shape) == 2:
+                            data = np.empty(
+                                (self.ngroups, file["Group/" + ikey].shape[1]),
+                                dtype=file["Group/" + ikey].dtype)
+                        else:
+                            assert False
+
+                # read group data
+                if ng > 0:
+                    data[skip_gr:skip_gr + ng] = file["Group/" + ikey]
+
+                skip_gr += ng
+
+                file.close()
+        else:
+            cur_filename = self.filename
+            file = h5py.File(cur_filename, "r")
+            ng = int(file["Header"].attrs["Ngroups_ThisFile"])
+            if "Group" in file:
+                if len(file["Group/" + ikey].shape) == 1:
+                    data = np.empty(
+                        ng, dtype=file["Group/" + ikey].dtype)
+                elif len(file["Group/" + ikey].shape) == 2:
+                    data = np.empty(
+                        (ng, file["Group/" + ikey].shape[1]),
+                        dtype=file["Group/" + ikey].dtype)
+                else:
+                    assert False
 
             # read group data
             if ng > 0:
-                data[skip_gr:skip_gr + ng] = file["Group/" + ikey]
-
-            skip_gr += ng
+                data[:ng] = file["Group/" + ikey][...]
 
             file.close()
 
