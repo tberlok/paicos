@@ -858,6 +858,28 @@ class PaicosTimeSeries(PaicosQuantity):
 
         return obj
 
+    def __getitem__(self, key):
+        """
+        We overload this method in order to also slice the
+        time array when a PaicosTimeSeries is sliced.
+        """
+        result = super().__getitem__(key)
+
+        # Ensure key is always a tuple
+        key_tuple = (key,) if not isinstance(key, tuple) else key
+
+        # Get index for axis 0
+        key0 = key_tuple[0] if len(key_tuple) > 0 else slice(None)
+        result._a = self._a[key0]
+
+        # Return PaicosQuantity if new view is just a single point in time
+        if len(result.shape) == 0:
+            return PaicosQuantity(result.value, result.unit, a=result.a,
+                                  h=result.h, comoving_sim=result.comoving_sim,
+                                  copy=True)
+
+        return result
+
     @property
     def to_physical(self):
         """
