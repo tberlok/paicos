@@ -124,18 +124,26 @@ class PaicosWriter:
 
         file = h5py.File(filename, 'r+')
 
-        if self.mode == 'a':
-            msg = ('PaicosWriter is in amend mode but {} is already '
-                   + 'in the group {} in the hdf5 file {}')
+        if self.mode == 'a' or self.mode == 'r+':
+            msg = ("PaicosWriter is in amend mode but {} is already "
+                   + "in the group {} in the hdf5 file {}. Use mode='r+' "
+                   + "for overwriting data.")
             msg = msg.format(name, group, file.filename)
 
             if group is None:
                 if name in file:
-                    raise RuntimeError(msg)
+                    if self.mode == 'a':
+                        raise RuntimeError(msg)
+                    else:
+                        del file[name]
+
             else:
                 if group in file:
                     if name in file[group]:
-                        raise RuntimeError(msg)
+                        if self.mode == 'a':
+                            raise RuntimeError(msg)
+                        else:
+                            del file[group + '/' + name]
 
         # Save the data
         util.save_dataset(file, name, data=data, data_attrs=data_attrs,
@@ -181,3 +189,11 @@ class PaicosTimeSeriesWriter(PaicosWriter):
                          basename=basename,
                          add_snapnum=add_snapnum,
                          mode=mode)
+
+    def _perform_consistency_checks(self):
+        """
+        Perform consistency checks when trying to amend a file (to avoid
+        saving data at different times, for instance)
+        """
+
+        self._perform_extra_consistency_checks()
