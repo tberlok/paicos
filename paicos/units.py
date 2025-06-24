@@ -868,12 +868,16 @@ class PaicosTimeSeries(PaicosQuantity):
         # Ensure key is always a tuple
         key_tuple = (key,) if not isinstance(key, tuple) else key
 
+        # print(key_tuple)
+
         # Get index for axis 0
         key0 = key_tuple[0] if len(key_tuple) > 0 else slice(None)
-        result._a = self._a[key0]
+        # print(key, key0)
+        if not len(self._a.shape) == 0:
+            result._a = self._a[key0]
 
         # Return PaicosQuantity if new view is just a single point in time
-        if len(result.shape) == 0:
+        if len(result._a.shape) == 0:
             return PaicosQuantity(result.value, result.unit, a=result.a,
                                   h=result.h, comoving_sim=result.comoving_sim,
                                   copy=True)
