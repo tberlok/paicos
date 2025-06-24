@@ -1,5 +1,6 @@
 import pytest
 
+
 def test_writer_and_reader():
 
     import paicos as pa
@@ -17,7 +18,6 @@ def test_writer_and_reader():
 
     f = pa.PaicosReader(writer.filename)
 
-
     # Amend mode
     writer = pa.PaicosWriter(snap, basedir=pa.data_dir, mode='a')
 
@@ -34,4 +34,4 @@ def test_writer_and_reader():
 
 
 if __name__ == '__main__':
-    test_slicer_writer_and_reader(True)
+    test_writer_and_reader()

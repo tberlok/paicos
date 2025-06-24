@@ -21,6 +21,6 @@ writer.write_data('test_data', snap['0_Density'][0], group='group1')
 
 # Read-plus mode
 writer = pa.PaicosWriter(snap, basedir=pa.data_dir, mode='r+')
-writer.write_data('0_Density2', 2*snap['0_Density'][0])
+writer.write_data('0_Density2', 2 * snap['0_Density'][0])
 
 print(f)
