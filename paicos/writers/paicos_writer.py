@@ -122,32 +122,32 @@ class PaicosWriter:
         else:
             filename = self.filename
 
-        file = h5py.File(filename, 'r+')
+        with h5py.File(filename, 'r+') as file:
 
-        if self.mode == 'a' or self.mode == 'r+':
-            msg = ("PaicosWriter is in amend mode but {} is already "
-                   + "in the group {} in the hdf5 file {}. Use mode='r+' "
-                   + "for overwriting data.")
-            msg = msg.format(name, group, file.filename)
+            if self.mode == 'a' or self.mode == 'r+':
+                msg = ("PaicosWriter is in amend mode but {} is already "
+                       + "in the group {} in the hdf5 file {}. Use mode='r+' "
+                       + "for overwriting data.")
+                msg = msg.format(name, group, file.filename)
 
-            if group is None:
-                if name in file:
-                    if self.mode == 'a':
-                        raise RuntimeError(msg)
-                    else:
-                        del file[name]
-
-            else:
-                if group in file:
-                    if name in file[group]:
+                if group is None:
+                    if name in file:
                         if self.mode == 'a':
                             raise RuntimeError(msg)
                         else:
-                            del file[group + '/' + name]
+                            del file[name]
 
-        # Save the data
-        util.save_dataset(file, name, data=data, data_attrs=data_attrs,
-                          group=group, group_attrs=group_attrs)
+                else:
+                    if group in file:
+                        if name in file[group]:
+                            if self.mode == 'a':
+                                raise RuntimeError(msg)
+                            else:
+                                del file[group + '/' + name]
+
+            # Save the data
+            util.save_dataset(file, name, data=data, data_attrs=data_attrs,
+                              group=group, group_attrs=group_attrs)
 
     def _perform_extra_consistency_checks(self):
         """
