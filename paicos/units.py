@@ -884,6 +884,62 @@ class PaicosTimeSeries(PaicosQuantity):
 
         return result
 
+    def __array_function__(self, func, types, args, kwargs):
+        """
+        Ensure that the the information about a-values is correctly propagated.
+        """
+
+        result = super().__array_function__(func, types, args, kwargs)
+
+        # Numpy functions that sometimes turn a time series into a single value
+        if func in [np.mean, np.sum, np.std, np.var, np.min, np.max]:
+            axis = kwargs.get("axis", None)
+            if axis is None or (isinstance(axis, int) and axis == 0) or (isinstance(axis, tuple) and 0 in axis):
+                # Reduction along dimension 0, so discard time information and return an astropy Quantity
+                return result.astropy_quantity
+
+        # Stacking functions
+        if func in [np.vstack, np.hstack, np.dstack]:
+            err_msg = ("This stacking function not implemented for PaicosTimeSeries. ",
+                       "Please try instead if np.concatenate or np.stack works.")
+            raise RuntimeError(err_msg)
+
+        if func in [np.concatenate, np.stack]:
+
+            arrays = args[0]
+            if not all(isinstance(p, PaicosTimeSeries) for p in arrays):
+                raise RuntimeError("concatenate requires same type for all arrays")
+
+            axis = kwargs.get("axis", None)
+
+            if axis == 0:
+                if func == np.stack:
+                    raise RuntimeError("np.stack only implemented with axis=1")
+                # Concatenate the a-values if we are concatenating / stacking along axis 0
+                new_a = np.concatenate([p.a for p in arrays])
+
+                if len(new_a.shape) > 1:
+                    print(new_a.shape)
+                    err_msg = ("Supported operations for PaicosTimeSeries are np.concatenate",
+                               " along axis=0 and/or stacking with np.stack along axis=1.")
+                    raise RuntimeError(err_msg)
+                return PaicosTimeSeries(result.value, result.unit, a=new_a,
+                                        h=result.h, copy=True, comoving_sim=result.comoving_sim)
+            elif axis == 1:
+                a_first = arrays[0].a
+                for p in arrays:
+                    try:
+                        np.testing.assert_array_equal(p.a, a_first)
+                    except AssertionError:
+                        err_msg = ("Stacking time series along this axis",
+                                   " requires that all time series have identical",
+                                   " time (i.e., .a values).")
+                        raise RuntimeError(err_msg)
+            else:
+                raise RuntimeError(f"You have axis={axis}. Please specify axis to be either 0 or 1.")
+
+        return result
+
     @property
     def to_physical(self):
         """
@@ -972,6 +1028,20 @@ class PaicosTimeSeries(PaicosQuantity):
         """
         assert vec.shape[0] == self.shape[0]
         return np.vstack([vec for _ in range(self.shape[1])]).T
+
+    # def concatenate_and_sort(self, paicos_time_series):
+    #     """
+    #     Concatenate two time series and sort according to their a values
+    #     """
+    #     assert self.unit == paicos_time_series.unit
+    #     assert self.shape == paicos_time_series.shape
+
+    #     # index = np.arange(self.a.shape[0] + paicos_time_series.a.shape[0])
+    #     stacked_a = np.concatenate([self.a, paicos_time_series.a])
+    #     stacked_values = np.concatenate([self.value, paicos_time_series.value])
+    #     index = np.argsort(stacked_a)
+    #     return PaicosTimeSeries(stacked_values[index], self.unit, a=stacked_a[index],
+    #                             h=self.h, copy=True, comoving_sim=self.comoving_sim)
 
     def _sanity_check(self, value):
         """
