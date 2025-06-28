@@ -643,7 +643,7 @@ class Snapshot(PaicosReader):
 
             if not self.subselection:
                 if np_file > 0:
-                    self[alias_key][skip_part:skip_part + np_file] = f[datname]
+                    self[alias_key][skip_part:skip_part + np_file] = f[datname][...]
             else:
                 # Global indices
                 file_first = skip_part
