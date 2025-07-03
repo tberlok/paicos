@@ -303,6 +303,84 @@ def is_point_in_box(point, box):
             return False
     return True
 
+@numba.jit(nopython=True)
+def box_intersects_sphere(box, center, radius):
+    sq_dist = 0.0
+    r2 = radius * radius
+    for i in range(3):
+        if center[i] < box[i, 0]:
+            d = box[i, 0] - center[i]
+            sq_dist += d * d
+        elif center[i] > box[i, 1]:
+            d = center[i] - box[i, 1]
+            sq_dist += d * d
+        if sq_dist > r2:
+            return False
+    return True
+
+@numba.jit(nopython=True)
+def find_points_in_range(points, tree_children, tree_bounds,
+                         query_points, radius, max_neighbors):
+    n_queries = query_points.shape[0]
+    num_internal_nodes = tree_children.shape[0]
+
+    all_neighbors = np.full((n_queries, max_neighbors), -1, dtype=np.int64)
+    neighbor_counts = np.zeros(n_queries, dtype=np.int64)
+
+    for ip in range(n_queries):
+        query_point = query_points[ip]
+
+        queue = np.zeros(256, dtype=np.int64)
+        queue_index = 0
+        queue[queue_index] = 0  # Start from root
+
+        while queue_index >= 0:
+            node_id = queue[queue_index]
+            childA = tree_children[node_id, 0]
+            childB = tree_children[node_id, 1]
+
+            is_leafA = childA >= num_internal_nodes
+            is_leafB = childB >= num_internal_nodes
+
+            intersectsA = box_intersects_sphere(tree_bounds[childA], query_point, radius)
+            intersectsB = box_intersects_sphere(tree_bounds[childB], query_point, radius)
+
+            if intersectsA and is_leafA:
+                data_id = childA - num_internal_nodes
+                dist = distance(query_point[0], query_point[1], query_point[2],
+                                points[data_id, 0], points[data_id, 1], points[data_id, 2])
+                if dist <= radius:
+                    count = neighbor_counts[ip]
+                    if count < max_neighbors:
+                        all_neighbors[ip, count] = data_id
+                        neighbor_counts[ip] += 1
+
+            if intersectsB and is_leafB:
+                data_id = childB - num_internal_nodes
+                dist = distance(query_point[0], query_point[1], query_point[2],
+                                points[data_id, 0], points[data_id, 1], points[data_id, 2])
+                if dist <= radius:
+                    count = neighbor_counts[ip]
+                    if count < max_neighbors:
+                        all_neighbors[ip, count] = data_id
+                        neighbor_counts[ip] += 1
+
+            traverseA = intersectsA and not is_leafA
+            traverseB = intersectsB and not is_leafB
+
+            if not traverseA and not traverseB:
+                queue_index -= 1
+            else:
+                if traverseA:
+                    queue[queue_index] = childA
+                else:
+                    queue[queue_index] = childB
+                if traverseA and traverseB:
+                    queue_index += 1
+                    queue[queue_index] = childB
+
+    return all_neighbors, neighbor_counts
+
 
 @numba.jit(nopython=True)
 def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
@@ -504,3 +582,27 @@ class BinaryTree:
                                    query_points), dists, ids,
                                start_id=start_id)
         return dists / self.conversion_factor, self._tree_node_ids_to_data_ids(ids)
+
+
+    def range_search(self, query_points, radius, max_neighbors=256):
+        if query_points.ndim == 1:
+            query_points = query_points[None, :]
+
+        raw_neighbors, neighbor_counts = find_points_in_range(
+            self._pos, self.children, self.bounds,
+            self._to_tree_coordinates(query_points), radius * self.conversion_factor, max_neighbors
+        )
+
+        neighbor_lists = []
+        for i in range(len(query_points)):
+            n_valid = neighbor_counts[i]
+            ids = raw_neighbors[i, :n_valid]  # Only keep valid entries
+            neighbor_lists.append(self._tree_node_ids_to_data_ids(ids))
+
+        if neighbor_counts.max() >= max_neighbors:
+            import warnings
+            warning_msg = (f"Range search has max_neighbors={max_neighbors}" +
+                          f" but the largest number of neighbors found was {neighbor_counts.max()}.")
+            warnings.warn(warning_msg)
+
+        return neighbor_lists, neighbor_counts
