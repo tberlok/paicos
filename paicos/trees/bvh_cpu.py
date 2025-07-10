@@ -394,29 +394,25 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
 
         if start_id != 0:
             this_query_start_id = int(start_id)
-            # print(this_query_start_id, start_id)
             is_leaf = start_id >= num_internal_nodes
             in_box = is_point_in_box(
                 query_point, tree_bounds[this_query_start_id])
             while not in_box or is_leaf:
-                # print(this_query_start_id, start_id)
+
                 this_query_start_id = tree_parents[this_query_start_id]
-                # print('dfdf')
+
                 in_box = is_point_in_box(
                     query_point, tree_bounds[this_query_start_id])
-                # print('22222')
+
                 is_leaf = this_query_start_id >= num_internal_nodes
-                # print('33333', is_leaf, in_box)
-                # print(this_query_start_id, start_id)
+
+
                 if this_query_start_id == -1:
-                    # print('went all the way up...')
                     this_query_start_id = 0
                     break
         else:
             this_query_start_id = 0
 
-        # print('did we go here?')
-        # print('this_query_start_id', this_query_start_id, start_id)
         # We traverse the nodes and leafs using a while loop and a queue.
 
         # Local memory on each tread (32 should be fine?)
@@ -442,15 +438,6 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
             point_in_A = is_point_in_box(query_point, tree_bounds[childA])
             point_in_B = is_point_in_box(query_point, tree_bounds[childB])
 
-            # Do explicit check if in a leaf
-            # print(f'node_id: {node_id}\t childA: {childA}\t childB: {childB}\t')
-            # if node_id == 6:
-            #     print('node_id, point_in_A, point_in_B, is_leaf,
-            # is_leafB', node_id, point_in_A, point_in_B, is_leafA, is_leafB)
-            #     print(query_point)
-            #     print(tree_bounds[childA])
-            #     print(tree_bounds[childB])
-            # raise RuntimeError("d")
             if point_in_A and is_leafA:
                 data_id = childA - num_internal_nodes
                 dist = distance(query_point[0],
@@ -460,11 +447,6 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
                                 points[data_id, 1],
                                 points[data_id, 2])
 
-                # if node_id == 6:
-                #     print(f'dist: {dist}, min_dist: {min_dist}')
-                #     print(dist, min_dist, data_id)
-                #     print(points[data_id], query_point)
-                # raise RuntimeError("d")
                 if dist < min_dist:
                     min_dist = dist
                     min_index = data_id
