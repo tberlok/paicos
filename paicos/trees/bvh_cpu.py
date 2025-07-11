@@ -275,12 +275,11 @@ def propagate_bounds_upwards(tree_bounds, tree_parents, tree_children):
         # if len(next_parents) < 10:
         #     print(node_id, len(next_parents), next_parents)
 
-
-@numba.jit(nopython=True)
-def distance(xf_q, yf_q, zf_q, xf, yf, zf):
-    dist = math.sqrt((xf - xf_q)**2
-                     + (yf - yf_q)**2
-                     + (zf - zf_q)**2)
+@numba.njit(inline='always')
+def distance(point, query_point):
+    dist = math.sqrt((point[0] - query_point[0])**2
+                     + (point[1] - query_point[1])**2
+                     + (point[2] - query_point[2])**2)
     return dist
 
 
@@ -296,12 +295,25 @@ def distance(xf_q, yf_q, zf_q, xf, yf, zf):
 #         return False
 #     return True
 
-@numba.jit(nopython=True)
+@numba.njit(inline='always')
 def is_point_in_box(point, box):
     for ii in range(3):
         if point[ii] < box[ii, 0] or point[ii] > box[ii, 1]:
             return False
     return True
+
+@numba.njit(inline='always')
+def distance_to_box(point, box):
+    """Squared distance from a point to an AABB (0 if inside)."""
+    sq_dist = 0.0
+    for i in range(3):
+        if point[i] < box[i, 0]:
+            d = box[i, 0] - point[i]
+            sq_dist += d * d
+        elif point[i] > box[i, 1]:
+            d = point[i] - box[i, 1]
+            sq_dist += d * d
+    return math.sqrt(sq_dist)
 
 @numba.jit(nopython=True)
 def box_intersects_sphere(box, center, radius):
@@ -317,6 +329,65 @@ def box_intersects_sphere(box, center, radius):
         if sq_dist > r2:
             return False
     return True
+
+import numba
+import numpy as np
+
+@numba.njit(inline='always')
+def nearest_neighbor_cpu(points, tree_parents, tree_children, tree_bounds,
+                         query_point, num_internal_nodes):
+    queue = np.empty(128, dtype=np.int64)
+    queue_index = 0
+    queue[queue_index] = 0
+
+    # Initialize min_dist, and min_index
+    min_dist = (2**L - 1.0)
+    min_index = -1
+
+    while queue_index >= 0:
+        node_id = queue[queue_index]
+
+        childA = tree_children[node_id, 0]
+        childB = tree_children[node_id, 1]
+
+        is_leafA = childA >= num_internal_nodes
+        is_leafB = childB >= num_internal_nodes
+
+        if is_leafA:
+            data_id = childA - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        if is_leafB:
+            data_id = childB - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+
+        distA = distance_to_box(query_point, tree_bounds[childA])
+        distB = distance_to_box(query_point, tree_bounds[childB])
+
+        # Whether to traverse
+        traverseA = (distA <= min_dist) and not is_leafA
+        traverseB = (distB <= min_dist) and not is_leafB
+
+        if not traverseA and not traverseB:
+            queue_index -= 1
+        else:
+            if traverseA:
+                queue[queue_index] = childA
+            else:
+                queue[queue_index] = childB
+            if traverseA and traverseB:
+                queue_index += 1
+                queue[queue_index] = childB
+
+    return min_dist, min_index
+
 
 @numba.jit(nopython=True)
 def find_points_in_range(points, tree_children, tree_bounds,
@@ -347,8 +418,7 @@ def find_points_in_range(points, tree_children, tree_bounds,
 
             if intersectsA and is_leafA:
                 data_id = childA - num_internal_nodes
-                dist = distance(query_point[0], query_point[1], query_point[2],
-                                points[data_id, 0], points[data_id, 1], points[data_id, 2])
+                dist = distance(query_point, points[data_id])
                 if dist <= radius:
                     count = neighbor_counts[ip]
                     if count < max_neighbors:
@@ -357,8 +427,7 @@ def find_points_in_range(points, tree_children, tree_bounds,
 
             if intersectsB and is_leafB:
                 data_id = childB - num_internal_nodes
-                dist = distance(query_point[0], query_point[1], query_point[2],
-                                points[data_id, 0], points[data_id, 1], points[data_id, 2])
+                dist = distance(query_point, points[data_id])
                 if dist <= radius:
                     count = neighbor_counts[ip]
                     if count < max_neighbors:
@@ -381,37 +450,18 @@ def find_points_in_range(points, tree_children, tree_bounds,
 
     return all_neighbors, neighbor_counts
 
-
 @numba.jit(nopython=True)
 def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
                            query_points, dists, ids, start_id=0):
     n_queries = query_points.shape[0]
+    num_internal_nodes = numba.int64(tree_children.shape[0])
+
     for ip in range(n_queries):
-        num_internal_nodes = numba.int64(tree_children.shape[0])
 
         # Select a query_point from the list of queries
         query_point = query_points[ip]
 
-        if start_id != 0:
-            this_query_start_id = int(start_id)
-            is_leaf = start_id >= num_internal_nodes
-            in_box = is_point_in_box(
-                query_point, tree_bounds[this_query_start_id])
-            while not in_box or is_leaf:
-
-                this_query_start_id = tree_parents[this_query_start_id]
-
-                in_box = is_point_in_box(
-                    query_point, tree_bounds[this_query_start_id])
-
-                is_leaf = this_query_start_id >= num_internal_nodes
-
-
-                if this_query_start_id == -1:
-                    this_query_start_id = 0
-                    break
-        else:
-            this_query_start_id = 0
+        this_query_start_id = 0
 
         # We traverse the nodes and leafs using a while loop and a queue.
 
@@ -425,6 +475,8 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
         min_dist = (2**L - 1.0)
         min_index = -1
 
+        # print('\n\nstarting\n\n')
+
         while queue_index >= 0:
 
             node_id = queue[queue_index]
@@ -435,38 +487,28 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
             is_leafA = childA >= num_internal_nodes
             is_leafB = childB >= num_internal_nodes
 
-            point_in_A = is_point_in_box(query_point, tree_bounds[childA])
-            point_in_B = is_point_in_box(query_point, tree_bounds[childB])
-
-            if point_in_A and is_leafA:
+            if is_leafA:
                 data_id = childA - num_internal_nodes
-                dist = distance(query_point[0],
-                                query_point[1],
-                                query_point[2],
-                                points[data_id, 0],
-                                points[data_id, 1],
-                                points[data_id, 2])
+                dist = distance(query_point, points[data_id])
 
                 if dist < min_dist:
                     min_dist = dist
                     min_index = data_id
 
-            if point_in_B and is_leafB:
+            if is_leafB:
                 data_id = childB - num_internal_nodes
-                dist = distance(query_point[0],
-                                query_point[1],
-                                query_point[2],
-                                points[data_id, 0],
-                                points[data_id, 1],
-                                points[data_id, 2])
+                dist = distance(query_point, points[data_id])
 
                 if dist < min_dist:
                     min_dist = dist
                     min_index = data_id
+
+            distA = distance_to_box(query_point, tree_bounds[childA])
+            distB = distance_to_box(query_point, tree_bounds[childB])
 
             # Whether to traverse
-            traverseA = point_in_A and not is_leafA
-            traverseB = point_in_B and not is_leafB
+            traverseA = (distA <= min_dist) and not is_leafA
+            traverseB = (distB <= min_dist) and not is_leafB
 
             if (not traverseA) and (not traverseB):
                 queue_index -= 1

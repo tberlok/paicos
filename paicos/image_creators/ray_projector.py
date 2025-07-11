@@ -1,6 +1,4 @@
 import numpy as np
-import cupy as cp
-from numba import cuda
 import numba
 
 from .image_creator import ImageCreator
@@ -8,109 +6,67 @@ from .. import util
 from .. import settings
 from .. import units
 
-from ..trees.bvh_gpu import GpuBinaryTree
-from ..trees.bvh_gpu import nearest_neighbor_device
+from ..trees.bvh_cpu import BinaryTree
+from ..trees.bvh_cpu import nearest_neighbor_cpu
 
-
-def get_blocks(size, threadsperblock):
-    return (size + (threadsperblock - 1)) // threadsperblock
-
-
-@cuda.jit(device=True, inline=True)
-def rotate_point_around_center(point, tmp_point, center, rotation_matrix):
-    """
-    Rotate around center. Note that we overwrite point.
-    """
-
-    # Subtract center
-    for ii in range(3):
-        tmp_point[ii] = point[ii] - center[ii]
-        point[ii] = 0.0
-
-    # Rotate around center (matrix multiplication).
-    for ii in range(3):
-        for jj in range(3):
-            point[ii] += rotation_matrix[ii, jj] * tmp_point[jj]
-
-    # Add center back
-    for ii in range(3):
-        point[ii] = point[ii] + center[ii]
-
-
-@cuda.jit
-def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
-               widths, center,
-               tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
-
-    ix, iy = cuda.grid(2)
+@numba.njit(parallel=True)
+def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+                   widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
     nx = image.shape[0]
     ny = image.shape[1]
+    dx = widths[0] / nx
+    dy = widths[1] / ny
+    num_internal_nodes = tree_children.shape[0]
 
-    if ix >= 0 and ix < nx and iy >= 0 and iy < ny:
-        result = 0.0
+    for ix in numba.prange(nx):
+        for iy in range(ny):
+            result = 0.0
+            z = 0.0
+            query_point = np.empty(3, dtype=np.float64)
 
-        dx = widths[0] / nx
-        dy = widths[1] / ny
+            while z < widths[2]:
+                # Compute query point in aligned coords
+                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[2] = (center[2] - widths[2] / 2.0) + z
 
-        num_internal_nodes = tree_children.shape[0]
+                # Rotate point around center
+                query_point = np.dot(rotation_matrix, query_point - center) + center
 
-        # Initialize z and dz (in arepo code units)
-        z = 0.0
+                # Convert to tree coordinates
+                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
 
-        query_point = numba.cuda.local.array(3, numba.float64)
-        tmp_point = numba.cuda.local.array(3, numba.float64)
+                # Nearest neighbor search in tree coordinates
+                min_dist, min_index = nearest_neighbor_cpu(points, tree_parents, tree_children,
+                                                           tree_bounds, query_point,
+                                                           num_internal_nodes)
 
-        while z < widths[2]:
+                # Adaptive step in Arepo units
+                dz = tol * min_dist
+                result += dz * variable[min_index]
+                z += dz
 
-            # Query points in aligned coords
-            query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
-            query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
-            query_point[2] = (center[2] - widths[2] / 2.0) + z
-
-            # Rotate to simulation coords
-            rotate_point_around_center(
-                query_point, tmp_point, center, rotation_matrix)
-
-            # Convert to the tree coordinates
-            query_point[2] = (query_point[2] - tree_offsets[2]
-                              ) * tree_scale_factor
-            query_point[0] = (query_point[0] - tree_offsets[0]
-                              ) * tree_scale_factor
-            query_point[1] = (query_point[1] - tree_offsets[1]
-                              ) * tree_scale_factor
-
-            min_dist, min_index = nearest_neighbor_device(points, tree_parents, tree_children,
-                                                          tree_bounds, query_point,
-                                                          num_internal_nodes)
-
-            # Calculate dz
-            dz = tol * hsml[min_index]
-
-            # Update integral
-            result = result + dz * variable[min_index]
-
-            # Update position
-            z = z + dz
-
-        # Subtract the 'extra' stuff added in last iteration
-        result = result - (z - widths[2]) * variable[min_index]
-        # Set result in image array
-        image[ix, iy] = result
+            # Correct overshoot
+            result -= (z - widths[2]) * variable[min_index]
+            image[ix, iy] = result
 
 
-class GpuRayProjector(ImageCreator):
+
+class RayProjector(ImageCreator):
     """
     A class that allows creating an image of a given variable by projecting
     it onto a 2D plane. This class works by raytracing the variable
     (i.e. by calculating a line integral along the line-of-sight).
 
-    It only works on cuda-enabled GPUs.
+    This is crudely made CPU-version which was made by adapting
+    the corresponding GPU code back to CPU.
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, parttype=0, tol=0.25, threadsperblock=8,
-                 do_pre_selection=False):
+                 npix=512, parttype=0, tol=0.25, do_pre_selection=False):
         """
         Initialize the Projector class.
 
@@ -140,21 +96,10 @@ class GpuRayProjector(ImageCreator):
 
         """
 
-        err_msg = ('GpuRayProjector currently only works for parttype 0.' +
-                    ' This is because the GPU version  of BVH tree' +
-                    ' assumes that the query points are inside the bounding' +
-                    ' boxes of the leaves of the tree. This has been fixed for' +
-                    ' the CPU version. Please send Thomas an email if you see' +
-                    ' this error message.')
-
-        assert parttype == 0, err_msg
-
         # call the superclass constructor to initialize the ImageCreator class
         super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
 
         parttype = self.parttype
-
-        self.threadsperblock = threadsperblock
 
         self.do_pre_selection = do_pre_selection
 
@@ -168,8 +113,11 @@ class GpuRayProjector(ImageCreator):
         elif f'{parttype}_SubfindHsml' in avail_list:
             self.hsml = self.snap[f'{parttype}_SubfindHsml']
         else:
-            raise RuntimeError(
-                'There is no smoothing length or volume for the projector')
+            if self.parttype != 0:
+                self.hsml = np.zeros_like(self.snap[f'{parttype}_Coordinates'])
+            else:
+                raise RuntimeError(
+                    'There is no smoothing length or volume for the projector')
 
         self.pos = self.snap[f'{self.parttype}_Coordinates']
 
@@ -197,7 +145,7 @@ class GpuRayProjector(ImageCreator):
                            + " properties after the fact, i.e. changing widths "
                            + "center, orientation, resolution etc. This might be "
                            + "slow with with the option do_pre_selection, which "
-                           + "you have turned on. If your GPU has enough memory "
+                           + "you have turned on. If you have enough memory "
                            + "then it is probably better to set do_pre_selection "
                            + "to False.")
                 warnings.warn(err_msg)
@@ -218,88 +166,83 @@ class GpuRayProjector(ImageCreator):
             self.hsml = self.hsml[self.index]
             self.pos = self.pos[self.index]
 
-            self._send_data_to_gpu()
+            self._send_data_to_tree()
 
             # We need to reconstruct the tree!
-            self.tree = GpuBinaryTree(self.gpu_variables['pos'],
-                                      self.gpu_variables['hsml'])
-            del self.gpu_variables['pos']
-            self.gpu_variables['hsml'] = self.gpu_variables['hsml'][self.tree.sort_index]
+            self.tree = BinaryTree(self.tree_variables['pos'],
+                                   self.tree_variables['hsml'])
+            del self.tree_variables['pos']
+            self.tree_variables['hsml'] = self.tree_variables['hsml'][self.tree.sort_index]
         # Send entirety of snapshot to GPU (if we have not already
         # done so). Always send small data with change in resolution etc
         else:
             if not self.has_do_region_selection_been_called:
-                self._send_data_to_gpu()
+                self._send_data_to_tree()
 
                 # Construct tree
-                self.tree = GpuBinaryTree(self.gpu_variables['pos'],
-                                          self.gpu_variables['hsml'])
+                self.tree = BinaryTree(self.tree_variables['pos'],
+                                       self.tree_variables['hsml'])
 
-                del self.gpu_variables['pos']
-                self.gpu_variables['hsml'] = self.gpu_variables['hsml'][
+                del self.tree_variables['pos']
+                self.tree_variables['hsml'] = self.tree_variables['hsml'][
                     self.tree.sort_index]
 
         # Always send small data
-        self._send_small_data_to_gpu()
+        self._send_small_data_to_tree()
 
-    def _send_data_to_gpu(self):
-        self.gpu_variables = {}
+    def _send_data_to_tree(self):
+        self.tree_variables = {}
         if settings.use_units:
-            self.gpu_variables['pos'] = cp.array(self.pos.value)
-            self.gpu_variables['hsml'] = cp.array(self.hsml.value)
+            self.tree_variables['pos'] = np.array(self.pos.value)
+            self.tree_variables['hsml'] = np.array(self.hsml.value)
         else:
-            self.gpu_variables['pos'] = cp.array(self.pos)
-            self.gpu_variables['hsml'] = cp.array(self.hsml)
+            self.tree_variables['pos'] = np.array(self.pos)
+            self.tree_variables['hsml'] = np.array(self.hsml)
 
-        self._send_small_data_to_gpu()
+        self._send_small_data_to_tree()
 
-    def _send_small_data_to_gpu(self):
+    def _send_small_data_to_tree(self):
 
-        self.gpu_variables['rotation_matrix'] = cp.array(
+        self.tree_variables['rotation_matrix'] = np.array(
             self.orientation.rotation_matrix)
 
         if settings.use_units:
-            self.gpu_variables['widths'] = cp.array(self.widths.value)
-            self.gpu_variables['center'] = cp.array(self.center.value)
+            self.tree_variables['widths'] = np.array(self.widths.value)
+            self.tree_variables['center'] = np.array(self.center.value)
         else:
-            self.gpu_variables['widths'] = cp.array(self.widths)
-            self.gpu_variables['center'] = cp.array(self.center)
+            self.tree_variables['widths'] = np.array(self.widths)
+            self.tree_variables['center'] = np.array(self.center)
 
-    def _gpu_project(self, variable_str, additive):
+    def _tree_project(self, variable_str, additive):
         """
         Private method for projecting using cuda code
         """
-        gpu_vars = self.gpu_variables
-        rotation_matrix = gpu_vars['rotation_matrix']
-        widths = gpu_vars['widths']
-        center = gpu_vars['center']
-        hsml = gpu_vars['hsml']
+        tree_vars = self.tree_variables
+        rotation_matrix = tree_vars['rotation_matrix']
+        widths = tree_vars['widths']
+        center = tree_vars['center']
+        hsml = tree_vars['hsml']
         nx = self.npix_width
         ny = self.npix_height
 
         if additive:
-            variable = gpu_vars[variable_str] / gpu_vars[f'{self.parttype}_Volume']
+            variable = tree_vars[variable_str] / tree_vars[f'{self.parttype}_Volume']
         else:
-            variable = gpu_vars[variable_str]
+            variable = tree_vars[variable_str]
 
         tree_scale_factor = self.tree.conversion_factor
         tree_offsets = self.tree.off_sets
 
-        image = cp.zeros((nx, ny))
+        image = np.zeros((nx, ny))
 
-        blocks_x = get_blocks(nx, self.threadsperblock)
-        blocks_y = get_blocks(ny, self.threadsperblock)
-        btuple = (blocks_x, blocks_y)
-        ttuple = (self.threadsperblock, self.threadsperblock)
-        trace_rays[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
-                                   self.tree.bounds, variable, hsml, widths, center,
-                                   tree_scale_factor, tree_offsets, image,
-                                   rotation_matrix, self.tol)
+        trace_rays_cpu(self.tree._pos, self.tree.parents, self.tree.children,
+                       self.tree.bounds, variable, hsml, widths, center,
+                       tree_scale_factor, tree_offsets, image,
+                       rotation_matrix, self.tol)
 
-        projection = cp.asnumpy(image)
-        return projection
+        return image
 
-    def _send_variable_to_gpu(self, variable, gpu_key='projection_variable'):
+    def _send_variable_to_tree(self, variable, tree_key='projection_variable'):
         if isinstance(variable, str):
             variable_str = str(variable)
             err_msg = 'projector uses a different parttype'
@@ -317,17 +260,17 @@ class GpuRayProjector(ImageCreator):
             # TODO: Check that this is not applied more than once...
             variable = variable[self.index]
 
-        if variable_str in self.gpu_variables and variable_str != gpu_key:
+        if variable_str in self.tree_variables and variable_str != tree_key:
             pass
         else:
             # Send variable to gpu
             if settings.use_units:
-                self.gpu_variables[variable_str] = cp.array(variable.value)
+                self.tree_variables[variable_str] = np.array(variable.value)
             else:
-                self.gpu_variables[variable_str] = cp.array(variable)
+                self.tree_variables[variable_str] = np.array(variable)
 
             # Sort the variable according to Morton code sorting
-            self.gpu_variables[variable_str] = self.gpu_variables[variable_str][
+            self.tree_variables[variable_str] = self.tree_variables[variable_str][
                 self.tree.sort_index]
 
         if isinstance(variable, units.PaicosQuantity):
@@ -356,12 +299,12 @@ class GpuRayProjector(ImageCreator):
         # widths or center changed
         self._check_if_properties_changed()
 
-        variable_str, unit_quantity = self._send_variable_to_gpu(variable)
+        variable_str, unit_quantity = self._send_variable_to_tree(variable)
         if additive:
-            _, vol_unit_quantity = self._send_variable_to_gpu(f'{self.parttype}_Volume')
+            _, vol_unit_quantity = self._send_variable_to_tree(f'{self.parttype}_Volume')
 
         # Do the projection
-        projection = self._gpu_project(variable_str, additive)
+        projection = self._tree_project(variable_str, additive)
 
         # Transpose
         projection = projection.T
@@ -384,15 +327,13 @@ class GpuRayProjector(ImageCreator):
         """
         Clean up like this? Not sure it is needed...
         """
-        self.release_gpu_memory()
+        self.release_tree_memory()
 
-    def release_gpu_memory(self):
-        if hasattr(self, 'gpu_variables'):
-            for key in list(self.gpu_variables):
-                del self.gpu_variables[key]
-            del self.gpu_variables
+    def release_tree_memory(self):
+        if hasattr(self, 'tree_variables'):
+            for key in list(self.tree_variables):
+                del self.tree_variables[key]
+            del self.tree_variables
         if hasattr(self, 'tree'):
-            self.tree.release_gpu_memory()
+            # self.tree.release_tree_memory()
             del self.tree
-
-        cp._default_memory_pool.free_all_blocks()
