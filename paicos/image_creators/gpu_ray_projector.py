@@ -141,14 +141,14 @@ class GpuRayProjector(ImageCreator):
 
         """
 
-        err_msg = ('GpuRayProjector currently only works for parttype 0.' +
-                    ' This is because the GPU version  of BVH tree' +
-                    ' assumes that the query points are inside the bounding' +
-                    ' boxes of the leaves of the tree. This has been fixed for' +
-                    ' the CPU version. Please send Thomas an email if you see' +
-                    ' this error message.')
+        # err_msg = ('GpuRayProjector currently only works for parttype 0.' +
+        #             ' This is because the GPU version  of BVH tree' +
+        #             ' assumes that the query points are inside the bounding' +
+        #             ' boxes of the leaves of the tree. This has been fixed for' +
+        #             ' the CPU version. Please send Thomas an email if you see' +
+        #             ' this error message.')
 
-        assert parttype == 0, err_msg
+        # assert parttype == 0, err_msg
 
         # call the superclass constructor to initialize the ImageCreator class
         super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
