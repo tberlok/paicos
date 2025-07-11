@@ -45,7 +45,10 @@ def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, h
                                                            num_internal_nodes)
 
                 # Adaptive step in Arepo units
-                dz = tol * min_dist
+                # dz = tol * hsml[min_index]
+                dz = tol * min_dist / tree_scale_factor
+                # if hsml[min_index] < min_dist:
+                    # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
                 result += dz * variable[min_index]
                 z += dz
 
@@ -239,6 +242,11 @@ class RayProjector(ImageCreator):
                        self.tree.bounds, variable, hsml, widths, center,
                        tree_scale_factor, tree_offsets, image,
                        rotation_matrix, self.tol)
+        # from ..cython.ray_tracer import trace_rays_cpu as trace_rays_cpu_cython
+        # trace_rays_cpu_cython(self.tree._pos, self.tree.parents, self.tree.children,
+        #        self.tree.bounds, variable, hsml, widths, center,
+        #        tree_scale_factor, tree_offsets, image,
+        #        rotation_matrix, self.tol, 1)
 
         return image
 

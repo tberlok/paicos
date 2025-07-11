@@ -16,7 +16,7 @@ import glob
 #     os.environ['CC'] = 'gcc-13'
 #     os.environ['CXX'] = 'g++-13'
 
-Options.annotate = False
+Options.annotate = True
 compiler_directives = {"boundscheck": False, "cdivision": True,
                        "wraparound": False, 'language_level': "3"}
 
@@ -67,8 +67,14 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
+    ),
+    Extension(
+        name='paicos.cython.ray_tracer',
+        sources=['paicos/cython/ray_tracer.pyx'],
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args
     )
-
 ]
 
 install_requires = ['scipy',
