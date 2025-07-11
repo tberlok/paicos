@@ -85,7 +85,8 @@ def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
                                                           num_internal_nodes)
 
             # Calculate dz
-            dz = tol * hsml[min_index]
+            # dz = tol * hsml[min_index]
+            dz = tol * min_dist / tree_scale_factor
 
             # Update integral
             result = result + dz * variable[min_index]

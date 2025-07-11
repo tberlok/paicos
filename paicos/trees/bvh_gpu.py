@@ -277,6 +277,19 @@ def is_point_in_box(point, box):
             return False
     return True
 
+@cuda.jit(device=True, inline=True)
+def distance_to_box(point, box):
+    """Squared distance from a point to an AABB (0 if inside)."""
+    sq_dist = 0.0
+    for i in range(3):
+        if point[i] < box[i, 0]:
+            d = box[i, 0] - point[i]
+            sq_dist += d * d
+        elif point[i] > box[i, 1]:
+            d = point[i] - box[i, 1]
+            sq_dist += d * d
+    return math.sqrt(sq_dist)
+
 
 @cuda.jit(device=True, inline=True)
 def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
@@ -304,11 +317,11 @@ def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
         is_leafA = childA >= num_internal_nodes
         is_leafB = childB >= num_internal_nodes
 
-        point_in_A = is_point_in_box(query_point, tree_bounds[childA])
-        point_in_B = is_point_in_box(query_point, tree_bounds[childB])
+        # point_in_A = is_point_in_box(query_point, tree_bounds[childA])
+        # point_in_B = is_point_in_box(query_point, tree_bounds[childB])
 
         # Do explicit check if in a leaf
-        if point_in_A and is_leafA:
+        if is_leafA:
             data_id = childA - num_internal_nodes
             dist = distance(points[data_id], query_point)
 
@@ -316,7 +329,7 @@ def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
                 min_dist = dist
                 min_index = data_id
 
-        if point_in_B and is_leafB:
+        if is_leafB:
             data_id = childB - num_internal_nodes
             dist = distance(points[data_id], query_point)
 
@@ -325,8 +338,12 @@ def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
                 min_index = data_id
 
         # Whether to traverse
-        traverseA = point_in_A and not is_leafA
-        traverseB = point_in_B and not is_leafB
+        distA = distance_to_box(query_point, tree_bounds[childA])
+        distB = distance_to_box(query_point, tree_bounds[childB])
+
+        # Whether to traverse
+        traverseA = (distA <= min_dist) and not is_leafA
+        traverseB = (distB <= min_dist) and not is_leafB
 
         if (not traverseA) and (not traverseB):
             queue_index -= 1
