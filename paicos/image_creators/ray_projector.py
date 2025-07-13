@@ -7,7 +7,7 @@ from .. import settings
 from .. import units
 
 from ..trees.bvh_cpu import BinaryTree
-from ..trees.bvh_cpu import nearest_neighbor_cpu
+from ..trees.bvh_cpu import nearest_neighbor_cpu, nearest_neighbor_cpu_voronoi, nearest_neighbor_cpu_optimized
 
 @numba.njit(parallel=True)
 def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, hsml,
@@ -56,6 +56,108 @@ def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, h
             result -= (z - widths[2]) * variable[min_index]
             image[ix, iy] = result
 
+@numba.njit(parallel=True)
+def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+                   widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+
+    nx = image.shape[0]
+    ny = image.shape[1]
+    dx = widths[0] / nx
+    dy = widths[1] / ny
+    num_internal_nodes = tree_children.shape[0]
+
+    for ix in numba.prange(nx):
+        for iy in range(ny):
+            result = 0.0
+            z = 0.0
+            query_point = np.empty(3, dtype=np.float64)
+
+            while z < widths[2]:
+                # Compute query point in aligned coords
+                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[2] = (center[2] - widths[2] / 2.0) + z
+
+                # Rotate point around center
+                query_point = np.dot(rotation_matrix, query_point - center) + center
+
+                # Convert to tree coordinates
+                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+
+                # Nearest neighbor search in tree coordinates
+                min_dist, min_index = nearest_neighbor_cpu_voronoi(points, tree_parents, tree_children,
+                                                           tree_bounds, query_point,
+                                                           num_internal_nodes)
+
+                # Adaptive step in Arepo units
+                dz = tol * hsml[min_index]
+                # dz = tol * min_dist / tree_scale_factor
+                # if hsml[min_index] < min_dist:
+                    # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
+                result += dz * variable[min_index]
+                z += dz
+
+            # Correct overshoot
+            result -= (z - widths[2]) * variable[min_index]
+            image[ix, iy] = result
+
+
+@numba.njit(parallel=True)
+def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+                             widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+
+    nx = image.shape[0]
+    ny = image.shape[1]
+    dx = widths[0] / nx
+    dy = widths[1] / ny
+    num_internal_nodes = tree_children.shape[0]
+
+    L = 21
+
+    for ix in numba.prange(nx):
+        for iy in range(ny):
+            result = 0.0
+            z = 0.0
+            query_point = np.empty(3, dtype=np.float64)
+
+            max_search_dist = (2**L - 1.0)
+
+            while z < widths[2]:
+                # Compute query point in aligned coords
+                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[2] = (center[2] - widths[2] / 2.0) + z
+
+                # Rotate point around center
+                query_point = np.dot(rotation_matrix, query_point - center) + center
+
+                # Convert to tree coordinates
+                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+
+                # Nearest neighbor search in tree coordinates
+                min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
+                                                                     tree_bounds, query_point,
+                                                                     num_internal_nodes, max_search_dist)
+                                                                     # num_internal_nodes, 5 * min_dist_prev)
+                # print(hsml[min_index] / (min_dist / tree_scale_factor))
+                # Adaptive step in Arepo units
+                # dz = tol * hsml[min_index]
+                dz = 2.0 * tol * min_dist / tree_scale_factor
+                # dz = 4.0 * tol * (min_dist * min_dist_prev) / (min_dist + min_dist_prev) / tree_scale_factor
+                max_search_dist = 3.0 * min_dist
+                # max_search_dist = 1.0 * hsml[min_index] * tree_scale_factor
+                # if hsml[min_index] < min_dist:
+                    # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
+                result += dz * variable[min_index]
+                z += dz
+
+            # Correct overshoot
+            result -= (z - widths[2]) * variable[min_index]
+            image[ix, iy] = result
 
 
 class RayProjector(ImageCreator):
@@ -69,7 +171,8 @@ class RayProjector(ImageCreator):
     """
 
     def __init__(self, snap, center, widths, direction,
-                 npix=512, parttype=0, tol=0.25, do_pre_selection=False):
+                 npix=512, parttype=0, tol=0.25, do_pre_selection=False,
+                 use_numba=True):
         """
         Initialize the Projector class.
 
@@ -107,6 +210,8 @@ class RayProjector(ImageCreator):
         self.do_pre_selection = do_pre_selection
 
         self.tol = tol
+
+        self.use_numba = use_numba
 
         # Calculate the smoothing length
         avail_list = (list(snap.keys()) + snap._auto_list)
@@ -238,15 +343,29 @@ class RayProjector(ImageCreator):
 
         image = np.zeros((nx, ny))
 
-        trace_rays_cpu(self.tree._pos, self.tree.parents, self.tree.children,
+        if self.use_numba:
+
+            if self.parttype == 0:
+                trace_rays = trace_rays_cpu_voronoi
+            else:
+                trace_rays =  trace_rays_cpu_optimized
+
+            trace_rays(self.tree._pos, self.tree.parents, self.tree.children,
                        self.tree.bounds, variable, hsml, widths, center,
                        tree_scale_factor, tree_offsets, image,
                        rotation_matrix, self.tol)
-        # from ..cython.ray_tracer import trace_rays_cpu as trace_rays_cpu_cython
-        # trace_rays_cpu_cython(self.tree._pos, self.tree.parents, self.tree.children,
-        #        self.tree.bounds, variable, hsml, widths, center,
-        #        tree_scale_factor, tree_offsets, image,
-        #        rotation_matrix, self.tol, 1)
+        else:
+            import warnings
+            warnings.warn("Cython ray tracer slower and less well tested than Numba!")
+            if self.parttype == 0:
+                from ..cython.ray_tracer import trace_rays_cpu_voronoi as trace_rays_cpu_cython
+            else:
+                from ..cython.ray_tracer import trace_rays_cpu as trace_rays_cpu_cython
+
+            trace_rays_cpu_cython(self.tree._pos, self.tree.parents, self.tree.children,
+                                  self.tree.bounds, variable, hsml, widths, center,
+                                  tree_scale_factor, tree_offsets, image,
+                                  rotation_matrix, self.tol, 1)
 
         return image
 

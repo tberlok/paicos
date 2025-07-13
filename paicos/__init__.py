@@ -201,6 +201,13 @@ def numthreads(numthreads):
     else:
         settings.numthreads_reduction = settings.numthreads
 
+    try:
+        from numba import set_num_threads
+        set_num_threads(settings.numthreads)
+    except:
+        pass
+        # print("numba not installed")
+
 
 def print_info_when_deriving_variables(option):
     """

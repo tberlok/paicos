@@ -4,14 +4,18 @@ show = True
 import paicos as pa
 import numpy as np
 
+
+pa.numthreads(pa.settings.max_threads)
 snap = pa.Snapshot(pa.data_dir, 7,
                    basename='small_non_comoving')
 
 widths = snap.box_size.copy
 center = snap.box_size.copy / 2
 
-tree_projector = pa.TreeProjector(snap, center, widths, 'z', npix=300)
-projector = pa.RayProjector(snap, center, widths, 'z', npix=300, tol=2)
+widths[2] = widths[2]
+
+tree_projector = pa.TreeProjector(snap, center, widths, 'z', npix=300, tol=0.1)
+projector = pa.RayProjector(snap, center, widths, 'z', npix=300, tol=0.1, use_numba=True)
 
 # tree_M = tree_projector.project_variable('0_Masses')
 # tree_V = tree_projector.project_variable('0_Volume')
@@ -23,6 +27,7 @@ rho = projector.project_variable('0_Density', additive=False)
 # rho = M / V
 
 rel_rho = (np.abs(tree_rho - rho) / tree_rho)
+print(np.sqrt(np.mean(rel_rho**2)))
 # rel_M = (np.abs(tree_M - M) / tree_M)
 
 # assert np.max(rel_rho.value) < 0.17, np.max(rel_rho.value)

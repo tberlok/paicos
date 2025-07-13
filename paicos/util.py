@@ -375,8 +375,10 @@ def _check_if_omp_has_issues(verbose=True):
     if settings.give_openMP_warnings is False:
         verbose = False
 
-    max_threads = get_openmp_settings(0, False)
+    # max_threads = get_openmp_settings(0, True)
+    max_threads = os.cpu_count()
     settings.max_threads = max_threads
+
     if settings.numthreads > max_threads and verbose:
         msg = ('\n\nThe default number of OpenMP threads, {}, '
                + 'exceeds the {} available on your system. Setting '

@@ -2,6 +2,8 @@ import numba
 import math
 import numpy as np
 from .bvh_tree import leading_zeros_cython as count_leading_zeros
+from .bvh_tree import generateHierarchy, propagate_bounds_upwards
+from .bvh_tree import set_leaf_bounding_volumes
 
 # Hardcoded for uint64 coordinates (don't change without also changing morton
 # code functions)
@@ -55,9 +57,9 @@ def decode64(key):
     z = unpart1by2_64(key)
     return numba.float64(x), numba.float64(y), numba.float64(z)
 
-
+from .bvh_tree import get_morton_keys64
 @numba.jit(nopython=True)
-def get_morton_keys64(pos):
+def get_morton_keys64_old(pos):
     morton_keys = np.empty(pos.shape[0], dtype=np.uint64)
     for ip in range(pos.shape[0]):
         morton_keys[ip] = encode64(pos[ip, 0], pos[ip, 1], pos[ip, 2])
@@ -65,7 +67,7 @@ def get_morton_keys64(pos):
 
 
 # @numba.jit(nopython=True, inline='always')
-def findSplit(sortedMortonCodes, first, last):
+def findSplit_old(sortedMortonCodes, first, last):
     # Identical Morton codes => split the range in the middle.
 
     firstCode = sortedMortonCodes[first]
@@ -98,9 +100,8 @@ def findSplit(sortedMortonCodes, first, last):
 
     return split
 
-
 # @numba.jit(nopython=True)
-def generateHierarchy(sortedMortonCodes, tree_children, tree_parents):
+def generateHierarchy_old(sortedMortonCodes, tree_children, tree_parents):
     """
     Generate tree using the sorted Morton code.
     This is done in parallel, see this blogpost
@@ -118,10 +119,10 @@ def generateHierarchy(sortedMortonCodes, tree_children, tree_parents):
         # (This is where the magic happens!)
 
         # Determine range
-        first, last = determineRange(sortedMortonCodes, n_codes, idx)
+        first, last = determineRange_old(sortedMortonCodes, n_codes, idx)
 
         # Determine where to split the range.
-        split = findSplit(sortedMortonCodes, first, last)
+        split = findSplit_old(sortedMortonCodes, first, last)
 
         # Select childA.
         if (split == first):
@@ -145,7 +146,7 @@ def generateHierarchy(sortedMortonCodes, tree_children, tree_parents):
 
 
 # @numba.jit(nopython=True, inline='always')
-def determineRange(sortedMortonCodes, n_codes, idx):
+def determineRange_old(sortedMortonCodes, n_codes, idx):
     """
     The determine range function needed by the generateHierarchy function.
     This code has has been adapted from the CornerStone CUDA/C++ code,
@@ -156,13 +157,19 @@ def determineRange(sortedMortonCodes, n_codes, idx):
     firstIndex = idx
     max_last = n_codes
 
+    # print("python:", firstIndex)
+
     if (firstIndex > 0):
         p1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex + 1]
         m1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex - 1]
 
+        # print("python:", p1, m1)
+
         # Count leading zeros
         lz_p1 = count_leading_zeros(p1)
         lz_m1 = count_leading_zeros(m1)
+
+        # print("python:", lz_p1, lz_m1)
 
         if lz_p1 > lz_m1:
             d = 1
@@ -180,7 +187,7 @@ def determineRange(sortedMortonCodes, n_codes, idx):
         if lz_first_second > minPrefixLength:
             searchRange *= 2
             secondIndex = firstIndex + searchRange * d
-            if secondIndex < max_last:
+            if (0 <= secondIndex and secondIndex < max_last):
                 lz_first_second = count_leading_zeros(
                     sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
             else:
@@ -216,8 +223,7 @@ def find_bounding_volume_as_sfc_keys(center, hsml):
     sfc_key_max = encode64(max_val_x, max_val_y, max_val_z)
     return sfc_key_min, sfc_key_max
 
-
-def set_leaf_bounding_volumes(tree_bounds, points, half_size, conversion_factor):
+def set_leaf_bounding_volumes_old(tree_bounds, points, half_size, conversion_factor):
     num_internal_nodes = half_size.shape[0] - 1
     num_leafs = half_size.shape[0]
     f = conversion_factor
@@ -240,8 +246,7 @@ def set_leaf_bounding_volumes(tree_bounds, points, half_size, conversion_factor)
         tree_bounds[ip + num_internal_nodes, 1, 1] = y_max
         tree_bounds[ip + num_internal_nodes, 2, 1] = z_max
 
-
-def propagate_bounds_upwards(tree_bounds, tree_parents, tree_children):
+def propagate_bounds_upwards_old(tree_bounds, tree_parents, tree_children):
     num_internal_nodes = tree_children.shape[0]
     num_leafs = num_internal_nodes + 1
 
@@ -330,9 +335,6 @@ def box_intersects_sphere(box, center, radius):
             return False
     return True
 
-import numba
-import numpy as np
-
 @numba.njit(inline='always')
 def nearest_neighbor_cpu(points, tree_parents, tree_children, tree_bounds,
                          query_point, num_internal_nodes):
@@ -374,6 +376,148 @@ def nearest_neighbor_cpu(points, tree_parents, tree_children, tree_bounds,
         # Whether to traverse
         traverseA = (distA <= min_dist) and not is_leafA
         traverseB = (distB <= min_dist) and not is_leafB
+
+        if not traverseA and not traverseB:
+            queue_index -= 1
+        else:
+            if traverseA:
+                queue[queue_index] = childA
+            else:
+                queue[queue_index] = childB
+            if traverseA and traverseB:
+                queue_index += 1
+                queue[queue_index] = childB
+
+    return min_dist, min_index
+
+@numba.njit(inline='always')
+def nearest_neighbor_cpu_optimized(points, tree_parents, tree_children, tree_bounds,
+                                   query_point, num_internal_nodes,
+                                   min_dist_init):
+    queue = np.empty(128, dtype=np.int64)
+    queue_index = 0
+    queue[queue_index] = 0
+
+    # Start with optionally pre-supplied minimum distance (squared)
+    min_dist2 = min_dist_init * min_dist_init
+    min_index = -1
+
+    while queue_index >= 0:
+        node_id = queue[queue_index]
+
+        childA = tree_children[node_id, 0]
+        childB = tree_children[node_id, 1]
+
+        is_leafA = childA >= num_internal_nodes
+        is_leafB = childB >= num_internal_nodes
+
+        # Handle leaf A
+        if is_leafA:
+            data_id = childA - num_internal_nodes
+            dx = points[data_id, 0] - query_point[0]
+            dy = points[data_id, 1] - query_point[1]
+            dz = points[data_id, 2] - query_point[2]
+            dist2 = dx*dx + dy*dy + dz*dz
+            if dist2 < min_dist2:
+                min_dist2 = dist2
+                min_index = data_id
+
+        # Handle leaf B
+        if is_leafB:
+            data_id = childB - num_internal_nodes
+            dx = points[data_id, 0] - query_point[0]
+            dy = points[data_id, 1] - query_point[1]
+            dz = points[data_id, 2] - query_point[2]
+            dist2 = dx*dx + dy*dy + dz*dz
+            if dist2 < min_dist2:
+                min_dist2 = dist2
+                min_index = data_id
+
+        # Compute distances to AABBs (squared)
+        distA2 = 0.0
+        for i in range(3):
+            if query_point[i] < tree_bounds[childA, i, 0]:
+                d = tree_bounds[childA, i, 0] - query_point[i]
+                distA2 += d * d
+            elif query_point[i] > tree_bounds[childA, i, 1]:
+                d = query_point[i] - tree_bounds[childA, i, 1]
+                distA2 += d * d
+
+        distB2 = 0.0
+        for i in range(3):
+            if query_point[i] < tree_bounds[childB, i, 0]:
+                d = tree_bounds[childB, i, 0] - query_point[i]
+                distB2 += d * d
+            elif query_point[i] > tree_bounds[childB, i, 1]:
+                d = query_point[i] - tree_bounds[childB, i, 1]
+                distB2 += d * d
+
+        # Decide whether to traverse children
+        traverseA = (distA2 <= min_dist2) and not is_leafA
+        traverseB = (distB2 <= min_dist2) and not is_leafB
+
+        if not traverseA and not traverseB:
+            queue_index -= 1
+        else:
+            # Choose traversal order based on proximity
+            if traverseA and traverseB:
+                if distA2 < distB2:
+                    queue[queue_index] = childA
+                    queue_index += 1
+                    queue[queue_index] = childB
+                else:
+                    queue[queue_index] = childB
+                    queue_index += 1
+                    queue[queue_index] = childA
+            elif traverseA:
+                queue[queue_index] = childA
+            elif traverseB:
+                queue[queue_index] = childB
+
+    return math.sqrt(min_dist2), min_index
+
+
+
+@numba.njit(inline='always')
+def nearest_neighbor_cpu_voronoi(points, tree_parents, tree_children, tree_bounds,
+                                 query_point, num_internal_nodes):
+    queue = np.empty(128, dtype=np.int64)
+    queue_index = 0
+    queue[queue_index] = 0
+
+    # Initialize min_dist, and min_index
+    min_dist = (2**L - 1.0)
+    min_index = -1
+
+    while queue_index >= 0:
+        node_id = queue[queue_index]
+
+        childA = tree_children[node_id, 0]
+        childB = tree_children[node_id, 1]
+
+        is_leafA = childA >= num_internal_nodes
+        is_leafB = childB >= num_internal_nodes
+
+        point_in_A = is_point_in_box(query_point, tree_bounds[childA])
+        point_in_B = is_point_in_box(query_point, tree_bounds[childB])
+
+        if point_in_A and is_leafA:
+            data_id = childA - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        if point_in_B and is_leafB:
+            data_id = childB - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        # Whether to traverse
+        traverseA = point_in_A and not is_leafA
+        traverseB = point_in_B and not is_leafB
 
         if not traverseA and not traverseB:
             queue_index -= 1
@@ -551,6 +695,7 @@ class BinaryTree:
         # Calculate uint64 and Morton keys
         self._pos_uint = self._pos.astype(np.uint64)
         self.morton_keys = get_morton_keys64(self._pos_uint)
+        # print(self.morton_keys)
 
         # Store index for going back to original ids.
         self.sort_index = np.argsort(self.morton_keys)
@@ -577,7 +722,7 @@ class BinaryTree:
 
         set_leaf_bounding_volumes(self.bounds, self._pos,
                                   sizes[self.sort_index],
-                                  self.conversion_factor)
+                                  self.conversion_factor, L)
 
         # Calculate the bounding volumes for internal nodes,
         # by propagating the information upwards in the tree
