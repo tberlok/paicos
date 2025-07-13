@@ -65,6 +65,7 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
     dx = widths[0] / nx
     dy = widths[1] / ny
     num_internal_nodes = tree_children.shape[0]
+    L = 21
 
     for ix in numba.prange(nx):
         for iy in range(ny):
@@ -90,7 +91,10 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
                 min_dist, min_index = nearest_neighbor_cpu_voronoi(points, tree_parents, tree_children,
                                                            tree_bounds, query_point,
                                                            num_internal_nodes)
-
+                if min_index == -1:
+                    nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
+                                         tree_bounds, query_point,
+                                         num_internal_nodes, (2**L - 1.0))
                 # Adaptive step in Arepo units
                 dz = tol * hsml[min_index]
                 # dz = tol * min_dist / tree_scale_factor
@@ -170,9 +174,10 @@ class RayProjector(ImageCreator):
     the corresponding GPU code back to CPU.
     """
 
+    @util.conditional_timer
     def __init__(self, snap, center, widths, direction,
                  npix=512, parttype=0, tol=0.25, do_pre_selection=False,
-                 use_numba=True):
+                 use_numba=True, verbose=False, timing=False):
         """
         Initialize the Projector class.
 
@@ -213,10 +218,12 @@ class RayProjector(ImageCreator):
 
         self.use_numba = use_numba
 
+        self.verbose = verbose
+
         # Calculate the smoothing length
         avail_list = (list(snap.keys()) + snap._auto_list)
         if f'{parttype}_Volume' in avail_list:
-            self.hsml = 2.0 * np.cbrt((self.snap[f"{parttype}_Volume"])
+            self.hsml = 1.2 * 2.0 * np.cbrt((self.snap[f"{parttype}_Volume"])
                                       / (4.0 * np.pi / 3.0))
         elif f'{parttype}_SubfindHsml' in avail_list:
             self.hsml = self.snap[f'{parttype}_SubfindHsml']
@@ -278,7 +285,7 @@ class RayProjector(ImageCreator):
 
             # We need to reconstruct the tree!
             self.tree = BinaryTree(self.tree_variables['pos'],
-                                   self.tree_variables['hsml'])
+                                   self.tree_variables['hsml'], self.verbose)
             del self.tree_variables['pos']
             self.tree_variables['hsml'] = self.tree_variables['hsml'][self.tree.sort_index]
         # Send entirety of snapshot to GPU (if we have not already
@@ -289,7 +296,7 @@ class RayProjector(ImageCreator):
 
                 # Construct tree
                 self.tree = BinaryTree(self.tree_variables['pos'],
-                                       self.tree_variables['hsml'])
+                                       self.tree_variables['hsml'], self.verbose)
 
                 del self.tree_variables['pos']
                 self.tree_variables['hsml'] = self.tree_variables['hsml'][
@@ -407,7 +414,8 @@ class RayProjector(ImageCreator):
 
         return variable_str, unit_quantity
 
-    def project_variable(self, variable, additive=False):
+    @util.conditional_timer
+    def project_variable(self, variable, additive=False, timing=False):
         """
         projects a given variable onto a 2D plane.
 

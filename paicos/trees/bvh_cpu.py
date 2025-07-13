@@ -4,6 +4,7 @@ import numpy as np
 from .bvh_tree import leading_zeros_cython as count_leading_zeros
 from .bvh_tree import generateHierarchy, propagate_bounds_upwards
 from .bvh_tree import set_leaf_bounding_volumes
+from .bvh_tree import get_morton_keys64
 
 # Hardcoded for uint64 coordinates (don't change without also changing morton
 # code functions)
@@ -57,7 +58,6 @@ def decode64(key):
     z = unpart1by2_64(key)
     return numba.float64(x), numba.float64(y), numba.float64(z)
 
-from .bvh_tree import get_morton_keys64
 @numba.jit(nopython=True)
 def get_morton_keys64_old(pos):
     morton_keys = np.empty(pos.shape[0], dtype=np.uint64)
@@ -672,7 +672,7 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
 
 
 class BinaryTree:
-    def __init__(self, positions, sizes):
+    def __init__(self, positions, sizes, verbose=False):
         """
         Python/Numba implementation of a BVH (boundary volume hierarchy) tree.
         """
@@ -694,6 +694,8 @@ class BinaryTree:
 
         # Calculate uint64 and Morton keys
         self._pos_uint = self._pos.astype(np.uint64)
+        if verbose:
+            print('Tree: Generating morton keys')
         self.morton_keys = get_morton_keys64(self._pos_uint)
         # print(self.morton_keys)
 
@@ -714,19 +716,28 @@ class BinaryTree:
         self.children = -1 * np.ones((self.num_internal_nodes, 2), dtype=int)
         self.parents = -1 * np.ones(self.num_leafs_and_nodes, dtype=int)
 
+        if verbose:
+            print("Tree: Generate parent/children hierarchy")
         # This sets the parent and children properties
         generateHierarchy(self.morton_keys, self.children, self.parents)
 
         # Set the boundaries for the leafs
         self.bounds = np.zeros((self.num_leafs_and_nodes, 3, 2), dtype=np.uint64)
 
+        if verbose:
+            print("Tree: Set leaf bounding volumes")
         set_leaf_bounding_volumes(self.bounds, self._pos,
                                   sizes[self.sort_index],
                                   self.conversion_factor, L)
 
         # Calculate the bounding volumes for internal nodes,
         # by propagating the information upwards in the tree
+        if verbose:
+            print("Tree: Propagating bounds")
         propagate_bounds_upwards(self.bounds, self.parents, self.children)
+
+        if verbose:
+            print("Tree: Construction [DONE]")
 
     def _to_tree_coordinates(self, pos):
         return (pos - self.off_sets[None, :]) * self.conversion_factor
