@@ -1,6 +1,7 @@
 import cython
 import numpy as np
 cimport numpy as np
+np.import_array()
 from cython.parallel import prange
 from libc.math cimport fmin, fmax
 from libc.math cimport ceil
@@ -21,6 +22,12 @@ cdef int L = 21
 
 def leading_zeros_cython(unsigned long x):
     return __builtin_clzl(x)
+
+cdef api long leading_zeros_cython_for_numba(unsigned long x):
+    return <long>(__builtin_clzl(x))
+
+def get_len_of_common_prefix_cython(ulong key1, ulong key2):
+    return __builtin_clzl(key1 ^ key2)
 
 def get_leading_zeros(unsigned long[:] morton_keys):
     cdef int ii, N
@@ -166,6 +173,8 @@ cdef inline ulong unpart1by2_64(ulong n) noexcept nogil:
 cdef inline ulong encode64(ulong x, ulong y, ulong z) noexcept nogil:
     return 4 * part1by2_64(x) + 2 * part1by2_64(y) + part1by2_64(z)
 
+def encode64_cython(ulong x, ulong y, ulong z):
+    return 4 * part1by2_64(x) + 2 * part1by2_64(y) + part1by2_64(z)
 
 cdef inline void decode64(ulong key, ulong[:] out) noexcept nogil:
     out[0] = unpart1by2_64(key >> 2)
