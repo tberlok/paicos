@@ -355,7 +355,7 @@ class RayProjector(ImageCreator):
             if self.parttype == 0:
                 trace_rays = trace_rays_cpu_voronoi
             else:
-                trace_rays =  trace_rays_cpu_optimized
+                trace_rays =  trace_rays_cpu#_optimized
 
             trace_rays(self.tree._pos, self.tree.parents, self.tree.children,
                        self.tree.bounds, variable, hsml, widths, center,
