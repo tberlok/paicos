@@ -109,9 +109,10 @@ class GpuRayProjector(ImageCreator):
     It only works on cuda-enabled GPUs.
     """
 
+    @util.conditional_timer
     def __init__(self, snap, center, widths, direction,
                  npix=512, parttype=0, tol=0.25, threadsperblock=8,
-                 do_pre_selection=False):
+                 do_pre_selection=False, timing=False):
         """
         Initialize the Projector class.
 
@@ -338,7 +339,8 @@ class GpuRayProjector(ImageCreator):
 
         return variable_str, unit_quantity
 
-    def project_variable(self, variable, additive=False):
+    @util.conditional_timer
+    def project_variable(self, variable, additive=False, timing=False):
         """
         projects a given variable onto a 2D plane.
 
