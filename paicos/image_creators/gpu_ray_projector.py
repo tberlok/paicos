@@ -9,7 +9,7 @@ from .. import settings
 from .. import units
 
 from ..trees.bvh_gpu import GpuBinaryTree
-from ..trees.bvh_gpu import nearest_neighbor_device
+from ..trees.bvh_gpu import nearest_neighbor_device, nearest_neighbor_device_optimized
 
 
 def get_blocks(size, threadsperblock):
@@ -87,6 +87,74 @@ def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
             # Calculate dz
             # dz = tol * hsml[min_index]
             dz = tol * min_dist / tree_scale_factor
+
+            # Update integral
+            result = result + dz * variable[min_index]
+
+            # Update position
+            z = z + dz
+
+        # Subtract the 'extra' stuff added in last iteration
+        result = result - (z - widths[2]) * variable[min_index]
+        # Set result in image array
+        image[ix, iy] = result
+
+
+@cuda.jit
+def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+               widths, center,
+               tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+
+    ix, iy = cuda.grid(2)
+
+    nx = image.shape[0]
+    ny = image.shape[1]
+
+    L = 21
+
+    if ix >= 0 and ix < nx and iy >= 0 and iy < ny:
+        result = 0.0
+
+        dx = widths[0] / nx
+        dy = widths[1] / ny
+
+        num_internal_nodes = tree_children.shape[0]
+
+        # Initialize z and dz (in arepo code units)
+        z = 0.0
+
+        query_point = numba.cuda.local.array(3, numba.float64)
+        tmp_point = numba.cuda.local.array(3, numba.float64)
+
+        max_search_dist = (2**L - 1.0)
+
+        while z < widths[2]:
+
+            # Query points in aligned coords
+            query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+            query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+            query_point[2] = (center[2] - widths[2] / 2.0) + z
+
+            # Rotate to simulation coords
+            rotate_point_around_center(
+                query_point, tmp_point, center, rotation_matrix)
+
+            # Convert to the tree coordinates
+            query_point[2] = (query_point[2] - tree_offsets[2]
+                              ) * tree_scale_factor
+            query_point[0] = (query_point[0] - tree_offsets[0]
+                              ) * tree_scale_factor
+            query_point[1] = (query_point[1] - tree_offsets[1]
+                              ) * tree_scale_factor
+
+            min_dist, min_index = nearest_neighbor_device_optimized(points, tree_parents, tree_children,
+                                                          tree_bounds, query_point,
+                                                          num_internal_nodes, max_search_dist)
+
+            # Calculate dz
+            # dz = tol * hsml[min_index]
+            dz = 2.0 * tol * min_dist / tree_scale_factor
+            max_search_dist = 1.2 * (min_dist + dz * tree_scale_factor)
 
             # Update integral
             result = result + dz * variable[min_index]

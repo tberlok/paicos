@@ -359,6 +359,74 @@ def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
     return min_dist, min_index
 
 
+@cuda.jit(device=True, inline=True)
+def nearest_neighbor_device_optimized(points, tree_parents, tree_children, tree_bounds,
+                            query_point, num_internal_nodes, min_dist_init):
+
+    # We traverse the nodes and leafs using a while loop and a queue.
+    # Local memory on each tread (32 should be fine?)
+    queue = cuda.local.array(128, numba.int64)
+    # Initialize queue_index an start at node 0
+    queue_index = 0
+    queue[queue_index] = 0
+
+    # Initialize min_dist, and min_index
+    min_dist = min_dist_init
+    min_index = -1
+
+    while queue_index >= 0:
+
+        node_id = queue[queue_index]
+        # print(queue_index, node_id)#traverseA, traverseB, is_leafA, is_leafB)
+
+        childA = tree_children[node_id, 0]
+        childB = tree_children[node_id, 1]
+
+        is_leafA = childA >= num_internal_nodes
+        is_leafB = childB >= num_internal_nodes
+
+        # point_in_A = is_point_in_box(query_point, tree_bounds[childA])
+        # point_in_B = is_point_in_box(query_point, tree_bounds[childB])
+
+        # Do explicit check if in a leaf
+        if is_leafA:
+            data_id = childA - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        if is_leafB:
+            data_id = childB - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        # Whether to traverse
+        distA = distance_to_box(query_point, tree_bounds[childA])
+        distB = distance_to_box(query_point, tree_bounds[childB])
+
+        # Whether to traverse
+        traverseA = (distA <= min_dist) and not is_leafA
+        traverseB = (distB <= min_dist) and not is_leafB
+
+        if (not traverseA) and (not traverseB):
+            queue_index -= 1
+        else:
+            if traverseA:
+                queue[queue_index] = childA
+            else:
+                queue[queue_index] = childB
+            if traverseA and traverseB:
+                queue_index += 1
+                queue[queue_index] = childB
+
+    return min_dist, min_index
+
+
 @cuda.jit
 def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
                            query_points, dists, ids):

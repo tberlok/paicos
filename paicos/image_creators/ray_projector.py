@@ -151,8 +151,7 @@ def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, v
                 # Adaptive step in Arepo units
                 # dz = tol * hsml[min_index]
                 dz = 2.0 * tol * min_dist / tree_scale_factor
-                # dz = 4.0 * tol * (min_dist * min_dist_prev) / (min_dist + min_dist_prev) / tree_scale_factor
-                max_search_dist = 3.0 * min_dist
+                max_search_dist = 1.2 * (min_dist + dz * tree_scale_factor)
                 # max_search_dist = 1.0 * hsml[min_index] * tree_scale_factor
                 # if hsml[min_index] < min_dist:
                     # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
@@ -355,7 +354,7 @@ class RayProjector(ImageCreator):
             if self.parttype == 0:
                 trace_rays = trace_rays_cpu_voronoi
             else:
-                trace_rays =  trace_rays_cpu#_optimized
+                trace_rays =  trace_rays_cpu_optimized
 
             trace_rays(self.tree._pos, self.tree.parents, self.tree.children,
                        self.tree.bounds, variable, hsml, widths, center,
