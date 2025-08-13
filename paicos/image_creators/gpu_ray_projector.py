@@ -101,7 +101,7 @@ def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
 
 
 @cuda.jit
-def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+def trace_rays_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
                widths, center,
                tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
@@ -361,7 +361,7 @@ class GpuRayProjector(ImageCreator):
         blocks_y = get_blocks(ny, self.threadsperblock)
         btuple = (blocks_x, blocks_y)
         ttuple = (self.threadsperblock, self.threadsperblock)
-        trace_rays[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
+        trace_rays_optimized[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
                                    self.tree.bounds, variable, hsml, widths, center,
                                    tree_scale_factor, tree_offsets, image,
                                    rotation_matrix, self.tol)
