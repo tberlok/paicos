@@ -183,7 +183,6 @@ def add_user_unit(field, blockname, unit):
 
     util.user_unit_dict[field][blockname] = unit
 
-
 def numthreads(numthreads):
     """
     Pass the number of threads you would like to use for parallel execution.
@@ -203,7 +202,10 @@ def numthreads(numthreads):
 
     try:
         from numba import set_num_threads
-        set_num_threads(settings.numthreads)
+        from .misc import suppress_omp_nested_warning
+
+        with suppress_omp_nested_warning():
+            set_num_threads(settings.numthreads)
     except:
         pass
         # print("numba not installed")
