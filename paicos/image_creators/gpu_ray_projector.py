@@ -38,7 +38,7 @@ def rotate_point_around_center(point, tmp_point, center, rotation_matrix):
 
 
 @cuda.jit
-def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+def trace_rays_voronoi(points, tree_parents, tree_children, tree_bounds, variable, hsml,
                widths, center,
                tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
@@ -83,6 +83,11 @@ def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
             min_dist, min_index = nearest_neighbor_device(points, tree_parents, tree_children,
                                                           tree_bounds, query_point,
                                                           num_internal_nodes)
+
+            if min_index == -1:
+                min_dist, min_index = nearest_neighbor_device_optimized(points, tree_parents, tree_children,
+                                              tree_bounds, query_point,
+                                              num_internal_nodes, 2**L - 1.0)
 
             # Calculate dz
             # dz = tol * hsml[min_index]
@@ -361,7 +366,12 @@ class GpuRayProjector(ImageCreator):
         blocks_y = get_blocks(ny, self.threadsperblock)
         btuple = (blocks_x, blocks_y)
         ttuple = (self.threadsperblock, self.threadsperblock)
-        trace_rays_optimized[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
+        if self.parttype == 0:
+            trace_rays = trace_rays_voronoi
+        else:
+            trace_rays = trace_rays_optimized
+
+        trace_rays[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
                                    self.tree.bounds, variable, hsml, widths, center,
                                    tree_scale_factor, tree_offsets, image,
                                    rotation_matrix, self.tol)
