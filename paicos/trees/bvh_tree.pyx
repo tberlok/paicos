@@ -192,25 +192,30 @@ def get_morton_keys64(ulong[:, :] pos):
     tmp[:] = morton_keys[:]
     return tmp
 
+cdef inline int delta(ulong[:] sortedMortonCodes, int i, int j) noexcept nogil:
+    cdef ulong codeA = sortedMortonCodes[i]
+    cdef ulong codeB = sortedMortonCodes[j]
+
+    if codeA == codeB:
+        # Fallback: compare indices instead of codes
+        return 64 + count_leading_zeros(<ulong>(i ^ j))
+    else:
+        return count_leading_zeros(codeA ^ codeB)
+
 cdef inline int findSplit(ulong[:] sortedMortonCodes, int first, int last) noexcept nogil:
-    cdef ulong firstCode = sortedMortonCodes[first]
-    cdef ulong lastCode = sortedMortonCodes[last]
-    cdef int commonPrefix, step, split, newSplit, splitPrefix
-
-    if firstCode == lastCode:
-        return (first + last) >> 1
-
-    commonPrefix = count_leading_zeros(firstCode ^ lastCode)
-    split = first
-    step = last - first
+    cdef int commonPrefix = delta(sortedMortonCodes, first, last)
+    cdef int split = first
+    cdef int step = last - first
+    cdef int newSplit, splitPrefix
 
     while step > 1:
         step = (step + 1) >> 1
         newSplit = split + step
         if newSplit < last:
-            splitPrefix = count_leading_zeros(firstCode ^ sortedMortonCodes[newSplit])
+            splitPrefix = delta(sortedMortonCodes, first, newSplit)
             if splitPrefix > commonPrefix:
                 split = newSplit
+
     return split
 
 cdef inline void determineRange(ulong[:] sortedMortonCodes, int n_codes, int idx, int[:] first_last) noexcept nogil:
@@ -218,15 +223,11 @@ cdef inline void determineRange(ulong[:] sortedMortonCodes, int n_codes, int idx
     cdef int firstIndex = idx, max_last = n_codes
     cdef int lz_p1, lz_m1, lz_first_second, searchRange, secondIndex, newJdx
     cdef int first, last
-    cdef ulong p1, m1
 
     if (firstIndex > 0):
-        p1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex + 1]
-        m1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex - 1]
-
         # Count leading zeros
-        lz_p1 = count_leading_zeros(p1)
-        lz_m1 = count_leading_zeros(m1)
+        lz_p1 = delta(sortedMortonCodes, firstIndex, firstIndex + 1)
+        lz_m1 = delta(sortedMortonCodes, firstIndex, firstIndex - 1)
 
         if lz_p1 > lz_m1:
             d = 1
@@ -239,14 +240,12 @@ cdef inline void determineRange(ulong[:] sortedMortonCodes, int n_codes, int idx
     secondIndex = firstIndex + searchRange * d
 
     while (0 <= secondIndex and secondIndex < max_last):
-        lz_first_second = count_leading_zeros(
-            sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
+        lz_first_second = delta(sortedMortonCodes, firstIndex, secondIndex)
         if lz_first_second > minPrefixLength:
             searchRange *= 2
             secondIndex = firstIndex + searchRange * d
             if (0 <= secondIndex and secondIndex < max_last):
-                lz_first_second = count_leading_zeros(
-                    sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
+                lz_first_second = delta(sortedMortonCodes, firstIndex, secondIndex)
             else:
                 break
         else:
@@ -258,8 +257,7 @@ cdef inline void determineRange(ulong[:] sortedMortonCodes, int n_codes, int idx
         searchRange = (searchRange + 1) // 2
         newJdx = secondIndex + searchRange * d
         if (0 <= newJdx and newJdx < max_last):
-            lz_f_Jdx = count_leading_zeros(
-                sortedMortonCodes[firstIndex] ^ sortedMortonCodes[newJdx])
+            lz_f_Jdx = delta(sortedMortonCodes, firstIndex, newJdx)
             if lz_f_Jdx > minPrefixLength:
                 secondIndex = newJdx
 
