@@ -9,6 +9,38 @@ from .. import units
 from ..trees.bvh_cpu import BinaryTree
 from ..trees.bvh_cpu import nearest_neighbor_cpu, nearest_neighbor_cpu_voronoi, nearest_neighbor_cpu_optimized
 
+from ..trees.bvh_cpu import leading_zeros_cython_for_numba
+
+@numba.njit(inline='always')
+def part1by2_64(n):
+    n &= 0x1fffff
+    n = (n | (n << 32)) & 0x1f00000000ffff
+    n = (n | (n << 16)) & 0x1f0000ff0000ff
+    n = (n | (n << 8)) & 0x100f00f00f00f00f
+    n = (n | (n << 4)) & 0x10c30c30c30c30c3
+    n = (n | (n << 2)) & 0x1249249249249249
+    return n
+
+
+@numba.njit(inline='always')
+def unpart1by2_64(n):
+    n = numba.uint64(n)
+    n &= 0x1249249249249249
+    n = (n ^ (n >> 2)) & 0x10c30c30c30c30c3
+    n = (n ^ (n >> 4)) & 0x100f00f00f00f00f
+    n = (n ^ (n >> 8)) & 0x1f0000ff0000ff
+    n = (n ^ (n >> 16)) & 0x1f00000000ffff
+    n = (n ^ (n >> 32)) & 0x1fffff
+    return n
+
+
+@numba.njit(inline='always')
+def encode64(x, y, z):
+    xx = part1by2_64(x)
+    yy = part1by2_64(y)
+    zz = part1by2_64(z)
+    return xx * 4 + yy * 2 + zz
+
 @numba.njit(parallel=True)
 def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, hsml,
                    widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
@@ -97,9 +129,6 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
                                          num_internal_nodes, (2**L - 1.0))
                 # Adaptive step in Arepo units
                 dz = tol * hsml[min_index]
-                # dz = tol * min_dist / tree_scale_factor
-                # if hsml[min_index] < min_dist:
-                    # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
                 result += dz * variable[min_index]
                 z += dz
 
@@ -107,6 +136,74 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
             result -= (z - widths[2]) * variable[min_index]
             image[ix, iy] = result
 
+@numba.njit(parallel=True)
+def trace_rays_several_variables_cpu_voronoi(points, tree_parents, tree_children, tree_bounds,
+                                             variables, hsml, widths, center,
+                                             tree_scale_factor, tree_offsets, images,
+                                             rotation_matrix, tol):
+
+    nx = images.shape[0]
+    ny = images.shape[1]
+    nvars = images.shape[2]
+    dx = widths[0] / nx
+    dy = widths[1] / ny
+    num_internal_nodes = tree_children.shape[0]
+    L = 21
+
+    for ix in numba.prange(nx):
+        for iy in range(ny):
+            result = np.zeros(nvars, dtype=variables.dtype)
+            z = 0.0
+            query_point = np.empty(3, dtype=np.float64)
+
+            while z < widths[2]:
+                # Compute query point in aligned coords
+                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[2] = (center[2] - widths[2] / 2.0) + z
+
+                # Rotate point around center
+                query_point = np.dot(rotation_matrix, query_point - center) + center
+
+                # Convert to tree coordinates
+                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+
+                # Nearest neighbor search in tree coordinates
+                min_dist, min_index = nearest_neighbor_cpu_voronoi(points, tree_parents, tree_children,
+                                                                   tree_bounds, query_point,
+                                                                   num_internal_nodes)
+                if min_index == -1:
+                    nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
+                                                   tree_bounds, query_point,
+                                                   num_internal_nodes, (2**L - 1.0))
+
+                # Adaptive step in Arepo units
+                dz = tol * hsml[min_index]
+
+                for k in range(nvars):
+                    result[k] += dz * variables[min_index, k]
+                z += dz
+
+            # Correct overshoot
+            for k in range(nvars):
+                result[k] -= (z - widths[2]) * variables[min_index, k]
+                images[ix, iy, k] = result[k]
+
+@numba.njit(inline='always')
+def get_start_node_for_search():
+
+        morton_query = query_point_to_morton(query_point)
+        # new_query_point = query_point + kick * sizes[bvh_id] #bvh_dist
+        new_query_point = query_point + kick * bvh_dist
+        new_bvh_dist, new_bvh_id = bvh_tree.nearest_neighbor(new_query_point)
+        new_leaf_id = bvh_tree._data_ids_to_tree_node_ids(new_bvh_id)[0]
+
+        new_morton_query = query_point_to_morton(new_query_point)
+
+        common_prefix = get_len_of_common_prefix_cython(morton_leaf, morton_query)
+        new_common_prefix = get_len_of_common_prefix_cython(morton_leaf, new_morton_query)
 
 @numba.njit(parallel=True)
 def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
@@ -146,21 +243,70 @@ def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, v
                 min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
                                                                      tree_bounds, query_point,
                                                                      num_internal_nodes, max_search_dist)
-                                                                     # num_internal_nodes, 5 * min_dist_prev)
-                # print(hsml[min_index] / (min_dist / tree_scale_factor))
                 # Adaptive step in Arepo units
-                # dz = tol * hsml[min_index]
                 dz = 2.0 * tol * min_dist / tree_scale_factor
-                max_search_dist = 1.2 * (min_dist + dz * tree_scale_factor)
-                # max_search_dist = 1.0 * hsml[min_index] * tree_scale_factor
-                # if hsml[min_index] < min_dist:
-                    # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
+                max_search_dist = 1.1 * (min_dist + dz * tree_scale_factor)
                 result += dz * variable[min_index]
                 z += dz
 
             # Correct overshoot
             result -= (z - widths[2]) * variable[min_index]
             image[ix, iy] = result
+
+@numba.njit(parallel=True)
+def trace_rays_several_variables_cpu_optimized(points, tree_parents, tree_children, tree_bounds,
+                                               variables, hsml, widths, center,
+                                               tree_scale_factor, tree_offsets, images,
+                                               rotation_matrix, tol):
+
+    nx = images.shape[0]
+    ny = images.shape[1]
+    nvars = images.shape[2]
+    dx = widths[0] / nx
+    dy = widths[1] / ny
+    num_internal_nodes = tree_children.shape[0]
+
+    L = 21
+
+    for ix in numba.prange(nx):
+        for iy in range(ny):
+            result = np.zeros(nvars, dtype=variables.dtype)
+            z = 0.0
+            query_point = np.empty(3, dtype=np.float64)
+
+            max_search_dist = (2**L - 1.0)
+
+            while z < widths[2]:
+                # Compute query point in aligned coords
+                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[2] = (center[2] - widths[2] / 2.0) + z
+
+                # Rotate point around center
+                query_point = np.dot(rotation_matrix, query_point - center) + center
+
+                # Convert to tree coordinates
+                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+
+                # Nearest neighbor search in tree coordinates
+                min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
+                                                                     tree_bounds, query_point,
+                                                                     num_internal_nodes, max_search_dist)
+                # Adaptive step in Arepo units
+                dz = 2.0 * tol * min_dist / tree_scale_factor
+                max_search_dist = 1.1 * (min_dist + dz * tree_scale_factor)
+
+                for k in range(nvars):
+                    result[k] += dz * variables[min_index, k]
+                z += dz
+
+            # Correct overshoot
+            for k in range(nvars):
+                result[k] -= (z - widths[2]) * variables[min_index, k]
+                images[ix, iy, k] = result[k]
+
 
 
 class RayProjector(ImageCreator):
@@ -375,6 +521,62 @@ class RayProjector(ImageCreator):
 
         return image
 
+    def _tree_project_several_variables(self, variable_strs, additives):
+        """
+        Private method for projecting several variables in one tree traversal.
+
+        Parameters
+        ----------
+        variable_strs : list of str
+            Keys in `self.tree_variables` for each variable to project.
+        additives : list of bool
+            Whether to use additive projection for each variable.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape (nx, ny, n_variables) with the projected results.
+        """
+        tree_vars = self.tree_variables
+        rotation_matrix = tree_vars['rotation_matrix']
+        widths = tree_vars['widths']
+        center = tree_vars['center']
+        hsml = tree_vars['hsml']
+        nx = self.npix_width
+        ny = self.npix_height
+
+        # Build (N, n_variables) array for particle variables
+        var_list = []
+        for var_str, additive in zip(variable_strs, additives):
+            if additive:
+                var_arr = tree_vars[var_str] / tree_vars[f'{self.parttype}_Volume']
+            else:
+                var_arr = tree_vars[var_str]
+            var_list.append(var_arr)
+
+        variables = np.column_stack(var_list)  # shape: (N, n_variables)
+
+        tree_scale_factor = self.tree.conversion_factor
+        tree_offsets = self.tree.off_sets
+
+        # Allocate output cube (nx, ny, n_variables)
+        images = np.zeros((nx, ny, len(variable_strs)), dtype=variables.dtype)
+
+        if self.use_numba:
+            if self.parttype == 0:
+                trace_rays = trace_rays_several_variables_cpu_voronoi
+            else:
+                trace_rays = trace_rays_several_variables_cpu_optimized
+
+            trace_rays(self.tree._pos, self.tree.parents, self.tree.children,
+                       self.tree.bounds, variables, hsml, widths, center,
+                       tree_scale_factor, tree_offsets, images,
+                       rotation_matrix, self.tol)
+        else:
+            raise RuntimeError("only implemented for numba")
+
+        return images
+
     def _send_variable_to_tree(self, variable, tree_key='projection_variable'):
         if isinstance(variable, str):
             variable_str = str(variable)
@@ -382,7 +584,7 @@ class RayProjector(ImageCreator):
             assert int(variable[0]) == self.parttype, err_msg
             variable = self.snap[variable]
         else:
-            variable_str = 'projection_variable'
+            variable_str = tree_key
             if not isinstance(variable, np.ndarray):
                 raise RuntimeError('Unexpected type for variable')
 
@@ -456,6 +658,85 @@ class RayProjector(ImageCreator):
             return projection
         else:
             return projection / self.depth
+
+    @util.conditional_timer
+    def project_variables(self, variables, additives, timing=False):
+        """
+        Projects multiple variables onto a 2D plane in a single tree traversal.
+
+        This probably offers a speed benefit compared to calling
+        project_variable several times.
+
+        Parameters
+        ----------
+        variables : list of str, function, or numpy array
+            Variables to project.
+        additives : list of bool
+            Whether to use additive projection for each variable.
+
+        Returns
+        -------
+        list
+            List of 2D arrays, each being the projection of the corresponding variable.
+        """
+        assert len(variables) == len(additives), \
+            "Length of `variables` and `additives` must match."
+
+        self._check_if_properties_changed()
+
+        tree_keys = []
+        unit_quantities = []
+        vol_unit_quantities = []
+        is_additive_flags = []
+
+        for i, (variable, additive) in enumerate(zip(variables, additives)):
+            # Assign unique tree key for this projection variable
+            # (not used for string variables!)
+            tree_key = f'projection_variable{i}'
+
+            variable_str, unit_quantity = self._send_variable_to_tree(
+                variable, tree_key=tree_key
+            )
+            tree_keys.append(variable_str)
+            unit_quantities.append(unit_quantity)
+            is_additive_flags.append(additive)
+
+            if additive:
+                _, vol_unit_quantity = self._send_variable_to_tree(
+                    f'{self.parttype}_Volume'
+                )
+            else:
+                vol_unit_quantity = None
+            vol_unit_quantities.append(vol_unit_quantity)
+
+        # Perform projection in one tree traversal
+        projection_cube = self._tree_project_several_variables(tree_keys, is_additive_flags)
+        # projection_cube.shape = (nx, ny, n_variables)
+
+        results = []
+        for i in range(len(variables)):
+            proj_2d = projection_cube[:, :, i].T  # transpose for output convention
+
+            assert proj_2d.shape[0] == self.npix_height
+            assert proj_2d.shape[1] == self.npix_width
+
+            unit_quantity = unit_quantities[i]
+            vol_unit_quantity = vol_unit_quantities[i]
+            additive = is_additive_flags[i]
+
+            if unit_quantity is not None:
+                unit_length = self.snap['0_Coordinates'].uq
+                proj_2d = proj_2d * unit_quantity * unit_length
+                if additive:
+                    proj_2d = proj_2d / vol_unit_quantity
+
+            if not additive:
+                proj_2d = proj_2d / self.depth
+
+            results.append(proj_2d)
+
+        return results
+
 
     def __del__(self):
         """
