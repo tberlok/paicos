@@ -644,7 +644,7 @@ class Snapshot(PaicosReader):
             else:
                 unit_str = None
 
-            np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])
+            np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])  # pylint: disable=unsubscriptable-object
 
             if not self.subselection:
                 if np_file > 0:
