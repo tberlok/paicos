@@ -6,15 +6,14 @@ from .bvh_tree import generateHierarchy, propagate_bounds_upwards
 from .bvh_tree import set_leaf_bounding_volumes
 from .bvh_tree import get_morton_keys64
 from .. import util
-
-# Hardcoded for uint64 coordinates (don't change without also changing morton
-# code functions)
-L = 21
-
 from numba import uint64
 
 import ctypes
 from numba.extending import get_cython_function_address
+
+# Hardcoded for uint64 coordinates (don't change without also changing morton
+# code functions)
+L = 21
 
 addr = get_cython_function_address("paicos.trees.bvh_tree", "leading_zeros_cython_for_numba")
 functype = ctypes.CFUNCTYPE(ctypes.c_long, ctypes.c_ulong)
@@ -46,6 +45,7 @@ def count_leading_zeros_numba_inline(x: uint64) -> int:
     if (x & 0x8000000000000000) == 0:
         n += 1
     return n
+
 
 def leading_zeros_python(key64bit):
     """
@@ -94,6 +94,7 @@ def decode64(key):
     z = unpart1by2_64(key)
     return numba.float64(x), numba.float64(y), numba.float64(z)
 
+
 @numba.jit(nopython=True)
 def get_morton_keys64_old(pos):
     morton_keys = np.empty(pos.shape[0], dtype=np.uint64)
@@ -135,6 +136,7 @@ def findSplit_old(sortedMortonCodes, first, last):
                 split = newSplit  # accept proposal
 
     return split
+
 
 # @numba.jit(nopython=True)
 def generateHierarchy_old(sortedMortonCodes, tree_children, tree_parents):
@@ -259,6 +261,7 @@ def find_bounding_volume_as_sfc_keys(center, hsml):
     sfc_key_max = encode64(max_val_x, max_val_y, max_val_z)
     return sfc_key_min, sfc_key_max
 
+
 def set_leaf_bounding_volumes_old(tree_bounds, points, half_size, conversion_factor):
     num_internal_nodes = half_size.shape[0] - 1
     num_leafs = half_size.shape[0]
@@ -281,6 +284,7 @@ def set_leaf_bounding_volumes_old(tree_bounds, points, half_size, conversion_fac
         tree_bounds[ip + num_internal_nodes, 0, 1] = x_max
         tree_bounds[ip + num_internal_nodes, 1, 1] = y_max
         tree_bounds[ip + num_internal_nodes, 2, 1] = z_max
+
 
 def propagate_bounds_upwards_old(tree_bounds, tree_parents, tree_children):
     num_internal_nodes = tree_children.shape[0]
@@ -316,6 +320,7 @@ def propagate_bounds_upwards_old(tree_bounds, tree_parents, tree_children):
         # if len(next_parents) < 10:
         #     print(node_id, len(next_parents), next_parents)
 
+
 @numba.njit(inline='always')
 def distance(point, query_point):
     dist = math.sqrt((point[0] - query_point[0])**2
@@ -324,24 +329,13 @@ def distance(point, query_point):
     return dist
 
 
-# @numba.jit(nopython=True)
-# def is_within_bounds(xf_q, yf_q, zf_q, tree_bound):
-#     x_min, y_min, z_min = tree_bound[:, ]decode64(tree_bound[0])
-#     x_max, y_max, z_max = decode64(tree_bound[1])
-#     if x_min > xf_q or x_max < xf_q:
-#         return False
-#     if y_min > yf_q or y_max < yf_q:
-#         return False
-#     if z_min > zf_q or z_max < zf_q:
-#         return False
-#     return True
-
 @numba.njit(inline='always')
 def is_point_in_box(point, box):
     for ii in range(3):
         if point[ii] < box[ii, 0] or point[ii] > box[ii, 1]:
             return False
     return True
+
 
 @numba.njit(inline='always')
 def distance_to_box(point, box):
@@ -355,6 +349,7 @@ def distance_to_box(point, box):
             d = point[i] - box[i, 1]
             sq_dist += d * d
     return math.sqrt(sq_dist)
+
 
 @numba.jit(nopython=True)
 def box_intersects_sphere(box, center, radius):
@@ -370,6 +365,7 @@ def box_intersects_sphere(box, center, radius):
         if sq_dist > r2:
             return False
     return True
+
 
 @numba.njit(inline='always')
 def nearest_neighbor_cpu(points, tree_parents, tree_children, tree_bounds,
@@ -405,7 +401,6 @@ def nearest_neighbor_cpu(points, tree_parents, tree_children, tree_bounds,
                 min_dist = dist
                 min_index = data_id
 
-
         distA = distance_to_box(query_point, tree_bounds[childA])
         distB = distance_to_box(query_point, tree_bounds[childB])
 
@@ -425,6 +420,7 @@ def nearest_neighbor_cpu(points, tree_parents, tree_children, tree_bounds,
                 queue[queue_index] = childB
 
     return min_dist, min_index
+
 
 @numba.njit(inline='always')
 def nearest_neighbor_cpu_optimized(points, tree_parents, tree_children, tree_bounds,
@@ -453,7 +449,7 @@ def nearest_neighbor_cpu_optimized(points, tree_parents, tree_children, tree_bou
             dx = points[data_id, 0] - query_point[0]
             dy = points[data_id, 1] - query_point[1]
             dz = points[data_id, 2] - query_point[2]
-            dist2 = dx*dx + dy*dy + dz*dz
+            dist2 = dx * dx + dy * dy + dz * dz
             if dist2 < min_dist2:
                 min_dist2 = dist2
                 min_index = data_id
@@ -464,7 +460,7 @@ def nearest_neighbor_cpu_optimized(points, tree_parents, tree_children, tree_bou
             dx = points[data_id, 0] - query_point[0]
             dy = points[data_id, 1] - query_point[1]
             dz = points[data_id, 2] - query_point[2]
-            dist2 = dx*dx + dy*dy + dz*dz
+            dist2 = dx * dx + dy * dy + dz * dz
             if dist2 < min_dist2:
                 min_dist2 = dist2
                 min_index = data_id
@@ -511,7 +507,6 @@ def nearest_neighbor_cpu_optimized(points, tree_parents, tree_children, tree_bou
                 queue[queue_index] = childB
 
     return math.sqrt(min_dist2), min_index
-
 
 
 @numba.njit(inline='always')
@@ -629,6 +624,7 @@ def find_points_in_range(points, tree_children, tree_bounds,
                     queue[queue_index] = childB
 
     return all_neighbors, neighbor_counts
+
 
 @numba.jit(nopython=True)
 def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
@@ -796,7 +792,6 @@ class BinaryTree:
         inverse_index[self.sort_index] = np.arange(self.sort_index.shape[0])
         return inverse_index[original_ids]
 
-
     @util.conditional_timer
     def nearest_neighbor(self, query_points, start_id=0, ignore_self=False, timing=False):
         if query_points.ndim == 1:
@@ -811,7 +806,6 @@ class BinaryTree:
                                    query_points), dists, ids,
                                start_id=start_id, ignore_self=ignore_self)
         return dists / self.conversion_factor, self._tree_node_ids_to_data_ids(ids)
-
 
     def range_search(self, query_points, radius, max_neighbors=256):
         if query_points.ndim == 1:
@@ -830,8 +824,8 @@ class BinaryTree:
 
         if neighbor_counts.max() >= max_neighbors:
             import warnings
-            warning_msg = (f"Range search has max_neighbors={max_neighbors}" +
-                          f" but the largest number of neighbors found was {neighbor_counts.max()}.")
+            warning_msg = (f"Range search has max_neighbors={max_neighbors}"
+                           + f" but the largest number of neighbors found was {neighbor_counts.max()}.")
             warnings.warn(warning_msg)
 
         return neighbor_lists, neighbor_counts

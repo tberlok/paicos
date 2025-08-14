@@ -1,10 +1,10 @@
 import paicos as pa
 import numpy as np
-pa.use_units(False)
-
-pa.numthreads(pa.settings.max_threads)
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+
+pa.use_units(False)
+pa.numthreads(pa.settings.max_threads)
 
 snap = pa.Snapshot(pa.data_dir, 247, basename='snap', load_catalog=True)
 
@@ -13,7 +13,7 @@ plt.figure(1)
 plt.clf()
 fig, axes = plt.subplots(num=1, ncols=3, sharex='col', sharey='col')
 
-widths = [snap.box/2, snap.box/2, snap.box/2]
+widths = [snap.box / 2, snap.box / 2, snap.box / 2]
 center = [snap.box / 2, snap.box / 2, snap.box / 2]
 
 widths = [20000, 20000, 20000]

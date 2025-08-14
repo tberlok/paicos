@@ -1,9 +1,8 @@
-
 import paicos as pa
 import numpy as np
-pa.use_units(False)
-
 import matplotlib.pyplot as plt
+
+pa.use_units(False)
 
 snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                    load_catalog=False)
@@ -25,7 +24,6 @@ for jj in range(3):
         snap['0_Coordinates'][ii][0] += jj * snap.box * 1 / 4
         snap['0_Coordinates'][ii][1] += kk * snap.box * 1 / 4
 
-
 plt.rc('image', origin='lower', cmap='RdBu_r', interpolation='None')
 plt.figure(1)
 plt.clf()
@@ -39,7 +37,6 @@ for ii, direction in enumerate(['z']):
     t = pa.RayProjector(snap, center, widths, direction, npix=512)
 
     density = t.project_variable('0_Density')
-
 
     p = pa.Projector(snap, center, widths, direction, npix=512)
 

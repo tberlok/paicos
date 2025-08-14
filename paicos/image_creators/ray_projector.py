@@ -11,6 +11,7 @@ from ..trees.bvh_cpu import nearest_neighbor_cpu, nearest_neighbor_cpu_voronoi, 
 
 from ..trees.bvh_cpu import leading_zeros_cython_for_numba
 
+
 @numba.njit(inline='always')
 def part1by2_64(n):
     n &= 0x1fffff
@@ -41,6 +42,7 @@ def encode64(x, y, z):
     zz = part1by2_64(z)
     return xx * 4 + yy * 2 + zz
 
+
 @numba.njit(parallel=True)
 def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, hsml,
                    widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
@@ -51,7 +53,7 @@ def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, h
     dy = widths[1] / ny
     num_internal_nodes = tree_children.shape[0]
 
-    for ix in numba.prange(nx):
+    for ix in numba.prange(nx):  # pylint: disable=not-an-iterable
         for iy in range(ny):
             result = 0.0
             z = 0.0
@@ -59,17 +61,23 @@ def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, h
 
             while z < widths[2]:
                 # Compute query point in aligned coords
-                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
-                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[0] = (center[0] - widths[0]
+                                  / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1]
+                                  / 2.0) + (iy + 0.5) * dy
                 query_point[2] = (center[2] - widths[2] / 2.0) + z
 
                 # Rotate point around center
-                query_point = np.dot(rotation_matrix, query_point - center) + center
+                query_point = np.dot(
+                    rotation_matrix, query_point - center) + center
 
                 # Convert to tree coordinates
-                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
-                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
-                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+                query_point[0] = (
+                    query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (
+                    query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (
+                    query_point[2] - tree_offsets[2]) * tree_scale_factor
 
                 # Nearest neighbor search in tree coordinates
                 min_dist, min_index = nearest_neighbor_cpu(points, tree_parents, tree_children,
@@ -80,7 +88,7 @@ def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, h
                 # dz = tol * hsml[min_index]
                 dz = tol * min_dist / tree_scale_factor
                 # if hsml[min_index] < min_dist:
-                    # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
+                # print(hsml[min_index], min_dist, min_dist/tree_scale_factor)
                 result += dz * variable[min_index]
                 z += dz
 
@@ -88,9 +96,10 @@ def trace_rays_cpu(points, tree_parents, tree_children, tree_bounds, variable, h
             result -= (z - widths[2]) * variable[min_index]
             image[ix, iy] = result
 
+
 @numba.njit(parallel=True)
 def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, variable, hsml,
-                   widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+                           widths, center, tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
     nx = image.shape[0]
     ny = image.shape[1]
@@ -99,7 +108,7 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
     num_internal_nodes = tree_children.shape[0]
     L = 21
 
-    for ix in numba.prange(nx):
+    for ix in numba.prange(nx):  # pylint: disable=not-an-iterable
         for iy in range(ny):
             result = 0.0
             z = 0.0
@@ -107,22 +116,28 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
 
             while z < widths[2]:
                 # Compute query point in aligned coords
-                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
-                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[0] = (center[0] - widths[0]
+                                  / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1]
+                                  / 2.0) + (iy + 0.5) * dy
                 query_point[2] = (center[2] - widths[2] / 2.0) + z
 
                 # Rotate point around center
-                query_point = np.dot(rotation_matrix, query_point - center) + center
+                query_point = np.dot(
+                    rotation_matrix, query_point - center) + center
 
                 # Convert to tree coordinates
-                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
-                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
-                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+                query_point[0] = (
+                    query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (
+                    query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (
+                    query_point[2] - tree_offsets[2]) * tree_scale_factor
 
                 # Nearest neighbor search in tree coordinates
                 min_dist, min_index = nearest_neighbor_cpu_voronoi(points, tree_parents, tree_children,
-                                                           tree_bounds, query_point,
-                                                           num_internal_nodes)
+                                                                   tree_bounds, query_point,
+                                                                   num_internal_nodes)
                 if min_index == -1:
                     min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
                                                                          tree_bounds, query_point,
@@ -135,6 +150,7 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
             # Correct overshoot
             result -= (z - widths[2]) * variable[min_index]
             image[ix, iy] = result
+
 
 @numba.njit(parallel=True)
 def trace_rays_several_variables_cpu_voronoi(points, tree_parents, tree_children, tree_bounds,
@@ -150,7 +166,7 @@ def trace_rays_several_variables_cpu_voronoi(points, tree_parents, tree_children
     num_internal_nodes = tree_children.shape[0]
     L = 21
 
-    for ix in numba.prange(nx):
+    for ix in numba.prange(nx):  # pylint: disable=not-an-iterable
         for iy in range(ny):
             result = np.zeros(nvars, dtype=variables.dtype)
             z = 0.0
@@ -158,17 +174,23 @@ def trace_rays_several_variables_cpu_voronoi(points, tree_parents, tree_children
 
             while z < widths[2]:
                 # Compute query point in aligned coords
-                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
-                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[0] = (center[0] - widths[0]
+                                  / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1]
+                                  / 2.0) + (iy + 0.5) * dy
                 query_point[2] = (center[2] - widths[2] / 2.0) + z
 
                 # Rotate point around center
-                query_point = np.dot(rotation_matrix, query_point - center) + center
+                query_point = np.dot(
+                    rotation_matrix, query_point - center) + center
 
                 # Convert to tree coordinates
-                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
-                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
-                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+                query_point[0] = (
+                    query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (
+                    query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (
+                    query_point[2] - tree_offsets[2]) * tree_scale_factor
 
                 # Nearest neighbor search in tree coordinates
                 min_dist, min_index = nearest_neighbor_cpu_voronoi(points, tree_parents, tree_children,
@@ -191,19 +213,6 @@ def trace_rays_several_variables_cpu_voronoi(points, tree_parents, tree_children
                 result[k] -= (z - widths[2]) * variables[min_index, k]
                 images[ix, iy, k] = result[k]
 
-@numba.njit(inline='always')
-def get_start_node_for_search():
-
-        morton_query = query_point_to_morton(query_point)
-        # new_query_point = query_point + kick * sizes[bvh_id] #bvh_dist
-        new_query_point = query_point + kick * bvh_dist
-        new_bvh_dist, new_bvh_id = bvh_tree.nearest_neighbor(new_query_point)
-        new_leaf_id = bvh_tree._data_ids_to_tree_node_ids(new_bvh_id)[0]
-
-        new_morton_query = query_point_to_morton(new_query_point)
-
-        common_prefix = get_len_of_common_prefix_cython(morton_leaf, morton_query)
-        new_common_prefix = get_len_of_common_prefix_cython(morton_leaf, new_morton_query)
 
 @numba.njit(parallel=True)
 def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
@@ -217,7 +226,7 @@ def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, v
 
     L = 21
 
-    for ix in numba.prange(nx):
+    for ix in numba.prange(nx):  # pylint: disable=not-an-iterable
         for iy in range(ny):
             result = 0.0
             z = 0.0
@@ -227,17 +236,23 @@ def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, v
 
             while z < widths[2]:
                 # Compute query point in aligned coords
-                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
-                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[0] = (center[0] - widths[0]
+                                  / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1]
+                                  / 2.0) + (iy + 0.5) * dy
                 query_point[2] = (center[2] - widths[2] / 2.0) + z
 
                 # Rotate point around center
-                query_point = np.dot(rotation_matrix, query_point - center) + center
+                query_point = np.dot(
+                    rotation_matrix, query_point - center) + center
 
                 # Convert to tree coordinates
-                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
-                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
-                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+                query_point[0] = (
+                    query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (
+                    query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (
+                    query_point[2] - tree_offsets[2]) * tree_scale_factor
 
                 # Nearest neighbor search in tree coordinates
                 min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
@@ -252,6 +267,7 @@ def trace_rays_cpu_optimized(points, tree_parents, tree_children, tree_bounds, v
             # Correct overshoot
             result -= (z - widths[2]) * variable[min_index]
             image[ix, iy] = result
+
 
 @numba.njit(parallel=True)
 def trace_rays_several_variables_cpu_optimized(points, tree_parents, tree_children, tree_bounds,
@@ -268,7 +284,7 @@ def trace_rays_several_variables_cpu_optimized(points, tree_parents, tree_childr
 
     L = 21
 
-    for ix in numba.prange(nx):
+    for ix in numba.prange(nx):  # pylint: disable=not-an-iterable
         for iy in range(ny):
             result = np.zeros(nvars, dtype=variables.dtype)
             z = 0.0
@@ -278,17 +294,23 @@ def trace_rays_several_variables_cpu_optimized(points, tree_parents, tree_childr
 
             while z < widths[2]:
                 # Compute query point in aligned coords
-                query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
-                query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+                query_point[0] = (center[0] - widths[0]
+                                  / 2.0) + (ix + 0.5) * dx
+                query_point[1] = (center[1] - widths[1]
+                                  / 2.0) + (iy + 0.5) * dy
                 query_point[2] = (center[2] - widths[2] / 2.0) + z
 
                 # Rotate point around center
-                query_point = np.dot(rotation_matrix, query_point - center) + center
+                query_point = np.dot(
+                    rotation_matrix, query_point - center) + center
 
                 # Convert to tree coordinates
-                query_point[0] = (query_point[0] - tree_offsets[0]) * tree_scale_factor
-                query_point[1] = (query_point[1] - tree_offsets[1]) * tree_scale_factor
-                query_point[2] = (query_point[2] - tree_offsets[2]) * tree_scale_factor
+                query_point[0] = (
+                    query_point[0] - tree_offsets[0]) * tree_scale_factor
+                query_point[1] = (
+                    query_point[1] - tree_offsets[1]) * tree_scale_factor
+                query_point[2] = (
+                    query_point[2] - tree_offsets[2]) * tree_scale_factor
 
                 # Nearest neighbor search in tree coordinates
                 min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
@@ -306,7 +328,6 @@ def trace_rays_several_variables_cpu_optimized(points, tree_parents, tree_childr
             for k in range(nvars):
                 result[k] -= (z - widths[2]) * variables[min_index, k]
                 images[ix, iy, k] = result[k]
-
 
 
 class RayProjector(ImageCreator):
@@ -369,7 +390,7 @@ class RayProjector(ImageCreator):
         avail_list = (list(snap.keys()) + snap._auto_list)
         if f'{parttype}_Volume' in avail_list:
             self.hsml = 1.2 * 2.0 * np.cbrt((self.snap[f"{parttype}_Volume"])
-                                      / (4.0 * np.pi / 3.0))
+                                            / (4.0 * np.pi / 3.0))
         elif f'{parttype}_SubfindHsml' in avail_list:
             self.hsml = self.snap[f'{parttype}_SubfindHsml']
         else:
@@ -500,7 +521,7 @@ class RayProjector(ImageCreator):
             if self.parttype == 0:
                 trace_rays = trace_rays_cpu_voronoi
             else:
-                trace_rays =  trace_rays_cpu_optimized
+                trace_rays = trace_rays_cpu_optimized
 
             trace_rays(self.tree._pos, self.tree.parents, self.tree.children,
                        self.tree.bounds, variable, hsml, widths, center,
@@ -508,7 +529,8 @@ class RayProjector(ImageCreator):
                        rotation_matrix, self.tol)
         else:
             import warnings
-            warnings.warn("Cython ray tracer slower and less well tested than Numba!")
+            warnings.warn(
+                "Cython ray tracer slower and less well tested than Numba!")
             if self.parttype == 0:
                 from ..cython.ray_tracer import trace_rays_cpu_voronoi as trace_rays_cpu_cython
             else:
@@ -710,12 +732,14 @@ class RayProjector(ImageCreator):
             vol_unit_quantities.append(vol_unit_quantity)
 
         # Perform projection in one tree traversal
-        projection_cube = self._tree_project_several_variables(tree_keys, is_additive_flags)
+        projection_cube = self._tree_project_several_variables(
+            tree_keys, is_additive_flags)
         # projection_cube.shape = (nx, ny, n_variables)
 
         results = []
         for i in range(len(variables)):
-            proj_2d = projection_cube[:, :, i].T  # transpose for output convention
+            # transpose for output convention
+            proj_2d = projection_cube[:, :, i].T
 
             assert proj_2d.shape[0] == self.npix_height
             assert proj_2d.shape[1] == self.npix_width
@@ -736,7 +760,6 @@ class RayProjector(ImageCreator):
             results.append(proj_2d)
 
         return results
-
 
     def __del__(self):
         """

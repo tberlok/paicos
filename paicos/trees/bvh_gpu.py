@@ -78,13 +78,9 @@ def delta(sortedMortonCodes, i, j):
     else:
         return cuda.libdevice.clzll(codeA ^ codeB)
 
+
 @cuda.jit(device=True, inline=True)
 def findSplit(sortedMortonCodes, first, last):
-    # Identical Morton codes => split the range in the middle.
-
-    firstCode = sortedMortonCodes[first]
-    lastCode = sortedMortonCodes[last]
-
     # Calculate the number of highest bits that are the same
     # for all objects, using the count-leading-zeros intrinsic.
 
@@ -278,6 +274,7 @@ def is_point_in_box(point, box):
             return False
     return True
 
+
 @cuda.jit(device=True, inline=True)
 def distance_to_box(point, box):
     """Squared distance from a point to an AABB (0 if inside)."""
@@ -362,7 +359,7 @@ def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
 
 @cuda.jit(device=True, inline=True)
 def nearest_neighbor_device_optimized(points, tree_parents, tree_children, tree_bounds,
-                            query_point, num_internal_nodes, min_dist_init):
+                                      query_point, num_internal_nodes, min_dist_init):
     """
     This is a nearest neighbor function that works for general particle distributions,
     i.e., the points are *not* assumed to have overlapping bounding volumes that

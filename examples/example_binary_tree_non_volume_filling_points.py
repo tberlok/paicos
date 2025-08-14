@@ -1,8 +1,9 @@
 import paicos as pa
 import numpy as np
 from scipy.spatial import KDTree
-pa.use_units(False)
 from paicos.trees.bvh_cpu import BinaryTree
+
+pa.use_units(False)
 snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                    load_catalog=False)
 center = np.array([398968.4, 211682.6, 629969.9])

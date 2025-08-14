@@ -39,8 +39,8 @@ def rotate_point_around_center(point, tmp_point, center, rotation_matrix):
 
 @cuda.jit
 def trace_rays_voronoi(points, tree_parents, tree_children, tree_bounds, variable, hsml,
-               widths, center,
-               tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+                       widths, center,
+                       tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
     ix, iy = cuda.grid(2)
 
@@ -88,8 +88,8 @@ def trace_rays_voronoi(points, tree_parents, tree_children, tree_bounds, variabl
 
             if min_index == -1:
                 min_dist, min_index = nearest_neighbor_device_optimized(points, tree_parents, tree_children,
-                                              tree_bounds, query_point,
-                                              num_internal_nodes, 2**L - 1.0)
+                                                                        tree_bounds, query_point,
+                                                                        num_internal_nodes, 2**L - 1.0)
 
             # Calculate dz
             # dz = tol * hsml[min_index]
@@ -109,8 +109,8 @@ def trace_rays_voronoi(points, tree_parents, tree_children, tree_bounds, variabl
 
 @cuda.jit
 def trace_rays_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
-               widths, center,
-               tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+                         widths, center,
+                         tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
     ix, iy = cuda.grid(2)
 
@@ -155,8 +155,8 @@ def trace_rays_optimized(points, tree_parents, tree_children, tree_bounds, varia
                               ) * tree_scale_factor
 
             min_dist, min_index = nearest_neighbor_device_optimized(points, tree_parents, tree_children,
-                                                          tree_bounds, query_point,
-                                                          num_internal_nodes, max_search_dist)
+                                                                    tree_bounds, query_point,
+                                                                    num_internal_nodes, max_search_dist)
 
             # Calculate dz
             # dz = tol * hsml[min_index]

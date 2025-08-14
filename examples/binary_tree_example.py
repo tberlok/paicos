@@ -1,8 +1,9 @@
 import paicos as pa
 import numpy as np
 from scipy.spatial import KDTree
-pa.use_units(False)
 from paicos.trees.bvh_cpu import BinaryTree
+
+pa.use_units(False)
 snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                    load_catalog=False)
 center = np.array([398968.4, 211682.6, 629969.9])
@@ -33,5 +34,3 @@ brute_force_indices = []
 for ii in range(pos.shape[0]):
     brute_force_indices.append(np.arange(pos.shape[0])[pa.util.get_index_of_radial_range(pos, pos[ii, :], 0, radius)])
     np.testing.assert_array_equal(np.sort(indices[ii]), brute_force_indices[ii])
-
-

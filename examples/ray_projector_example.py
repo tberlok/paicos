@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import LogNorm
 import paicos as pa
 import numpy as np
@@ -13,7 +14,9 @@ widths = [10000, 10000, 2 * R200c]
 projector = pa.RayProjector(snap, center, widths, 'z', npix=512, tol=1, timing=True)
 extent = projector.centered_extent.to_physical.to('Mpc')
 
-images = projector.project_variables(["0_Masses", "0_Volume", "0_Density", "0_Temperatures", "0_MagneticFieldSquaredTimesVolume"], [True, True, False, False, True], timing=True)
+variables = ["0_Masses", "0_Volume", "0_Density", "0_Temperatures", "0_MagneticFieldSquaredTimesVolume"]
+additive = [True, True, False, False, True]
+images = projector.project_variables(variables, additive, timing=True)
 Masses = images[0]
 Volume = images[1]
 Density = images[2]
@@ -21,9 +24,6 @@ T = images[3].to('keV')
 B = (np.sqrt(images[4] / images[1])).to_physical.to('uG')
 
 # Make plots
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # --- Figure 1 ---
 plt.figure(1)

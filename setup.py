@@ -17,7 +17,7 @@ import glob
 #     os.environ['CXX'] = 'g++-13'
 
 Options.annotate = True
-compiler_directives = {"boundscheck": False, "cdivision": True, "nonecheck":False,
+compiler_directives = {"boundscheck": False, "cdivision": True, "nonecheck": False,
                        "wraparound": False, 'language_level': "3"}
 # compiler_directives = {"boundscheck": True, "cdivision": True,
 #                        "wraparound": False, 'language_level': "3"}

@@ -1,8 +1,14 @@
 import paicos as pa
 import numpy as np
 from scipy.spatial import KDTree
-pa.use_units(False)
 from paicos.trees.bvh_cpu import BinaryTree
+from paicos.trees.bvh_cpu import get_morton_keys64_old, get_morton_keys64
+from paicos.trees.bvh_cpu import propagate_bounds_upwards_old, propagate_bounds_upwards
+from paicos.trees.bvh_cpu import generateHierarchy_old, generateHierarchy
+from paicos.trees.bvh_cpu import set_leaf_bounding_volumes_old, set_leaf_bounding_volumes
+
+pa.use_units(False)
+
 snap = pa.Snapshot(pa.data_dir, 247, basename='reduced_snap',
                    load_catalog=False)
 center = np.array([398968.4, 211682.6, 629969.9])
@@ -39,7 +45,6 @@ _pos *= conversion_factor
 
 # Calculate uint64 and Morton keys
 _pos_uint = _pos.astype(np.uint64)
-from paicos.trees.bvh_cpu import get_morton_keys64_old, get_morton_keys64
 
 morton_keys_old = get_morton_keys64_old(_pos_uint)
 morton_keys = get_morton_keys64(_pos_uint)
@@ -60,16 +65,12 @@ num_leafs = morton_keys.shape[0]
 num_internal_nodes = num_leafs - 1
 num_leafs_and_nodes = 2 * num_leafs - 1
 
-
-from paicos.trees.bvh_cpu import generateHierarchy_old, generateHierarchy
 # Allocate arrays
 children = -1 * np.ones((num_internal_nodes, 2), dtype=int)
 parents = -1 * np.ones(num_leafs_and_nodes, dtype=int)
 
 children_old = -1 * np.ones((num_internal_nodes, 2), dtype=int)
 parents_old = -1 * np.ones(num_leafs_and_nodes, dtype=int)
-
-from paicos.trees.bvh_cpu import generateHierarchy_old, generateHierarchy
 
 # # This sets the parent and children properties
 generateHierarchy(morton_keys, children, parents)
@@ -83,17 +84,15 @@ bounds_old = np.zeros((num_leafs_and_nodes, 3, 2), dtype=np.uint64)
 bounds = np.zeros((num_leafs_and_nodes, 3, 2), dtype=np.uint64)
 bounds_cython = np.zeros((num_leafs_and_nodes, 3, 2), dtype=np.uint64)
 
-from paicos.trees.bvh_cpu import set_leaf_bounding_volumes_old, set_leaf_bounding_volumes
 set_leaf_bounding_volumes_old(bounds_old, _pos,
-                          sizes[sort_index],
-                          conversion_factor)
+                              sizes[sort_index],
+                              conversion_factor)
 set_leaf_bounding_volumes(bounds, _pos,
                           sizes[sort_index],
                           conversion_factor, L)
 
 np.testing.assert_array_equal(bounds, bounds_old)
 
-from paicos.trees.bvh_cpu import propagate_bounds_upwards_old, propagate_bounds_upwards
 propagate_bounds_upwards_old(bounds_old, parents, children)
 propagate_bounds_upwards(bounds, parents, children)
 

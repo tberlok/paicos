@@ -3,6 +3,7 @@ import sys
 import contextlib
 import io
 
+
 @contextlib.contextmanager
 def suppress_omp_nested_warning():
     try:
