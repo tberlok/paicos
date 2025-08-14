@@ -17,13 +17,15 @@ import glob
 #     os.environ['CXX'] = 'g++-13'
 
 Options.annotate = True
-compiler_directives = {"boundscheck": False, "cdivision": True,
+compiler_directives = {"boundscheck": False, "cdivision": True, "nonecheck":False,
                        "wraparound": False, 'language_level': "3"}
+# compiler_directives = {"boundscheck": True, "cdivision": True,
+#                        "wraparound": False, 'language_level': "3"}
 
 
 include_dirs = ['paicos/cython/', numpy.get_include()]
 extra_compile_args = ['-fopenmp', "-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION",
-                      "-Wno-unused-function"]
+                      "-Wno-unused-function", '-O3', '-ffast-math', '-march=native']
 extra_link_args = ['-fopenmp']
 ext_modules = [
     Extension(
