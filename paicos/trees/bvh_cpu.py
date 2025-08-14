@@ -5,11 +5,47 @@ from .bvh_tree import leading_zeros_cython as count_leading_zeros
 from .bvh_tree import generateHierarchy, propagate_bounds_upwards
 from .bvh_tree import set_leaf_bounding_volumes
 from .bvh_tree import get_morton_keys64
+from .. import util
 
 # Hardcoded for uint64 coordinates (don't change without also changing morton
 # code functions)
 L = 21
 
+from numba import uint64
+
+import ctypes
+from numba.extending import get_cython_function_address
+
+addr = get_cython_function_address("paicos.trees.bvh_tree", "leading_zeros_cython_for_numba")
+functype = ctypes.CFUNCTYPE(ctypes.c_long, ctypes.c_ulong)
+leading_zeros_cython_for_numba = functype(addr)
+
+
+@numba.njit(inline='always')
+def count_leading_zeros_numba_inline(x: uint64) -> int:
+    """
+    """
+    if x == 0:
+        return 64
+    n = 0
+    if (x & 0xFFFFFFFF00000000) == 0:
+        n += 32
+        x <<= 32
+    if (x & 0xFFFF000000000000) == 0:
+        n += 16
+        x <<= 16
+    if (x & 0xFF00000000000000) == 0:
+        n += 8
+        x <<= 8
+    if (x & 0xF000000000000000) == 0:
+        n += 4
+        x <<= 4
+    if (x & 0xC000000000000000) == 0:
+        n += 2
+        x <<= 2
+    if (x & 0x8000000000000000) == 0:
+        n += 1
+    return n
 
 def leading_zeros_python(key64bit):
     """
@@ -596,7 +632,7 @@ def find_points_in_range(points, tree_children, tree_bounds,
 
 @numba.jit(nopython=True)
 def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
-                           query_points, dists, ids, start_id=0):
+                           query_points, dists, ids, start_id=0, ignore_self=False):
     n_queries = query_points.shape[0]
     num_internal_nodes = numba.int64(tree_children.shape[0])
 
@@ -605,7 +641,7 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
         # Select a query_point from the list of queries
         query_point = query_points[ip]
 
-        this_query_start_id = 0
+        this_query_start_id = start_id
 
         # We traverse the nodes and leafs using a while loop and a queue.
 
@@ -636,16 +672,18 @@ def find_nearest_neighbors(points, tree_parents, tree_children, tree_bounds,
                 dist = distance(query_point, points[data_id])
 
                 if dist < min_dist:
-                    min_dist = dist
-                    min_index = data_id
+                    if (dist > 0.0) or (not ignore_self):
+                        min_dist = dist
+                        min_index = data_id
 
             if is_leafB:
                 data_id = childB - num_internal_nodes
                 dist = distance(query_point, points[data_id])
 
                 if dist < min_dist:
-                    min_dist = dist
-                    min_index = data_id
+                    if (dist > 0.0) or (not ignore_self):
+                        min_dist = dist
+                        min_index = data_id
 
             distA = distance_to_box(query_point, tree_bounds[childA])
             distB = distance_to_box(query_point, tree_bounds[childB])
@@ -749,7 +787,18 @@ class BinaryTree:
         """
         return np.arange(self.sort_index.shape[0])[self.sort_index][ids]
 
-    def nearest_neighbor(self, query_points, start_id=0):
+    def _data_ids_to_tree_node_ids(self, original_ids):
+        """
+        Go from original data indices of selected data
+        to sorted indices (tree node ids).
+        """
+        inverse_index = np.empty_like(self.sort_index)
+        inverse_index[self.sort_index] = np.arange(self.sort_index.shape[0])
+        return inverse_index[original_ids]
+
+
+    @util.conditional_timer
+    def nearest_neighbor(self, query_points, start_id=0, ignore_self=False, timing=False):
         if query_points.ndim == 1:
             n_queries = 1
         else:
@@ -760,7 +809,7 @@ class BinaryTree:
         find_nearest_neighbors(self._pos, self.parents, self.children, self.bounds,
                                self._to_tree_coordinates(
                                    query_points), dists, ids,
-                               start_id=start_id)
+                               start_id=start_id, ignore_self=ignore_self)
         return dists / self.conversion_factor, self._tree_node_ids_to_data_ids(ids)
 
 
