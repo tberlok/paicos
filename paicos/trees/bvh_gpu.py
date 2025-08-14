@@ -68,19 +68,27 @@ def device_clf_64(tmp):
 
 
 @cuda.jit(device=True, inline=True)
+def delta(sortedMortonCodes, i, j):
+    codeA = sortedMortonCodes[i]
+    codeB = sortedMortonCodes[j]
+
+    if codeA == codeB:
+        # Fallback: compare indices instead of codes
+        return 64 + cuda.libdevice.clzll(numba.uint64(i ^ j))
+    else:
+        return cuda.libdevice.clzll(codeA ^ codeB)
+
+@cuda.jit(device=True, inline=True)
 def findSplit(sortedMortonCodes, first, last):
     # Identical Morton codes => split the range in the middle.
 
     firstCode = sortedMortonCodes[first]
     lastCode = sortedMortonCodes[last]
 
-    if (firstCode == lastCode):
-        return (first + last) >> 1
-
     # Calculate the number of highest bits that are the same
     # for all objects, using the count-leading-zeros intrinsic.
 
-    commonPrefix = cuda.libdevice.clzll(firstCode ^ lastCode)
+    commonPrefix = delta(sortedMortonCodes, first, last)
 
     # Use binary search to find where the next bit differs.
     # Specifically, we are looking for the highest object that
@@ -94,8 +102,7 @@ def findSplit(sortedMortonCodes, first, last):
         newSplit = split + step  # proposed new position
 
         if (newSplit < last):
-            splitCode = sortedMortonCodes[newSplit]
-            splitPrefix = cuda.libdevice.clzll(firstCode ^ splitCode)
+            splitPrefix = delta(sortedMortonCodes, first, newSplit)
             if (splitPrefix > commonPrefix):
                 split = newSplit  # accept proposal
 
@@ -162,12 +169,9 @@ def determineRange(sortedMortonCodes, n_codes, idx):
     max_last = n_codes
 
     if (firstIndex > 0):
-        p1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex + 1]
-        m1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex - 1]
-
         # Count leading zeros
-        lz_p1 = device_clf_64(p1)
-        lz_m1 = device_clf_64(m1)
+        lz_p1 = delta(sortedMortonCodes, firstIndex, firstIndex + 1)
+        lz_m1 = delta(sortedMortonCodes, firstIndex, firstIndex - 1)
 
         if lz_p1 > lz_m1:
             d = 1
@@ -180,14 +184,12 @@ def determineRange(sortedMortonCodes, n_codes, idx):
     secondIndex = firstIndex + searchRange * d
 
     while (0 <= secondIndex and secondIndex < max_last):
-        lz_first_second = device_clf_64(
-            sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
+        lz_first_second = delta(sortedMortonCodes, firstIndex, secondIndex)
         if lz_first_second > minPrefixLength:
             searchRange *= 2
             secondIndex = firstIndex + searchRange * d
             if secondIndex < max_last:
-                lz_first_second = device_clf_64(
-                    sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
+                lz_first_second = delta(sortedMortonCodes, firstIndex, secondIndex)
             else:
                 break
         else:
@@ -199,8 +201,7 @@ def determineRange(sortedMortonCodes, n_codes, idx):
         searchRange = (searchRange + 1) // 2
         newJdx = secondIndex + searchRange * d
         if (0 <= newJdx and newJdx < max_last):
-            lz_f_Jdx = device_clf_64(
-                sortedMortonCodes[firstIndex] ^ sortedMortonCodes[newJdx])
+            lz_f_Jdx = delta(sortedMortonCodes, firstIndex, newJdx)
             if lz_f_Jdx > minPrefixLength:
                 secondIndex = newJdx
 
