@@ -124,9 +124,9 @@ def trace_rays_cpu_voronoi(points, tree_parents, tree_children, tree_bounds, var
                                                            tree_bounds, query_point,
                                                            num_internal_nodes)
                 if min_index == -1:
-                    nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
-                                         tree_bounds, query_point,
-                                         num_internal_nodes, (2**L - 1.0))
+                    min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
+                                                                         tree_bounds, query_point,
+                                                                         num_internal_nodes, (2**L - 1.0))
                 # Adaptive step in Arepo units
                 dz = tol * hsml[min_index]
                 result += dz * variable[min_index]
@@ -175,9 +175,9 @@ def trace_rays_several_variables_cpu_voronoi(points, tree_parents, tree_children
                                                                    tree_bounds, query_point,
                                                                    num_internal_nodes)
                 if min_index == -1:
-                    nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
-                                                   tree_bounds, query_point,
-                                                   num_internal_nodes, (2**L - 1.0))
+                    min_dist, min_index = nearest_neighbor_cpu_optimized(points, tree_parents, tree_children,
+                                                                         tree_bounds, query_point,
+                                                                         num_internal_nodes, (2**L - 1.0))
 
                 # Adaptive step in Arepo units
                 dz = tol * hsml[min_index]
