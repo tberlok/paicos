@@ -47,6 +47,8 @@ def trace_rays_voronoi(points, tree_parents, tree_children, tree_bounds, variabl
     nx = image.shape[0]
     ny = image.shape[1]
 
+    L = 21
+
     if ix >= 0 and ix < nx and iy >= 0 and iy < ny:
         result = 0.0
 
