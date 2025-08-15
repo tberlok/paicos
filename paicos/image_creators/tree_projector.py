@@ -14,9 +14,10 @@ class TreeProjector(ImageCreator):
     This implements projection of gas variables by adding up several slices.
     """
 
+    @util.conditional_timer
     def __init__(self, snap, center, widths, direction,
                  npix=512, npix_depth=None, parttype=0, make_snap_with_selection=False,
-                 tol=1, verbose=False):
+                 tol=1, verbose=False, timing=False):
 
         """
         Initialize the Slicer object.
@@ -212,7 +213,8 @@ class TreeProjector(ImageCreator):
         """
         return arr.flatten().reshape((self.npix_height, self.npix_width))
 
-    def project_variable(self, variable, additive=True, extrinsic=None):
+    @util.conditional_timer
+    def project_variable(self, variable, additive=True, extrinsic=None, timing=False):
         """
         Project gas variable based on the Voronoi cells closest to each
         line of sight.

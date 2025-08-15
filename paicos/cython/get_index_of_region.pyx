@@ -315,7 +315,7 @@ def get_radial_range(real_t [:, :] pos, real_t xc, real_t yc,
 
         # Index calculation
         index[ip] = 0
-        if (r2 < r2_max) and (r2 > r2_min):
+        if (r2 < r2_max) and (r2 >= r2_min):
             index[ip] = 1
 
     # Return a numpy boolean array
@@ -371,10 +371,10 @@ def get_radial_range_plus_thin_layer(real_t [:, :] pos, real_t xc, real_t yc,
         if (r_min > thickness[ip]):
             r2_min = (r_min - thickness[ip])*(r_min - thickness[ip])
         r2_max = (r_max + thickness[ip])*(r_max + thickness[ip])
-        
+
         # Index calculation
         index[ip] = 0
-        if (r2 < r2_max) and (r2 > r2_min):
+        if (r2 < r2_max) and (r2 >= r2_min):
             index[ip] = 1
 
     # Return a numpy boolean array

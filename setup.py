@@ -16,14 +16,16 @@ import glob
 #     os.environ['CC'] = 'gcc-13'
 #     os.environ['CXX'] = 'g++-13'
 
-Options.annotate = False
-compiler_directives = {"boundscheck": False, "cdivision": True,
+Options.annotate = True
+compiler_directives = {"boundscheck": False, "cdivision": True, "nonecheck": False,
                        "wraparound": False, 'language_level': "3"}
+# compiler_directives = {"boundscheck": True, "cdivision": True,
+#                        "wraparound": False, 'language_level': "3"}
 
 
 include_dirs = ['paicos/cython/', numpy.get_include()]
 extra_compile_args = ['-fopenmp', "-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION",
-                      "-Wno-unused-function"]
+                      "-Wno-unused-function", '-O3', '-ffast-math', '-march=native']
 extra_link_args = ['-fopenmp']
 ext_modules = [
     Extension(
@@ -67,8 +69,14 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
+    ),
+    Extension(
+        name='paicos.cython.ray_tracer',
+        sources=['paicos/cython/ray_tracer.pyx'],
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args
     )
-
 ]
 
 install_requires = ['scipy',

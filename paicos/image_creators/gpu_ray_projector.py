@@ -9,8 +9,7 @@ from .. import settings
 from .. import units
 
 from ..trees.bvh_gpu import GpuBinaryTree
-from ..trees.bvh_gpu import nearest_neighbor_device
-from ..trees.bvh_gpu import is_point_in_box, distance
+from ..trees.bvh_gpu import nearest_neighbor_device, nearest_neighbor_device_optimized
 
 
 def get_blocks(size, threadsperblock):
@@ -39,14 +38,16 @@ def rotate_point_around_center(point, tmp_point, center, rotation_matrix):
 
 
 @cuda.jit
-def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
-               widths, center,
-               tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+def trace_rays_voronoi(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+                       widths, center,
+                       tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
 
     ix, iy = cuda.grid(2)
 
     nx = image.shape[0]
     ny = image.shape[1]
+
+    L = 21
 
     if ix >= 0 and ix < nx and iy >= 0 and iy < ny:
         result = 0.0
@@ -85,8 +86,82 @@ def trace_rays(points, tree_parents, tree_children, tree_bounds, variable, hsml,
                                                           tree_bounds, query_point,
                                                           num_internal_nodes)
 
+            if min_index == -1:
+                min_dist, min_index = nearest_neighbor_device_optimized(points, tree_parents, tree_children,
+                                                                        tree_bounds, query_point,
+                                                                        num_internal_nodes, 2**L - 1.0)
+
             # Calculate dz
-            dz = tol * hsml[min_index]
+            # dz = tol * hsml[min_index]
+            dz = tol * min_dist / tree_scale_factor
+
+            # Update integral
+            result = result + dz * variable[min_index]
+
+            # Update position
+            z = z + dz
+
+        # Subtract the 'extra' stuff added in last iteration
+        result = result - (z - widths[2]) * variable[min_index]
+        # Set result in image array
+        image[ix, iy] = result
+
+
+@cuda.jit
+def trace_rays_optimized(points, tree_parents, tree_children, tree_bounds, variable, hsml,
+                         widths, center,
+                         tree_scale_factor, tree_offsets, image, rotation_matrix, tol):
+
+    ix, iy = cuda.grid(2)
+
+    nx = image.shape[0]
+    ny = image.shape[1]
+
+    L = 21
+
+    if ix >= 0 and ix < nx and iy >= 0 and iy < ny:
+        result = 0.0
+
+        dx = widths[0] / nx
+        dy = widths[1] / ny
+
+        num_internal_nodes = tree_children.shape[0]
+
+        # Initialize z and dz (in arepo code units)
+        z = 0.0
+
+        query_point = numba.cuda.local.array(3, numba.float64)
+        tmp_point = numba.cuda.local.array(3, numba.float64)
+
+        max_search_dist = (2**L - 1.0)
+
+        while z < widths[2]:
+
+            # Query points in aligned coords
+            query_point[0] = (center[0] - widths[0] / 2.0) + (ix + 0.5) * dx
+            query_point[1] = (center[1] - widths[1] / 2.0) + (iy + 0.5) * dy
+            query_point[2] = (center[2] - widths[2] / 2.0) + z
+
+            # Rotate to simulation coords
+            rotate_point_around_center(
+                query_point, tmp_point, center, rotation_matrix)
+
+            # Convert to the tree coordinates
+            query_point[2] = (query_point[2] - tree_offsets[2]
+                              ) * tree_scale_factor
+            query_point[0] = (query_point[0] - tree_offsets[0]
+                              ) * tree_scale_factor
+            query_point[1] = (query_point[1] - tree_offsets[1]
+                              ) * tree_scale_factor
+
+            min_dist, min_index = nearest_neighbor_device_optimized(points, tree_parents, tree_children,
+                                                                    tree_bounds, query_point,
+                                                                    num_internal_nodes, max_search_dist)
+
+            # Calculate dz
+            # dz = tol * hsml[min_index]
+            dz = 2.0 * tol * min_dist / tree_scale_factor
+            max_search_dist = 1.2 * (min_dist + dz * tree_scale_factor)
 
             # Update integral
             result = result + dz * variable[min_index]
@@ -109,9 +184,10 @@ class GpuRayProjector(ImageCreator):
     It only works on cuda-enabled GPUs.
     """
 
+    @util.conditional_timer
     def __init__(self, snap, center, widths, direction,
                  npix=512, parttype=0, tol=0.25, threadsperblock=8,
-                 do_pre_selection=False):
+                 do_pre_selection=False, timing=False):
         """
         Initialize the Projector class.
 
@@ -140,6 +216,15 @@ class GpuRayProjector(ImageCreator):
             Number of the particle type to project, by default gas (PartType 0).
 
         """
+
+        # err_msg = ('GpuRayProjector currently only works for parttype 0.' +
+        #             ' This is because the GPU version  of BVH tree' +
+        #             ' assumes that the query points are inside the bounding' +
+        #             ' boxes of the leaves of the tree. This has been fixed for' +
+        #             ' the CPU version. Please send Thomas an email if you see' +
+        #             ' this error message.')
+
+        # assert parttype == 0, err_msg
 
         # call the superclass constructor to initialize the ImageCreator class
         super().__init__(snap, center, widths, direction, npix=npix, parttype=parttype)
@@ -283,6 +368,11 @@ class GpuRayProjector(ImageCreator):
         blocks_y = get_blocks(ny, self.threadsperblock)
         btuple = (blocks_x, blocks_y)
         ttuple = (self.threadsperblock, self.threadsperblock)
+        if self.parttype == 0:
+            trace_rays = trace_rays_voronoi
+        else:
+            trace_rays = trace_rays_optimized
+
         trace_rays[btuple, ttuple](self.tree._pos, self.tree.parents, self.tree.children,
                                    self.tree.bounds, variable, hsml, widths, center,
                                    tree_scale_factor, tree_offsets, image,
@@ -329,7 +419,8 @@ class GpuRayProjector(ImageCreator):
 
         return variable_str, unit_quantity
 
-    def project_variable(self, variable, additive=False):
+    @util.conditional_timer
+    def project_variable(self, variable, additive=False, timing=False):
         """
         projects a given variable onto a 2D plane.
 

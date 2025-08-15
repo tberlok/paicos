@@ -639,7 +639,12 @@ class Snapshot(PaicosReader):
 
             f = h5py.File(cur_filename, "r")
 
-            np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])
+            if 'unit' in f[datname].attrs.keys():
+                unit_str = f[datname].attrs['unit']
+            else:
+                unit_str = None
+
+            np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])  # pylint: disable=unsubscriptable-object
 
             if not self.subselection:
                 if np_file > 0:
@@ -720,18 +725,21 @@ class Snapshot(PaicosReader):
                 raise RuntimeError('Data has unexpected shape!')
 
         if settings.use_units:
-            if parttype in self._type_info:
-                ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
-                self[alias_key] = self.get_paicos_quantity(self[alias_key],
-                                                           blockname,
-                                                           field=ptype)
+            if unit_str is not None:
+                self[alias_key] = self[alias_key] * self.unit_quantity(unit_str)
             else:
-                # Assume dark matter for the units
-                self[alias_key] = self.get_paicos_quantity(self[alias_key],
-                                                           blockname,
-                                                           field='dark_matter')
-            if not hasattr(self[alias_key], 'unit'):
-                del self[alias_key]
+                if parttype in self._type_info:
+                    ptype = self._type_info[parttype]  # e.g. 'voronoi_cells'
+                    self[alias_key] = self.get_paicos_quantity(self[alias_key],
+                                                               blockname,
+                                                               field=ptype)
+                else:
+                    # Assume dark matter for the units
+                    self[alias_key] = self.get_paicos_quantity(self[alias_key],
+                                                               blockname,
+                                                               field='dark_matter')
+                if not hasattr(self[alias_key], 'unit'):
+                    del self[alias_key]
 
         if self.verbose:
             print("... done! (took", time.time() - start_time, "s)")
