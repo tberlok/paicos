@@ -8,7 +8,7 @@ The code is parallel with an OpenMP Cython implementation
 and a CUDA GPU implementation for visualization.
 """
 
-__version__ = "0.1.15"
+__version__ = "0.1.16"
 __author__ = 'Thomas Berlok'
 __credits__ = 'Niels Bohr Institute, University of Copenhagen'
 
