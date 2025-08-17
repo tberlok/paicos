@@ -16,17 +16,15 @@ import glob
 #     os.environ['CC'] = 'gcc-13'
 #     os.environ['CXX'] = 'g++-13'
 
-Options.annotate = True
-compiler_directives = {"boundscheck": False, "cdivision": True, "nonecheck": False,
+Options.annotate = False
+compiler_directives = {"boundscheck": False, "cdivision": True,
                        "wraparound": False, 'language_level': "3"}
-# compiler_directives = {"boundscheck": True, "cdivision": True,
-#                        "wraparound": False, 'language_level': "3"}
 
 
 include_dirs = ['paicos/cython/', numpy.get_include()]
 extra_compile_args = ['-fopenmp', "-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION",
-                      "-Wno-unused-function", '-O3', '-ffast-math', '-march=native']
-extra_link_args = ['-fopenmp']
+                      "-Wno-unused-function"]
+extra_link_args = ['-fopenmp', "-lm"]
 ext_modules = [
     Extension(
         name='paicos.cython.get_index_of_region',
@@ -96,7 +94,7 @@ with open(cur + 'dev_requirements.txt') as f:
 
 setup(
     name='paicos',
-    version='0.1.16',
+    version='0.1.17',
     description=('An object-oriented Python package for analysis of '
                  + '(cosmological) simulations performed with Arepo.'),
     url='https://github.com/tberlok/paicos',
