@@ -2,7 +2,7 @@
 
 Paicos provides a few ways of configuring its default behaviour. These are described here.
 
-We recommend that you work through notebook 1a before reading on (the notebooks
+We recommend that you work through notebook 1 before reading on (the notebooks
 can be seen on the sidebar on the left).
 
 ## Turn units/automatic derivations on/off
@@ -92,14 +92,14 @@ would use 24 cores in the parts of the code that are parallelized.
 
 ## Setting up user settings
 
-You can save a `paicos_user_settings.py` script at the location of the Paicos code,
-which is imported when you do `import paicos`.
-The location of this directory depends on whether you have done a pip installation or not.
-You can find the correct location by doing this:
+You can save a `.paicos_user_settings.py` script as a hidden file in your home directory,
+which will then be imported when you do `import paicos`.
+If you are unsure where to put it, then you can find the correct filepath by executing this block:
 
 ```
 import paicos as pa
-print('Put your paicos_user_settings.py in this directory:', pa.code_dir)
+print('The recommended filepath for your .paicos_user_settings.py is:\n', pa.home_dir + '/.paicos_user_settings.py')
+print('\nAlternatively, but no longer recommended due to high risk of accidental deletion, the filepath could be:\n', pa.code_dir + '/paicos_user_settings.py')
 ```
 
 We include an example named `paicos_user_settings_template.py`, which you can use to get started.
