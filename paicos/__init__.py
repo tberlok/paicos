@@ -8,7 +8,7 @@ The code is parallel with an OpenMP Cython implementation
 and a CUDA GPU implementation for visualization.
 """
 
-__version__ = "0.1.15"
+__version__ = "0.1.17"
 __author__ = 'Thomas Berlok'
 __credits__ = 'Niels Bohr Institute, University of Copenhagen'
 
@@ -43,6 +43,7 @@ from .image_creators.image_creator import ImageCreator
 from .image_creators.projector import Projector
 from .image_creators.nested_projector import NestedProjector
 from .image_creators.tree_projector import TreeProjector
+from .image_creators.ray_projector import RayProjector
 from .image_creators.slicer import Slicer
 from .image_creators.image_creator_actions import Actions
 
@@ -199,6 +200,17 @@ def numthreads(numthreads):
         settings.numthreads_reduction = 1
     else:
         settings.numthreads_reduction = settings.numthreads
+
+    try:
+        from numba import set_num_threads
+        from .misc import suppress_omp_nested_warning
+
+        with suppress_omp_nested_warning():
+            set_num_threads(settings.numthreads)
+    except Exception as e:
+        print(e)
+        import warnings
+        warnings.warn("Something went wrong. Perhaps numba is not installed?")
 
 
 def print_info_when_deriving_variables(option):

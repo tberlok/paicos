@@ -1,7 +1,7 @@
 import pytest
 
 
-def test_gpu_ray_projector(show=False):
+def test_gpu_ray_projector(show=False, timing=False):
     """
     We compare the CPU and GPU implementations of ray-tracing.
     """
@@ -36,14 +36,14 @@ def test_gpu_ray_projector(show=False):
 
     # Initialize projectors
     tree_projector = pa.TreeProjector(snap, center, widths, orientation, npix=npix,
-                                      tol=0.25)
+                                      tol=0.25, timing=timing)
     gpu_projector = pa.GpuRayProjector(snap, center, widths, orientation, npix=npix,
                                        threadsperblock=8, do_pre_selection=True,
-                                       tol=0.25)
+                                       tol=0.25, timing=timing)
 
     # Project density
-    tree_dens = tree_projector.project_variable('0_Density', additive=False)
-    gpu_dens = gpu_projector.project_variable('0_Density', additive=False)
+    tree_dens = tree_projector.project_variable('0_Density', additive=False, timing=timing)
+    gpu_dens = gpu_projector.project_variable('0_Density', additive=False, timing=timing)
 
     max_rel_err = np.max(np.abs(tree_dens.value - gpu_dens.value) / tree_dens.value)
 
@@ -68,4 +68,4 @@ def test_gpu_ray_projector(show=False):
 
 
 if __name__ == '__main__':
-    test_gpu_ray_projector(True)
+    test_gpu_ray_projector(True, True)

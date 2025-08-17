@@ -24,7 +24,7 @@ compiler_directives = {"boundscheck": False, "cdivision": True,
 include_dirs = ['paicos/cython/', numpy.get_include()]
 extra_compile_args = ['-fopenmp', "-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION",
                       "-Wno-unused-function"]
-extra_link_args = ['-fopenmp']
+extra_link_args = ['-fopenmp', "-lm"]
 ext_modules = [
     Extension(
         name='paicos.cython.get_index_of_region',
@@ -67,8 +67,14 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args
+    ),
+    Extension(
+        name='paicos.cython.ray_tracer',
+        sources=['paicos/cython/ray_tracer.pyx'],
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args
     )
-
 ]
 
 install_requires = ['scipy',
@@ -88,7 +94,7 @@ with open(cur + 'dev_requirements.txt') as f:
 
 setup(
     name='paicos',
-    version='0.1.15',
+    version='0.1.17',
     description=('An object-oriented Python package for analysis of '
                  + '(cosmological) simulations performed with Arepo.'),
     url='https://github.com/tberlok/paicos',

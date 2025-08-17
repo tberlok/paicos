@@ -68,19 +68,23 @@ def device_clf_64(tmp):
 
 
 @cuda.jit(device=True, inline=True)
+def delta(sortedMortonCodes, i, j):
+    codeA = sortedMortonCodes[i]
+    codeB = sortedMortonCodes[j]
+
+    if codeA == codeB:
+        # Fallback: compare indices instead of codes
+        return 64 + cuda.libdevice.clzll(numba.uint64(i ^ j))
+    else:
+        return cuda.libdevice.clzll(codeA ^ codeB)
+
+
+@cuda.jit(device=True, inline=True)
 def findSplit(sortedMortonCodes, first, last):
-    # Identical Morton codes => split the range in the middle.
-
-    firstCode = sortedMortonCodes[first]
-    lastCode = sortedMortonCodes[last]
-
-    if (firstCode == lastCode):
-        return (first + last) >> 1
-
     # Calculate the number of highest bits that are the same
     # for all objects, using the count-leading-zeros intrinsic.
 
-    commonPrefix = cuda.libdevice.clzll(firstCode ^ lastCode)
+    commonPrefix = delta(sortedMortonCodes, first, last)
 
     # Use binary search to find where the next bit differs.
     # Specifically, we are looking for the highest object that
@@ -94,8 +98,7 @@ def findSplit(sortedMortonCodes, first, last):
         newSplit = split + step  # proposed new position
 
         if (newSplit < last):
-            splitCode = sortedMortonCodes[newSplit]
-            splitPrefix = cuda.libdevice.clzll(firstCode ^ splitCode)
+            splitPrefix = delta(sortedMortonCodes, first, newSplit)
             if (splitPrefix > commonPrefix):
                 split = newSplit  # accept proposal
 
@@ -162,12 +165,9 @@ def determineRange(sortedMortonCodes, n_codes, idx):
     max_last = n_codes
 
     if (firstIndex > 0):
-        p1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex + 1]
-        m1 = sortedMortonCodes[firstIndex] ^ sortedMortonCodes[firstIndex - 1]
-
         # Count leading zeros
-        lz_p1 = device_clf_64(p1)
-        lz_m1 = device_clf_64(m1)
+        lz_p1 = delta(sortedMortonCodes, firstIndex, firstIndex + 1)
+        lz_m1 = delta(sortedMortonCodes, firstIndex, firstIndex - 1)
 
         if lz_p1 > lz_m1:
             d = 1
@@ -180,14 +180,12 @@ def determineRange(sortedMortonCodes, n_codes, idx):
     secondIndex = firstIndex + searchRange * d
 
     while (0 <= secondIndex and secondIndex < max_last):
-        lz_first_second = device_clf_64(
-            sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
+        lz_first_second = delta(sortedMortonCodes, firstIndex, secondIndex)
         if lz_first_second > minPrefixLength:
             searchRange *= 2
             secondIndex = firstIndex + searchRange * d
             if secondIndex < max_last:
-                lz_first_second = device_clf_64(
-                    sortedMortonCodes[firstIndex] ^ sortedMortonCodes[secondIndex])
+                lz_first_second = delta(sortedMortonCodes, firstIndex, secondIndex)
             else:
                 break
         else:
@@ -199,8 +197,7 @@ def determineRange(sortedMortonCodes, n_codes, idx):
         searchRange = (searchRange + 1) // 2
         newJdx = secondIndex + searchRange * d
         if (0 <= newJdx and newJdx < max_last):
-            lz_f_Jdx = device_clf_64(
-                sortedMortonCodes[firstIndex] ^ sortedMortonCodes[newJdx])
+            lz_f_Jdx = delta(sortedMortonCodes, firstIndex, newJdx)
             if lz_f_Jdx > minPrefixLength:
                 secondIndex = newJdx
 
@@ -279,8 +276,26 @@ def is_point_in_box(point, box):
 
 
 @cuda.jit(device=True, inline=True)
+def distance_to_box(point, box):
+    """Squared distance from a point to an AABB (0 if inside)."""
+    sq_dist = 0.0
+    for i in range(3):
+        if point[i] < box[i, 0]:
+            d = box[i, 0] - point[i]
+            sq_dist += d * d
+        elif point[i] > box[i, 1]:
+            d = point[i] - box[i, 1]
+            sq_dist += d * d
+    return math.sqrt(sq_dist)
+
+
+@cuda.jit(device=True, inline=True)
 def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
                             query_point, num_internal_nodes):
+    """
+    This is a nearest neighbor function which is fast and which
+    works well on Voronoi cells.
+    """
 
     # We traverse the nodes and leafs using a while loop and a queue.
     # Local memory on each tread (32 should be fine?)
@@ -327,6 +342,75 @@ def nearest_neighbor_device(points, tree_parents, tree_children, tree_bounds,
         # Whether to traverse
         traverseA = point_in_A and not is_leafA
         traverseB = point_in_B and not is_leafB
+
+        if (not traverseA) and (not traverseB):
+            queue_index -= 1
+        else:
+            if traverseA:
+                queue[queue_index] = childA
+            else:
+                queue[queue_index] = childB
+            if traverseA and traverseB:
+                queue_index += 1
+                queue[queue_index] = childB
+
+    return min_dist, min_index
+
+
+@cuda.jit(device=True, inline=True)
+def nearest_neighbor_device_optimized(points, tree_parents, tree_children, tree_bounds,
+                                      query_point, num_internal_nodes, min_dist_init):
+    """
+    This is a nearest neighbor function that works for general particle distributions,
+    i.e., the points are *not* assumed to have overlapping bounding volumes that
+    fill space with no holes.
+    """
+
+    # We traverse the nodes and leafs using a while loop and a queue.
+    # Local memory on each tread (32 should be fine?)
+    queue = cuda.local.array(128, numba.int64)
+    # Initialize queue_index an start at node 0
+    queue_index = 0
+    queue[queue_index] = 0
+
+    # Initialize min_dist, and min_index
+    min_dist = min_dist_init
+    min_index = -1
+
+    while queue_index >= 0:
+
+        node_id = queue[queue_index]
+
+        childA = tree_children[node_id, 0]
+        childB = tree_children[node_id, 1]
+
+        is_leafA = childA >= num_internal_nodes
+        is_leafB = childB >= num_internal_nodes
+
+        # Do explicit check if in a leaf
+        if is_leafA:
+            data_id = childA - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        if is_leafB:
+            data_id = childB - num_internal_nodes
+            dist = distance(points[data_id], query_point)
+
+            if dist < min_dist:
+                min_dist = dist
+                min_index = data_id
+
+        # Whether to traverse
+        distA = distance_to_box(query_point, tree_bounds[childA])
+        distB = distance_to_box(query_point, tree_bounds[childB])
+
+        # Whether to traverse
+        traverseA = (distA <= min_dist) and not is_leafA
+        traverseB = (distB <= min_dist) and not is_leafB
 
         if (not traverseA) and (not traverseB):
             queue_index -= 1

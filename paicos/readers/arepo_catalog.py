@@ -8,6 +8,30 @@ import numbers
 import warnings
 
 
+class PaicosDict(dict):
+    def __init__(self, cat, subfind_catalog=True):
+
+        self.cat = cat
+        group_keys, sub_keys = self.cat.info(verbose=False)
+        if subfind_catalog:
+            self.loader = self.cat.load_sub_data
+            self._auto_list = sub_keys
+        else:
+            self.loader = self.cat.load_group_data
+            self._auto_list = group_keys
+
+    def __getitem__(self, ikey):
+        self.loader(ikey)
+        return super().__getitem__(ikey)
+
+    def _ipython_key_completions_(self):
+        """
+        Auto-completion of dictionary.
+        """
+
+        return self._auto_list
+
+
 class Catalog(PaicosReader):
     """
     This is a Python class for reading Arepo group and subhalo catalogs.
@@ -54,8 +78,9 @@ class Catalog(PaicosReader):
             The age of the Universe (only for cosmological runs).
 
     """
-    def __init__(self, basedir='.', snapnum=None, load_all=True,
-                 to_physical=False, subfind_catalog=True, verbose=False):
+    def __init__(self, basedir='.', snapnum=None, load_all=False,
+                 to_physical=False, subfind_catalog=True, readonly_first_file=False,
+                 verbose=False):
         """
         Initializes the Catalog class.
 
@@ -79,6 +104,11 @@ class Catalog(PaicosReader):
             subfind_catalog : bool
                 whether the simulation has subfind catalogs,
                 when False the code will look for FoF-catalogs only.
+
+            readonly_first_file : bool
+                when set to True the code will only read one catalog file (the first).
+                This can significantly speed things up when one is only interested in the
+                properties of the most massive groups in a simulation.
 
             verbose : bool
                 whether to print information, default is False.
@@ -107,9 +137,93 @@ class Catalog(PaicosReader):
         self.Group = {}
         self.Sub = {}
 
+        self.Group = PaicosDict(self, subfind_catalog=False)
+        self.Sub = PaicosDict(self, subfind_catalog=True)
+
+        self.to_physical = to_physical
+
+        self.readonly_first_file = readonly_first_file
+
+        if to_physical and not settings.use_units:
+            err_msg = "to_physical=True requires that units are enabled"
+            raise RuntimeError(err_msg)
+
         # Load all data
         if load_all:
             self.load_all_data()
+
+    def info(self, verbose=True):
+        """
+        Return the available keys for the FoF catalog and/or
+        the subhalo catalo.
+
+        :meta private:
+        """
+        ifile = 0
+        if self.multi_file is False:
+            cur_filename = self.filename
+        else:
+            if self.no_subdir:
+                cur_filename = self.multi_wo_dir.format(ifile)
+            else:
+                cur_filename = self.multi_filename.format(ifile)
+
+        if self.verbose:
+            print("reading file", cur_filename)
+
+        file = h5py.File(cur_filename, "r")
+
+        if "Group" in file:
+            group_keys = list(file["Group"].keys())
+        else:
+            group_keys = []
+
+        if "Subhalo" in file:
+            sub_keys = list(file["Subhalo"].keys())
+        else:
+            sub_keys = []
+
+        file.close()
+
+        if not settings.use_units:
+            if verbose:
+                if len(group_keys) > 0:
+                    print('Available group_keys are:', group_keys)
+
+                if len(sub_keys) > 0:
+                    print('\nAvailable sub_keys are:', sub_keys)
+            return group_keys, sub_keys
+        else:
+            from .. import unit_specifications
+
+        not_implemented_group_keys = []
+        implemented_group_keys = []
+        for key in list(group_keys):
+            if key in unit_specifications.unit_dict['groups']:
+                implemented_group_keys.append(key)
+            else:
+                not_implemented_group_keys.append(key)
+
+        not_implemented_sub_keys = []
+        implemented_sub_keys = []
+        for key in list(sub_keys):
+            if key in unit_specifications.unit_dict['subhalos']:
+                implemented_sub_keys.append(key)
+            else:
+                not_implemented_sub_keys.append(key)
+
+        if verbose:
+            if len(group_keys) > 0:
+                print('Available group_keys are:', implemented_group_keys)
+                if len(not_implemented_group_keys) > 0:
+                    print('\nNot implemented group_keys are:', not_implemented_group_keys)
+
+            if len(sub_keys) > 0:
+                print('\nAvailable sub_keys are:', implemented_sub_keys)
+                if len(not_implemented_sub_keys) > 0:
+                    print('\nNot implemented sub_keys are:', not_implemented_sub_keys)
+
+        return implemented_group_keys, implemented_sub_keys
 
     def load_data(self):
         """
@@ -117,17 +231,114 @@ class Catalog(PaicosReader):
 
         :meta private:
         """
-        pass
+        raise RuntimeError('should not be called')
 
-    def load_all_data(self):
+    def load_group_data(self, ikey):
         """
-        Calling this method simply loads all the data in the catalog.
+        Load subhalo dato. See self.info for valid ikeys
 
-        TODO: For large catalogs it might be useful to implement on-demand
-        access in a similar way to what we have for snapshots.
+        :meta private:
         """
 
-        skip_gr = 0
+        if ikey in self.Group:
+            return
+
+        data = None  # to get rid of linting error
+
+        if not self.readonly_first_file:
+            skip_gr = 0
+
+            for ifile in range(self.nfiles):
+                if self.multi_file is False:
+                    cur_filename = self.filename
+                else:
+                    if self.no_subdir:
+                        cur_filename = self.multi_wo_dir.format(ifile)
+                    else:
+                        cur_filename = self.multi_filename.format(ifile)
+
+                if self.verbose:
+                    print("reading file", cur_filename)
+
+                file = h5py.File(cur_filename, "r")
+
+                ng = int(file["Header"].attrs["Ngroups_ThisFile"])
+
+                # initialize arrays
+                if ifile == 0:
+                    if "Group" in file:
+                        if len(file["Group/" + ikey].shape) == 1:
+                            data = np.empty(
+                                self.ngroups, dtype=file["Group/" + ikey].dtype)
+                        elif len(file["Group/" + ikey].shape) == 2:
+                            data = np.empty(
+                                (self.ngroups, file["Group/" + ikey].shape[1]),
+                                dtype=file["Group/" + ikey].dtype)
+                        else:
+                            assert False
+
+                # read group data
+                if ng > 0:
+                    data[skip_gr:skip_gr + ng] = file["Group/" + ikey]
+
+                skip_gr += ng
+
+                file.close()
+        else:
+            cur_filename = self.filename
+            file = h5py.File(cur_filename, "r")
+            ng = int(file["Header"].attrs["Ngroups_ThisFile"])
+            if "Group" in file:
+                if len(file["Group/" + ikey].shape) == 1:
+                    data = np.empty(
+                        ng, dtype=file["Group/" + ikey].dtype)
+                elif len(file["Group/" + ikey].shape) == 2:
+                    data = np.empty(
+                        (ng, file["Group/" + ikey].shape[1]),
+                        dtype=file["Group/" + ikey].dtype)
+                else:
+                    assert False
+
+            # read group data
+            if ng > 0:
+                data[:ng] = file["Group/" + ikey][...]
+
+            file.close()
+
+        # Load all variables with double precision
+        if settings.double_precision:
+            if not issubclass(data.dtype.type, numbers.Integral):
+                data = data.astype(np.float64)
+
+        else:
+            warnings.warn('\n\nThe cython routines expect double precision '
+                          + 'and will fail unless settings.double_precision '
+                          + 'is True.\n\n')
+
+        if settings.use_units:
+            self.Group[ikey] = self.get_paicos_quantity(
+                data, ikey,
+                field='groups')
+            if not hasattr(self.Group[ikey], 'unit'):
+                del self.Group[ikey]
+                raise RuntimeError(f"{ikey} does not have units implemented!")
+        else:
+            self.Group[ikey] = data
+
+    def load_sub_data(self, ikey):
+        """
+        Load subhalo dato. See self.info for valid ikeys
+
+        TODO: Merge with load_group_data, lot's of duplicate code here...
+
+        :meta private:
+        """
+
+        if ikey in self.Sub:
+            return
+
+        data = None  # to get rid of linting error
+
         skip_sub = 0
         for ifile in range(self.nfiles):
             if self.multi_file is False:
@@ -143,8 +354,6 @@ class Catalog(PaicosReader):
 
             file = h5py.File(cur_filename, "r")
 
-            ng = int(file["Header"].attrs["Ngroups_ThisFile"])
-
             if "Nsubgroups_ThisFile" in file["Header"].attrs.keys():
                 ns = int(file["Header"].attrs["Nsubgroups_ThisFile"])
             else:
@@ -152,73 +361,54 @@ class Catalog(PaicosReader):
 
             # initialize arrays
             if ifile == 0:
-                if "Group" in file:
-                    for ikey in file["Group"].keys():
-                        if len(file["Group/" + ikey].shape) == 1:
-                            self.Group[ikey] = np.empty(
-                                self.ngroups, dtype=file["Group/" + ikey].dtype)
-                        elif len(file["Group/" + ikey].shape) == 2:
-                            self.Group[ikey] = np.empty(
-                                (self.ngroups, file["Group/" + ikey].shape[1]),
-                                dtype=file["Group/" + ikey].dtype)
-                        else:
-                            assert False
                 if "Subhalo" in file:
-                    for ikey in file["Subhalo"].keys():
-                        if len(file["Subhalo/" + ikey].shape) == 1:
-                            self.Sub[ikey] = np.empty(
-                                self.nsubs, dtype=file["Subhalo/" + ikey].dtype)
-                        elif len(file["Subhalo/" + ikey].shape) == 2:
-                            self.Sub[ikey] = np.empty(
-                                (self.nsubs, file["Subhalo/" + ikey].shape[1]),
-                                dtype=file["Subhalo/" + ikey].dtype)
-                        else:
-                            assert False
-
-            # read group data
-            if ng > 0:
-                for ikey in file["Group"].keys():
-                    self.Group[ikey][skip_gr:skip_gr + ng] = file["Group/" + ikey]
+                    if len(file["Subhalo/" + ikey].shape) == 1:
+                        data = np.empty(
+                            self.nsubs, dtype=file["Subhalo/" + ikey].dtype)
+                    elif len(file["Subhalo/" + ikey].shape) == 2:
+                        data = np.empty(
+                            (self.nsubs, file["Subhalo/" + ikey].shape[1]),
+                            dtype=file["Subhalo/" + ikey].dtype)
+                    else:
+                        assert False
 
             # read subhalo data
             if ns > 0:
-                for ikey in file["Subhalo"].keys():
-                    self.Sub[ikey][skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
+                data[skip_sub:skip_sub + ns] = file["Subhalo/" + ikey]
 
-            skip_gr += ng
             skip_sub += ns
 
             file.close()
 
         # Load all variables with double precision
         if settings.double_precision:
-
-            for ikey in self.Group:
-                if not issubclass(self.Group[ikey].dtype.type, numbers.Integral):
-                    self.Group[ikey] = self.Group[ikey].astype(np.float64)
-
-            for ikey in self.Sub:
-                if not issubclass(self.Sub[ikey].dtype.type, numbers.Integral):
-                    self.Sub[ikey] = self.Sub[ikey].astype(np.float64)
+            if not issubclass(data.dtype.type, numbers.Integral):
+                data = data.astype(np.float64)
         else:
             warnings.warn('\n\nThe cython routines expect double precision '
                           + 'and will fail unless settings.double_precision '
                           + 'is True.\n\n')
 
         if settings.use_units:
-            for key in list(self.Group.keys()):
-                self.Group[key] = self.get_paicos_quantity(
-                    self.Group[key], key,
-                    field='groups')
-                if not hasattr(self.Group[key], 'unit'):
-                    del self.Group[key]
+            self.Sub[ikey] = self.get_paicos_quantity(
+                data, ikey,
+                field='subhalos')
+            if not hasattr(self.Sub[ikey], 'unit'):
+                del self.Sub[ikey]
+                raise RuntimeError(f"{ikey} does not have units implemented!")
+        else:
+            self.Sub[ikey] = data
 
-            for key in list(self.Sub.keys()):
-                self.Sub[key] = self.get_paicos_quantity(
-                    self.Sub[key], key,
-                    field='subhalos')
-                if not hasattr(self.Sub[key], 'unit'):
-                    del self.Sub[key]
+    def load_all_data(self):
+        """
+        Calling this method simply loads all the data in the catalog.
+        """
+
+        for ikey in self.Group._auto_list:
+            self.load_group_data(ikey)
+
+        for ikey in self.Sub._auto_list:
+            self.load_sub_data(ikey)
 
     def save_new_catalog(self, basename, basedir=None, single_precision=False):
         """

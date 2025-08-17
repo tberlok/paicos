@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 import h5py
 from functools import wraps
+import time
 from . import settings
 from . import units as pu
 from .cython.get_index_of_region import get_cube, get_radial_range
@@ -122,7 +123,10 @@ def save_dataset(hdf5file, name, data=None, data_attrs={},
         if 'scale_factor' not in path.keys():
             path.create_dataset('scale_factor', data=data.a)
         else:
-            np.testing.assert_array_equal(path['scale_factor'][...], data.a)
+            err_msg = ("All PaicosTimeSeries need to have the same array "
+                       + "of scale factors when saving to the same file")
+            np.testing.assert_allclose(path['scale_factor'][...], data.a,
+                                       err_msg=err_msg, rtol=1e-14, atol=1e-14)
 
 
 def load_dataset(hdf5file, name, group=None):
@@ -170,7 +174,7 @@ def load_dataset(hdf5file, name, group=None):
                                              comoving_sim=comoving_sim)
             else:
                 data = pu.PaicosQuantity(data, unit, a=time, h=hubble_param,
-                                         comoving_sim=comoving_sim)
+                                         comoving_sim=comoving_sim, copy=True)
     return data
 
 
@@ -372,8 +376,10 @@ def _check_if_omp_has_issues(verbose=True):
     if settings.give_openMP_warnings is False:
         verbose = False
 
-    max_threads = get_openmp_settings(0, False)
+    # max_threads = get_openmp_settings(0, True)
+    max_threads = os.cpu_count()
     settings.max_threads = max_threads
+
     if settings.numthreads > max_threads and verbose:
         msg = ('\n\nThe default number of OpenMP threads, {}, '
                + 'exceeds the {} available on your system. Setting '
@@ -416,3 +422,23 @@ def _copy_over_snapshot_information(snap, new_filename, mode='r+'):
             f.create_group(group)
             for key in info_dic[group]:
                 f[group].attrs[key] = info_dic[group][key]
+
+
+def conditional_timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        timing = kwargs.pop('timing', False)
+        if timing:
+            start = time.perf_counter()
+            result = func(*args, **kwargs)
+            end = time.perf_counter()
+
+            class_info = ""
+            if args and hasattr(args[0], '__class__'):
+                class_info = f"{args[0].__class__.__name__}."
+
+            print(f"[TIMER] {class_info}{func.__name__} took {end - start:.6f} seconds")
+            return result
+        else:
+            return func(*args, **kwargs)
+    return wrapper

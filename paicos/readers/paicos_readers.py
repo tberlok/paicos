@@ -62,6 +62,10 @@ class PaicosReader(dict):
         """
 
         self.to_physical = to_physical
+        if to_physical and not settings.use_units:
+            err_msg = "to_physical=True requires that units are enabled"
+            raise RuntimeError(err_msg)
+
         self.verbose = verbose
 
         if '.hdf5' in basedir:
@@ -417,7 +421,11 @@ class PaicosReader(dict):
         if self.comoving_sim:
             msg = 'time not defined for comoving sim'
             raise RuntimeError(msg)
-        return self._Time * self.arepo_units['unit_time']
+
+        time = self._Time * self.arepo_units['unit_time']
+        if self._HubbleParam != 1.0:
+            time = self._Time * self.unit_quantity('arepo_time / small_h')
+        return time
 
     def rho_crit(self, z):
         """
@@ -450,10 +458,10 @@ class PaicosReader(dict):
         if settings.use_units:
             a = 1.0 / (z + 1.)
             if isinstance(a, np.ndarray):
-                time = pu.PaicosTimeSeries(time, a=a, h=self.h,
+                time = pu.PaicosTimeSeries(time, a=a, h=self.h, copy=True,
                                            comoving_sim=self.comoving_sim)
             else:
-                time = pu.PaicosQuantity(time, a=a, h=self.h,
+                time = pu.PaicosQuantity(time, a=a, h=self.h, copy=True,
                                          comoving_sim=self.comoving_sim)
         return time
 
@@ -555,7 +563,7 @@ class PaicosReader(dict):
         unit = u.Unit(astropy_unit_str)
         return pu.PaicosQuantity(1.0, unit, a=self._Time, h=self.h,
                                  comoving_sim=self.comoving_sim,
-                                 dtype=float)
+                                 dtype=float, copy=True)
 
     def uq(self, astropy_unit_str):
         """
@@ -578,7 +586,65 @@ class PaicosReader(dict):
 
         return pu.get_new_unit(unit, remove_list)
 
+    def _load_helper(self, hdf5file, name, group=None):
+        """
+        Implementation of nested group functionality for readers
+        """
+
+        if group is None:
+            path = name
+        else:
+            path = group + '/' + name
+
+        terms = path.split('/')
+
+        # If dataset, read it and place it in the right dictionary
+        if isinstance(hdf5file[path], h5py.Dataset):
+            data = util.load_dataset(hdf5file, name, group=group)
+
+            # Convert to physical
+            if isinstance(data, pu.PaicosQuantity) and self.to_physical:
+                data = data.to_physical
+
+            mydic = self
+            if '/' not in path:
+                mydic[name] = data
+            else:
+                for ii in range(len(terms) - 1):
+                    mydic = mydic[terms[ii]]
+                mydic.update({name: data})
+
+        # If group, create top-level dictionary and call
+        # recursively for every key in this group.
+        elif isinstance(hdf5file[path], h5py.Group):
+            upper_dic = self
+            for ii in range(len(terms)):
+                upper_key = terms[ii]
+                if upper_key not in upper_dic:
+                    upper_dic[upper_key] = {}
+                upper_dic = upper_dic[upper_key]
+
+            for subname in hdf5file[path].keys():
+                self._load_helper(hdf5file, subname, group=path)
+
     def load_data(self, name, group=None):
+        """
+        Load data from a generic Paicos hdf5 file (written by a PaicosWriter
+        instance).
+
+        The method requires that the data sets have a 'unit' attribute
+        and hence does not work for Arepo hdf5 files.
+        For this reason, this method is overloaded in the Snapshot and Catalog
+        classes.
+        """
+        with h5py.File(self.filename, 'r') as f:
+            self._load_helper(f, name, group)
+
+        for key in list(self.keys()):
+            if isinstance(self[key], dict) and len(self[key].keys()) == 0:
+                del self[key]
+
+    def _load_data_old(self, name, group=None):
         """
         Load data from a generic Paicos hdf5 file (written by a PaicosWriter
         instance).
@@ -596,13 +662,18 @@ class PaicosReader(dict):
                     self[name] = self[name].to_physical
             elif isinstance(f[name], h5py.Group):
                 for data_name in f[name].keys():
-                    data = util.load_dataset(f, data_name, group=name)
-                    if name not in self:
-                        self[name] = {}
-                    if isinstance(data, pu.PaicosQuantity) and self.to_physical:
-                        self[name][data_name] = data.to_physical
+                    if isinstance(f[name][data_name], h5py.Group):
+                        import warnings
+                        warnings.warn("load_data: nested subgroups don't work :(")
+                        # raise RuntimeError()
                     else:
-                        self[name][data_name] = data
+                        data = util.load_dataset(f, data_name, group=name)
+                        if name not in self:
+                            self[name] = {}
+                        if isinstance(data, pu.PaicosQuantity) and self.to_physical:
+                            self[name][data_name] = data.to_physical
+                        else:
+                            self[name][data_name] = data
 
 
 class ImageReader(PaicosReader):

@@ -296,7 +296,13 @@ class PaicosQuantity(Quantity):
         if hasattr(self._a, 'unit'):
             return self._a
         else:
-            return self._a * u.Unit('arepo_time')
+            time = self._a * u.Unit('arepo_time')
+            if self._h != 1.0:
+                time = PaicosQuantity(self._a, 'arepo_time/small_h', a=self._a, h=self.h,
+                                      comoving_sim=self.comoving_sim, copy=True)
+            else:
+                time = self._a * u.Unit('arepo_time')
+            return time
 
     @property
     def unit_quantity(self):
@@ -304,7 +310,8 @@ class PaicosQuantity(Quantity):
         Returns a new PaicosQuantity with the same units as the current
         PaicosQuantity and a numeric value of 1.
         """
-        return PaicosQuantity(1., self.unit, a=self._a, h=self.h,
+
+        return PaicosQuantity(1., self.unit, a=self._a, h=self.h, copy=True,
                               comoving_sim=self.comoving_sim)
 
     @property
@@ -550,6 +557,121 @@ class PaicosQuantity(Quantity):
         new_quant = new_quant.to_comoving(pu_unit)
         return new_quant
 
+    def adjust_time(self, a=None, z=None):
+        """
+        Return a PaicosQuantity with its time (i.e. scale factor, a, and
+        redshift, z, set to new values *without* changing the physical
+        value of the quantity).
+
+        Note the difference between this method and the "adjust_time" method!
+
+        Use the "adjust_time" method if you want to keep the physical value fixed.
+        Use the "set_time" method if you want to keep the comoving value fixed.
+
+        Both are illustrated in the example below:
+
+        For instance, we initialize a length of 100 comoving kpc
+        (using a snap object with a = 1)
+
+            In [2]:  L = 100 * snap.uq('kpc / small_a')
+               ...:  L_fixed_physical = L.adjust_time(a=0.5)
+               ...:  L_fixed_comoving = L.set_time(a=0.5)
+
+            In [3]: L_fixed_physical
+            Out[3]: <PaicosQuantity 50. kpc / small_a>
+
+            In [4]: L_fixed_comoving
+            Out[4]: <PaicosQuantity 100. kpc / small_a>
+
+            In [5]: L.to_physical
+            Out[5]: <PaicosQuantity 100. kpc>
+
+            In [6]: L_fixed_physical.to_physical
+            Out[6]: <PaicosQuantity 100. kpc>
+
+            In [7]: L_fixed_comoving.to_physical
+            Out[7]: <PaicosQuantity 200. kpc>
+
+        """
+
+        if not self.comoving_sim:
+            raise RuntimeError('Only implemented for comoving simulations')
+
+        codic, _ = get_unit_dictionaries(self.unit)
+        # factor = self.h**codic[small_h]
+
+        if a is not None:
+            new_a = a
+        elif z is not None:
+            new_a = 1 / (z + 1)
+        else:
+            raise RuntimeError('You need to give an input to this method')
+
+        factor = (self.a / new_a)**codic[small_a]
+        data = self.value * factor
+        return PaicosQuantity(data, self.unit, a=new_a, h=self.h,
+                              comoving_sim=self.comoving_sim,
+                              dtype=data.dtype, copy=True)
+
+    def set_time(self, a=None, z=None):
+        """
+        Return a PaicosQuantity with its time (i.e. scale factor, a, and
+        redshift, z, set to new values *while changing* the physical
+        value of the quantity).
+
+        Note the difference between this method and the "adjust_time" method!
+
+        Use the "adjust_time" method if you want to keep the physical value fixed.
+        Use the "set_time" method if you want to keep the comoving value fixed.
+
+        Both are illustrated in the example below:
+
+        For instance, we initialize a length of 100 comoving kpc
+        (using a snap object with a = 1)
+
+            In [2]:  L = 100 * snap.uq('kpc / small_a')
+               ...:  L_fixed_physical = L.adjust_time(a=0.5)
+               ...:  L_fixed_comoving = L.set_time(a=0.5)
+
+            In [3]: L_fixed_physical
+            Out[3]: <PaicosQuantity 50. kpc / small_a>
+
+            In [4]: L_fixed_comoving
+            Out[4]: <PaicosQuantity 100. kpc / small_a>
+
+            In [5]: L.to_physical
+            Out[5]: <PaicosQuantity 100. kpc>
+
+            In [6]: L_fixed_physical.to_physical
+            Out[6]: <PaicosQuantity 100. kpc>
+
+            In [7]: L_fixed_comoving.to_physical
+            Out[7]: <PaicosQuantity 200. kpc>
+
+        """
+        if not self.comoving_sim:
+            raise RuntimeError('Only implemented for comoving simulations')
+
+        if a is not None:
+            new_a = a
+        elif z is not None:
+            new_a = 1 / (z + 1)
+        else:
+            raise RuntimeError('You need to give an input to this method')
+
+        data = self.value
+        return PaicosQuantity(data, self.unit, a=new_a, h=self.h,
+                              comoving_sim=self.comoving_sim,
+                              dtype=data.dtype, copy=True)
+
+    @property
+    def astropy_quantity(self):
+        """
+        Returns an astropy Quantity, i.e., the units are retained but
+        we no longer have access to the information about the values of a and h.
+        """
+        return Quantity(self.value, self.unit, dtype=self.value.dtype, copy=True)
+
     def __scaling_and_scaling_str(self, unit):
         """
         Helper function to create labels
@@ -736,6 +858,88 @@ class PaicosTimeSeries(PaicosQuantity):
 
         return obj
 
+    def __getitem__(self, key):
+        """
+        We overload this method in order to also slice the
+        time array when a PaicosTimeSeries is sliced.
+        """
+        result = super().__getitem__(key)
+
+        # Ensure key is always a tuple
+        key_tuple = (key,) if not isinstance(key, tuple) else key
+
+        # print(key_tuple)
+
+        # Get index for axis 0
+        key0 = key_tuple[0] if len(key_tuple) > 0 else slice(None)
+        # print(key, key0)
+        if not len(self._a.shape) == 0:
+            result._a = self._a[key0]
+
+        # Return PaicosQuantity if new view is just a single point in time
+        if len(result._a.shape) == 0:
+            return PaicosQuantity(result.value, result.unit, a=result.a,
+                                  h=result.h, comoving_sim=result.comoving_sim,
+                                  copy=True)
+
+        return result
+
+    def __array_function__(self, func, types, args, kwargs):
+        """
+        Ensure that the the information about a-values is correctly propagated.
+        """
+
+        result = super().__array_function__(func, types, args, kwargs)
+
+        # Numpy functions that sometimes turn a time series into a single value
+        if func in [np.mean, np.sum, np.std, np.var, np.min, np.max]:
+            axis = kwargs.get("axis", None)
+            if axis is None or (isinstance(axis, int) and axis == 0) or (isinstance(axis, tuple) and 0 in axis):
+                # Reduction along dimension 0, so discard time information and return an astropy Quantity
+                return result.astropy_quantity
+
+        # Stacking functions
+        if func in [np.vstack, np.hstack, np.dstack]:
+            err_msg = ("This stacking function not implemented for PaicosTimeSeries. ",
+                       "Please try instead if np.concatenate or np.stack works.")
+            raise RuntimeError(err_msg)
+
+        if func in [np.concatenate, np.stack]:
+
+            arrays = args[0]
+            if not all(isinstance(p, PaicosTimeSeries) for p in arrays):
+                raise RuntimeError("concatenate requires same type for all arrays")
+
+            axis = kwargs.get("axis", None)
+
+            if axis == 0:
+                if func == np.stack:
+                    raise RuntimeError("np.stack only implemented with axis=1")
+                # Concatenate the a-values if we are concatenating / stacking along axis 0
+                new_a = np.concatenate([p.a for p in arrays])
+
+                if len(new_a.shape) > 1:
+                    print(new_a.shape)
+                    err_msg = ("Supported operations for PaicosTimeSeries are np.concatenate",
+                               " along axis=0 and/or stacking with np.stack along axis=1.")
+                    raise RuntimeError(err_msg)
+                return PaicosTimeSeries(result.value, result.unit, a=new_a,
+                                        h=result.h, copy=True, comoving_sim=result.comoving_sim)
+            elif axis == 1:
+                a_first = arrays[0].a
+                for p in arrays:
+                    try:
+                        np.testing.assert_array_equal(p.a, a_first)
+                    except AssertionError:
+                        err_msg = ("Stacking time series along this axis",
+                                   " requires that all time series have identical",
+                                   " time (i.e., .a values).")
+                        raise RuntimeError(err_msg)
+            else:
+                raise RuntimeError(f"You have axis={axis}. Please specify axis to be either 0 or 1.")
+
+        return result
+
     @property
     def to_physical(self):
         """
@@ -824,6 +1028,20 @@ class PaicosTimeSeries(PaicosQuantity):
         """
         assert vec.shape[0] == self.shape[0]
         return np.vstack([vec for _ in range(self.shape[1])]).T
+
+    # def concatenate_and_sort(self, paicos_time_series):
+    #     """
+    #     Concatenate two time series and sort according to their a values
+    #     """
+    #     assert self.unit == paicos_time_series.unit
+    #     assert self.shape == paicos_time_series.shape
+
+    #     # index = np.arange(self.a.shape[0] + paicos_time_series.a.shape[0])
+    #     stacked_a = np.concatenate([self.a, paicos_time_series.a])
+    #     stacked_values = np.concatenate([self.value, paicos_time_series.value])
+    #     index = np.argsort(stacked_a)
+    #     return PaicosTimeSeries(stacked_values[index], self.unit, a=stacked_a[index],
+    #                             h=self.h, copy=True, comoving_sim=self.comoving_sim)
 
     def _sanity_check(self, value):
         """

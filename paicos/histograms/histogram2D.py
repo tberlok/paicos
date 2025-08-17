@@ -8,7 +8,6 @@ from .. import units as pu
 from .. import util
 from .. import settings
 from .histogram import _make_bins
-from ..cython.histogram import find_normalizing_norm_of_2d_hist
 
 
 class Histogram2D:
@@ -113,31 +112,44 @@ class Histogram2D:
         self.colorlabel = None
 
     def _get_image_properties(self):
-        dx = np.diff(self.edges_x)
-        dy = np.diff(self.edges_y)
+        if settings.use_units:
+            x_unit = self.edges_x.unit_quantity
+            y_unit = self.edges_y.unit_quantity
+            edges_x = self.edges_x.value
+            edges_y = self.edges_y.value
+            centers_x = self.centers_x.value
+            centers_y = self.centers_y.value
+        else:
+            edges_x = self.edges_x
+            edges_y = self.edges_y
+            centers_x = self.centers_x
+            centers_y = self.centers_y
+
+        if self.logscale:
+            dx = np.diff(np.log10(edges_x))
+            dy = np.diff(np.log10(edges_y))
+        else:
+            dx = np.diff(edges_x)
+            dy = np.diff(edges_y)
+
+        dxx, dyy = np.meshgrid(dx, dy)
 
         if settings.use_units:
-            dxu = dx.unit_quantity
-            dyu = dy.unit_quantity
-            dxx, dyy = np.meshgrid(dx.value, dy.value)
-            dxx = dxx * dxu
-            dyy = dyy * dyu
-
-            centers_x_mat, centers_y_mat = np.meshgrid(self.centers_x.value,
-                                                       self.centers_y.value)
-            centers_x_mat = centers_x_mat * dxu
-            centers_y_mat = centers_y_mat * dyu
-        else:
-            dxx, dyy = np.meshgrid(dx, dy)
-            centers_x_mat, centers_y_mat = np.meshgrid(self.centers_x,
-                                                       self.centers_y)
+            dxx = dxx * x_unit
+            dyy = dyy * y_unit
 
         self.area_per_bin = dxx * dyy
 
         if self.logscale and settings.use_units:
             self.area_per_bin *= u.Unit('dex')**(2) / self.area_per_bin.unit
-        self.centers_x_mat = centers_x_mat
-        self.centers_y_mat = centers_y_mat
+
+        centers_x_mat, centers_y_mat = np.meshgrid(centers_x, centers_y)
+        if settings.use_units:
+            self.centers_x_mat = centers_x_mat * x_unit
+            self.centers_y_mat = centers_y_mat * y_unit
+        else:
+            self.centers_x_mat = centers_x_mat
+            self.centers_y_mat = centers_y_mat
 
     def get_colorlabel(self, x_symbol, y_symbol, weight_symbol=None):
         """
@@ -254,7 +266,7 @@ class Histogram2D:
                                        h=self.x._h,
                                        comoving_sim=self.x.comoving_sim)
         if normalize:
-            norm = np.sum(self.area_per_bin * hist2d)
+            norm = np.sum(hist2d.flatten()) * self.area_per_bin
             hist2d /= norm
 
             sanity = np.sum(self.area_per_bin * hist2d)
