@@ -640,9 +640,8 @@ class Snapshot(PaicosReader):
 
             f = h5py.File(cur_filename, "r")
 
-
             np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])  # pylint: disable=unsubscriptable-object
-            
+
             if np_file > 0:
                 if 'unit' in f[datname].attrs.keys():
                     unit_str = f[datname].attrs['unit']
