@@ -628,6 +628,7 @@ class Snapshot(PaicosReader):
         else:
             self[alias_key] = np.empty((length, shape[1]), dtype=dtype)
 
+        unit_str = None
         for ifile in range(self.nfiles):
             if self.multi_file is False:
                 cur_filename = self.filename
@@ -639,12 +640,12 @@ class Snapshot(PaicosReader):
 
             f = h5py.File(cur_filename, "r")
 
-            if 'unit' in f[datname].attrs.keys():
-                unit_str = f[datname].attrs['unit']
-            else:
-                unit_str = None
 
             np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])  # pylint: disable=unsubscriptable-object
+            
+            if np_file > 0:
+                if 'unit' in f[datname].attrs.keys():
+                    unit_str = f[datname].attrs['unit']
 
             if not self.subselection:
                 if np_file > 0:
