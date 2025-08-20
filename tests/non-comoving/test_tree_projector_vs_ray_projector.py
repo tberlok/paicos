@@ -1,6 +1,6 @@
 
 def test_tree_projector_vs_ray_projector(show=False):
-    show = True
+
     import paicos as pa
     import numpy as np
 

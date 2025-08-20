@@ -4,3 +4,4 @@ pytest
 pytest-order
 flake8
 pylint
+pre-commit
