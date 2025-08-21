@@ -6,6 +6,7 @@ from ..writers.paicos_writer import PaicosWriter
 from .. import settings
 import numbers
 import warnings
+import os
 
 
 class PaicosDict(dict):
@@ -170,6 +171,10 @@ class Catalog(PaicosReader):
 
         if self.verbose:
             print("reading file", cur_filename)
+
+        err_msg = f'File: {cur_filename} not found'
+        if not os.path.exists(cur_filename):
+            raise FileNotFoundError(err_msg)
 
         file = h5py.File(cur_filename, "r")
 
