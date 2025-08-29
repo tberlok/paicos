@@ -91,9 +91,6 @@ class PaicosReader(dict):
             # If snapnum is None, filename is basedir + basename + '.hdf5'
             if snapnum is None:
                 self.filename = basedir + basename + '.hdf5'
-                err_msg = f'File: {self.filename} not found'
-                if not os.path.exists(self.filename):
-                    raise FileNotFoundError(err_msg)
             else:
                 # Set filenames for single_file and multi_file cases
                 single_file = basename + "_{:03d}.hdf5"
@@ -122,7 +119,11 @@ class PaicosReader(dict):
                     err_msg = "File not found. Tried locations:\n{}\n{}\n{}"
                     err_msg = err_msg.format(single_file, multi_file.format(0),
                                              multi_wo_dir.format(0))
-                    raise FileNotFoundError(err_msg)
+                    print(err_msg)
+                    raise FileNotFoundError(single_file)
+
+        if not os.path.exists(self.filename):
+            raise FileNotFoundError(self.filename)
 
         with h5py.File(self.filename, 'r') as f:
             self.Header = dict(f['Header'].attrs)

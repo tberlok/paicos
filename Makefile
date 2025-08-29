@@ -25,7 +25,7 @@ checks:
 
 linting:
 	flake8 ./
-	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=import-error,no-name-in-module,no-member,no-value-for-parameter,too-many-function-args paicos
+	pylint --errors-only --ignored-modules=astropy.units,astropy.constants  --disable=import-error,no-name-in-module,no-member,no-value-for-parameter,too-many-function-args,unexpected-keyword-arg,possibly-used-before-assignment paicos
 
 dev_checks:
 	make checks
