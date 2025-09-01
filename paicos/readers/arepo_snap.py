@@ -278,19 +278,23 @@ class Snapshot(PaicosReader):
                 # in space (e.g. the high resolution region in a zoom
                 # will have no low res DM particles).
                 for ii in range(self.nfiles):
-                    with h5py.File(self.multi_filename.format(ii), 'r') as file:
-                        if parttype_str in file:
-                            for key in file[parttype_str]:
-                                p_key = f'{parttype}_{key}'
-                                self._part_avail_load[parttype].append(p_key)
-                                shape = list(file[parttype_str][key].shape)
-                                if len(shape) > 1:
-                                    shape[0] = self.npart[parttype]
-                                dtype = file[parttype_str][key].dtype
-                                self._part_specs[parttype][key] = {'shape': tuple(shape),
-                                                                   'dtype': dtype}
-                            # print(f'found parttype in partfile {ii}, breaking out')
-                            break
+                    try:
+                        with h5py.File(self.multi_filename.format(ii), 'r') as file:
+                            if parttype_str in file:
+                                for key in file[parttype_str]:
+                                    p_key = f'{parttype}_{key}'
+                                    self._part_avail_load[parttype].append(p_key)
+                                    shape = list(file[parttype_str][key].shape)
+                                    if len(shape) > 1:
+                                        shape[0] = self.npart[parttype]
+                                    dtype = file[parttype_str][key].dtype
+                                    self._part_specs[parttype][key] = {'shape': tuple(shape),
+                                                                       'dtype': dtype}
+                                # print(f'found parttype in partfile {ii}, breaking out')
+                                break
+                    except OSError as e:
+                        print(e)
+                        raise RuntimeError(f"Error opening file {self.multi_filename.format(ii)}.")
 
             self._all_avail_load += self._part_avail_load[parttype]
 
@@ -638,64 +642,67 @@ class Snapshot(PaicosReader):
                 else:
                     cur_filename = self.multi_filename.format(ifile)
 
-            f = h5py.File(cur_filename, "r")
+            try:
+                with h5py.File(cur_filename, "r") as f:
 
-            np_file = int(f["Header"].attrs["NumPart_ThisFile"][parttype])  # pylint: disable=unsubscriptable-object
+                    np_file = f["Header"].attrs["NumPart_ThisFile"][parttype]  # pylint: disable=unsubscriptable-object
+                    np_file = int(np_file)
 
-            if np_file > 0:
-                if 'unit' in f[datname].attrs.keys():
-                    unit_str = f[datname].attrs['unit']
+                    if np_file > 0:
+                        if 'unit' in f[datname].attrs.keys():
+                            unit_str = f[datname].attrs['unit']
 
-            if not self.subselection:
-                if np_file > 0:
-                    self[alias_key][skip_part:skip_part + np_file] = f[datname][...]
-            else:
-                # Global indices
-                file_first = skip_part
-                file_last = skip_part + np_file
-                subfof_first = self._first_indices[parttype]
-                subfof_last = self._last_indices[parttype]
-                found_something = False
-                if subfof_first >= file_first and subfof_first < file_last:
-                    found_something = True
-                    first = subfof_first - file_first
-                    last = np.min([np_file, subfof_last - file_first])
-                elif subfof_last > file_first and subfof_last < file_last:
-                    found_something = True
-                    first = 0
-                    last = np.min([np_file, subfof_last - file_first])
-                elif subfof_first <= file_first and subfof_last >= file_last:
-                    found_something = True
-                    first = 0
-                    last = np_file
-                else:
-                    found_something = False
-                    if debug:
-                        pass
-                if found_something:
-                    np_file_subfof = last - first
-                    if debug:
-                        if self.subhalonum is not None:
-                            print(f'ifile={ifile}, subhalo {self.subhalonum} in file')
+                    if not self.subselection:
+                        if np_file > 0:
+                            self[alias_key][skip_part:skip_part + np_file] = f[datname][...]
+                    else:
+                        # Global indices
+                        file_first = skip_part
+                        file_last = skip_part + np_file
+                        subfof_first = self._first_indices[parttype]
+                        subfof_last = self._last_indices[parttype]
+                        found_something = False
+                        if subfof_first >= file_first and subfof_first < file_last:
+                            found_something = True
+                            first = subfof_first - file_first
+                            last = np.min([np_file, subfof_last - file_first])
+                        elif subfof_last > file_first and subfof_last < file_last:
+                            found_something = True
+                            first = 0
+                            last = np.min([np_file, subfof_last - file_first])
+                        elif subfof_first <= file_first and subfof_last >= file_last:
+                            found_something = True
+                            first = 0
+                            last = np_file
                         else:
-                            print(f'ifile={ifile}, fofnum {self.fofnum} in file')
-                        print('file_first, file_last', file_first, file_last)
-                        print('(subfof_first, subfof_last', subfof_first, subfof_last)
-                        print('np_file, np_file_subfof', np_file, np_file_subfof)
-                        print("len_subfof", len_subfof)
+                            found_something = False
+                            if debug:
+                                pass
+                        if found_something:
+                            np_file_subfof = last - first
+                            if debug:
+                                if self.subhalonum is not None:
+                                    print(f'ifile={ifile}, subhalo {self.subhalonum} in file')
+                                else:
+                                    print(f'ifile={ifile}, fofnum {self.fofnum} in file')
+                                print('file_first, file_last', file_first, file_last)
+                                print('(subfof_first, subfof_last', subfof_first, subfof_last)
+                                print('np_file, np_file_subfof', np_file, np_file_subfof)
+                                print("len_subfof", len_subfof)
 
-                    self[alias_key][subfof_skip_part:subfof_skip_part + np_file_subfof] = f[datname][first:last]
-                    subfof_skip_part += np_file_subfof
+                            self[alias_key][subfof_skip_part:subfof_skip_part + np_file_subfof] = f[datname][first:last]
+                            subfof_skip_part += np_file_subfof
 
-            skip_part += np_file
+                    skip_part += np_file
 
-            if debug:
-                if self.subselection:
-                    print(subfof_skip_part, length)
-                else:
-                    print(skip_part, length)
-
-            f.close()
+                    if debug:
+                        if self.subselection:
+                            print(subfof_skip_part, length)
+                        else:
+                            print(skip_part, length)
+            except OSError as e:
+                print(e)
+                raise RuntimeError(f"Error opening file {cur_filename}.")
 
         if self.subselection:
             err_msg = f'missing particles!, {subfof_skip_part}/{length}'
