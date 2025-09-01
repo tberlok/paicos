@@ -1027,7 +1027,7 @@ class PaicosTimeSeries(PaicosQuantity):
         :meta private:
         """
         assert vec.shape[0] == self.shape[0]
-        return np.vstack([vec for _ in range(self.shape[1])]).T
+        return np.stack([vec] * self.shape[1], axis=1)
 
     # def concatenate_and_sort(self, paicos_time_series):
     #     """
