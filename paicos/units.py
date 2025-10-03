@@ -468,7 +468,11 @@ class PaicosQuantity(Quantity):
             if ii < len(dic.keys()) - 1:
                 unit_label += r'\;'
 
-        label = co_label + r'\; \left[' + unit_label + r'\right]'
+        # If statement gets rid of empty brackets for unitless quantities
+        if len(unit_label) > 0:
+            label = co_label + r'\; \left[' + unit_label + r'\right]'
+        else:
+            label = co_label
 
         # Get ckpc, cMpc, ckpc/h and Mkpc/h as used in literature
         if normal_unit in ('kpc', 'Mpc', 'Gpc'):
@@ -929,7 +933,7 @@ class PaicosTimeSeries(PaicosQuantity):
                 a_first = arrays[0].a
                 for p in arrays:
                     try:
-                        np.testing.assert_array_equal(p.a, a_first)
+                        np.testing.assert_allclose(p.a, a_first, rtol=1e-14, atol=1e-14)
                     except AssertionError:
                         err_msg = ("Stacking time series along this axis",
                                    " requires that all time series have identical",
