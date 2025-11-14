@@ -303,13 +303,15 @@ class ImageCreator:
             center_width = self.x_c
             center_height = self.y_c
 
-        extent = [center_width - self.width / 2, center_width + self.width / 2,
-                  center_height - self.height / 2, center_height + self.height / 2]
-
+        extent = np.zeros(4)
         if settings.use_units:
-            extent = units.paicos_quantity_list_to_array(extent)
-        else:
-            extent = np.array(extent)
+            extent = extent * center_width.uq
+
+        extent[0] = center_width - self.width / 2
+        extent[1] = center_width + self.width / 2
+        extent[2] = center_height - self.height / 2
+        extent[3] = center_height + self.height / 2
+
         return extent
 
     @property
@@ -317,13 +319,15 @@ class ImageCreator:
         """
         Same as 'extent' but centered on the center of the image.
         """
-        centered_extent = [- self.width / 2, self.width / 2,
-                           - self.height / 2, self.height / 2]
-
+        centered_extent = np.zeros(4)
         if settings.use_units:
-            centered_extent = units.paicos_quantity_list_to_array(centered_extent)
-        else:
-            centered_extent = np.array(centered_extent)
+            centered_extent = centered_extent * self.width.uq
+
+        centered_extent[0] = - self.width / 2
+        centered_extent[1] = + self.width / 2
+        centered_extent[2] = - self.height / 2
+        centered_extent[3] = + self.height / 2
+
         return centered_extent
 
     @property
@@ -524,3 +528,39 @@ class ImageCreator:
         The volume per pixel in the image.
         """
         return self.volume / (self.npix_width * self.npix_height)
+
+    def _get_width_and_height_arrays(self):
+        """
+        Get width and height coordinates in the image as 1D arrays
+        of total length npix_width × npix_height.
+        """
+
+        extent = self.extent
+        npix_width = self.npix_width
+        npix_height = self.npix_height
+        width = self.width
+        height = self.height
+
+        w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
+        h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
+
+        if settings.use_units:
+            wu = w.unit_quantity
+            ww, hh = np.meshgrid(w.value, h.value)
+            ww = ww * wu
+            hh = hh * wu
+        else:
+            ww, hh = np.meshgrid(w, h)
+
+        w = ww.flatten()
+        h = hh.flatten()
+
+        np.testing.assert_array_equal(ww, self._unflatten(ww.flatten()))
+
+        return w, h
+
+    def _unflatten(self, arr):
+        """
+        Helper function to un-flatten 1D arrays to a 2D image
+        """
+        return arr.flatten().reshape((self.npix_height, self.npix_width))

@@ -133,44 +133,6 @@ class Slicer(ImageCreator):
         self.index = self._unflatten(self.index_in_slice_region[i])
         self.distance_to_nearest_cell = self._unflatten(d)
 
-    def _get_width_and_height_arrays(self):
-        """
-        Get width and height coordinates in the image as 1D arrays
-        of total length npix_width × npix_height.
-        """
-
-        # TODO: Make this part of the image_creator class
-
-        extent = self.extent
-        npix_width = self.npix_width
-        npix_height = self.npix_height
-        width = self.width
-        height = self.height
-
-        w = extent[0] + (np.arange(npix_width) + 0.5) * width / npix_width
-        h = extent[2] + (np.arange(npix_height) + 0.5) * height / npix_height
-
-        if settings.use_units:
-            wu = w.unit_quantity
-            ww, hh = np.meshgrid(w.value, h.value)
-            ww = ww * wu
-            hh = hh * wu
-        else:
-            ww, hh = np.meshgrid(w, h)
-
-        w = ww.flatten()
-        h = hh.flatten()
-
-        np.testing.assert_array_equal(ww, self._unflatten(ww.flatten()))
-
-        return w, h
-
-    def _unflatten(self, arr):
-        """
-        Helper function to un-flatten 1D arrays to a 2D image
-        """
-        return arr.flatten().reshape((self.npix_height, self.npix_width))
-
     def slice_variable(self, variable):
         """
         Slice a gas variable based on the Voronoi cells closest to the image

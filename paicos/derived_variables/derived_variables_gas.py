@@ -110,7 +110,7 @@ def Temperatures(snap, get_dependencies=False):
         variable = (gm1 * snap["0_InternalEnergy"]
                     * mmean * mhydrogen).to('K')
     else:
-        u_v = snap.arepo_units['unit_velocity']
+        u_v = snap.arepo_units_in_cgs['unit_velocity']
         variable = (gm1 * snap["0_InternalEnergy"]
                     * u_v**2 * mmean * mhydrogen
                     ).to('K').value

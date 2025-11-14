@@ -262,19 +262,20 @@ class Histogram2D:
         hist2d = hist2d.T
 
         if settings.use_units:
-            hist2d = pu.PaicosQuantity(hist2d, self.hist_units, a=self.x._a,
-                                       h=self.x._h,
-                                       comoving_sim=self.x.comoving_sim)
+            hist2d = hist2d * self.snap.unit_quantity(self.hist_units)
+
         if normalize:
             norm = np.sum(hist2d.flatten()) * self.area_per_bin
-            hist2d /= norm
 
-            sanity = np.sum(self.area_per_bin * hist2d)
-            if settings.use_units:
-                np.testing.assert_allclose(sanity.value, 1.0)
-                assert sanity.unit == u.Unit(''), f'{sanity.unit} should be dimensionless'
-            else:
-                np.testing.assert_allclose(sanity, 1.0)
+            if norm[0, 0] > 0.0:
+                hist2d /= norm
+
+                sanity = np.sum(self.area_per_bin * hist2d)
+                if settings.use_units:
+                    np.testing.assert_allclose(sanity.value, 1.0)
+                    assert sanity.unit == u.Unit(''), f'{sanity.unit} should be dimensionless'
+                else:
+                    np.testing.assert_allclose(sanity, 1.0)
 
         return hist2d
 

@@ -1078,11 +1078,14 @@ def paicos_quantity_list_to_array(list_to_convert):
     """
     e0 = list_to_convert[0]
     if hasattr(e0, 'unit'):
-        for e in list_to_convert:
-            assert e0.unit == e.unit
-            assert e0.comoving_sim == e.comoving_sim
-            assert e0._a == e._a
-            assert e0._h == e._h
-        return np.array([e.value for e in list_to_convert]) * e0.unit_quantity
+        if isinstance(e0, PaicosQuantity):
+            for e in list_to_convert:
+                assert e0.unit == e.unit
+                assert e0.comoving_sim == e.comoving_sim
+                assert e0._a == e._a
+                assert e0._h == e._h
+            return np.array([e.value for e in list_to_convert]) * e0.unit_quantity
+        else:
+            return np.array(list_to_convert)
     else:
         return np.array(list_to_convert)
