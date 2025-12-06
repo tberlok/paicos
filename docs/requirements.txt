@@ -230,7 +230,7 @@ traitlets==5.13.0
     #   nbconvert
     #   nbformat
     #   nbsphinx
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 waitress==3.0.1
     # via webtest
